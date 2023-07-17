@@ -198,13 +198,13 @@ namespace samg {
                 std::vector<Type> trg = this->parse_value<std::uint64_t>(v);
                 this->sequence.insert(this->sequence.end(),trg.begin(),trg.end());
             }
-            void add_values(const std::uint64_t *v, const std::size_t l) {
-                std::vector<std::uint64_t> V;
+            template<typename TypeSrc> void add_values(const TypeSrc *v, const std::size_t l) {
+                std::vector<TypeSrc> V;
                 V.insert(V.end(),v,v+l);
                 this->add_values(V);
             }
-            void add_values(const std::vector<std::uint64_t> V) {
-                std::vector<Type> X = this->parse_values<std::uint64_t>(V);
+            template<typename TypeSrc> void add_values(const std::vector<TypeSrc> V) {
+                std::vector<Type> X = this->parse_values<TypeSrc>(V);
                 this->sequence.insert(this->sequence.end(),X.begin(),X.end());
             }
             void add_value(std::string v) {

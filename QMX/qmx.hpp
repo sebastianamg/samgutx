@@ -869,12 +869,12 @@ namespace QMX
       this->decode_next_first_call = false;
     }
     std::vector<integer> decoded = std::vector<integer>(512);
-    std::cout << "(1)" << std::endl;
+    // // std::cout << "(1)" << std::endl;
     this->_offsets_[QMX_DESTINATION_OFFSET] = 0;
     this->_offsets_ = partial_decode(&decoded[0], 0, source, len, this->_offsets_);
-    std::cout << "(2)" << std::endl;
+    // // std::cout << "(2)" << std::endl;
     decoded.resize(this->_offsets_[QMX_DESTINATION_OFFSET]);
-    std::cout << "(3)" << std::endl;
+    // // std::cout << "(3)" << std::endl;
     return decoded;
    } 
 
@@ -893,7 +893,7 @@ namespace QMX
               keys_offset = offsets[QMX_KEYS_OFFSET],
               to_offset = offsets[QMX_DESTINATION_OFFSET];
 
-      std::cout << "* source_offset = " << source_offset << "; keys_offset = " << keys_offset << std::endl;
+      // // std::cout << "* source_offset = " << source_offset << "; keys_offset = " << keys_offset << std::endl;
       
       __m128i byte_stream, byte_stream_2, tmp, tmp2, mask_21, mask_12, mask_10,
           mask_9, mask_7, mask_6, mask_5, mask_4, mask_3, mask_2, mask_1;
@@ -930,12 +930,12 @@ namespace QMX
       while (in <= keys) // <= because there can be a boundary case where the
                          // final key is 255*0 bit integers
       {
-        std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << std::endl;
+        // // std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << std::endl;
         switch (*keys--)
         {
         case 0x00:
 
-          std::cout << "Case 0x00 (" << std::dec << 0x00 << ")" << std::endl;
+          // // std::cout << "Case 0x00 (" << std::dec << 0x00 << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -1005,7 +1005,7 @@ namespace QMX
           to += 256;
         case 0x01:
 
-          std::cout << "Case 0x01 (" << std::dec << 0x01 << ")" << std::endl;
+          // // std::cout << "Case 0x01 (" << std::dec << 0x01 << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -1075,7 +1075,7 @@ namespace QMX
           to += 256;
         case 0x02:
 
-          std::cout << "Case 0x02 (" << std::dec << 0x02 << ")" << std::endl;
+          // // std::cout << "Case 0x02 (" << std::dec << 0x02 << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -1145,7 +1145,7 @@ namespace QMX
           to += 256;
         case 0x03:
 
-          std::cout << "Case 0x03 (" << std::dec << 0x03 << ")" << std::endl;
+          // // std::cout << "Case 0x03 (" << std::dec << 0x03 << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -1215,7 +1215,7 @@ namespace QMX
           to += 256;
         case 0x04:
 
-          std::cout << "Case 0x04 (" << std::dec << 0x04 << ")" << std::endl;
+          // // std::cout << "Case 0x04 (" << std::dec << 0x04 << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -1285,7 +1285,7 @@ namespace QMX
           to += 256;
         case 0x05:
 
-          std::cout << "Case 0x05 (" << std::dec << 0x05 << ")" << std::endl;
+          // // std::cout << "Case 0x05 (" << std::dec << 0x05 << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -1355,7 +1355,7 @@ namespace QMX
           to += 256;
         case 0x06:
 
-          std::cout << "Case 0x06 (" << std::dec << 0x06 << ")" << std::endl;
+          // // std::cout << "Case 0x06 (" << std::dec << 0x06 << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -1425,7 +1425,7 @@ namespace QMX
           to += 256;
         case 0x07:
 
-          std::cout << "Case 0x07 (" << std::dec << 0x07 << ")" << std::endl;
+          // // std::cout << "Case 0x07 (" << std::dec << 0x07 << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -1495,7 +1495,7 @@ namespace QMX
           to += 256;
         case 0x08:
 
-          std::cout << "Case 0x08 (" << std::dec << 0x08 << ")" << std::endl;
+          // // std::cout << "Case 0x08 (" << std::dec << 0x08 << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -1565,7 +1565,7 @@ namespace QMX
           to += 256;
         case 0x09:
 
-          std::cout << "Case 0x09 (" << std::dec << 0x09 << ")" << std::endl;
+          // // std::cout << "Case 0x09 (" << std::dec << 0x09 << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -1635,7 +1635,7 @@ namespace QMX
           to += 256;
         case 0x0a:
 
-          std::cout << "Case 0x0a (" << std::dec << 0x0a << ")" << std::endl;
+          // // std::cout << "Case 0x0a (" << std::dec << 0x0a << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -1705,7 +1705,7 @@ namespace QMX
           to += 256;
         case 0x0b:
 
-          std::cout << "Case 0x0b (" << std::dec << 0x0b << ")" << std::endl;
+          // // std::cout << "Case 0x0b (" << std::dec << 0x0b << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -1775,7 +1775,7 @@ namespace QMX
           to += 256;
         case 0x0c:
 
-          std::cout << "Case 0x0c (" << std::dec << 0x0c << ")" << std::endl;
+          // // std::cout << "Case 0x0c (" << std::dec << 0x0c << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -1845,7 +1845,7 @@ namespace QMX
           to += 256;
         case 0x0d:
 
-          std::cout << "Case 0x0d (" << std::dec << 0x0d << ")" << std::endl;
+          // // std::cout << "Case 0x0d (" << std::dec << 0x0d << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -1915,7 +1915,7 @@ namespace QMX
           to += 256;
         case 0x0e:
 
-          std::cout << "Case 0x0e (" << std::dec << 0x0e << ")" << std::endl;
+          // // std::cout << "Case 0x0e (" << std::dec << 0x0e << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -1985,7 +1985,7 @@ namespace QMX
           to += 256;
         case 0x0f:
 
-          std::cout << "Case 0x0f (" << std::dec << 0x0f << ")" << std::endl;
+          // // std::cout << "Case 0x0f (" << std::dec << 0x0f << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -2054,11 +2054,11 @@ namespace QMX
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to) + 63, tmp);
           to += 256;
           
-          std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
+          // // std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
           return { (size_t) (in - ((uint8_t *)source) ) , (size_t) (((uint8_t *)source) + len - 1 - keys) ,  (size_t) (to - destination_base) };
         case 0x10:
 
-          std::cout << "Case 0x10 (" << std::dec << 0x10 << ")" << std::endl;
+          // // std::cout << "Case 0x10 (" << std::dec << 0x10 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -2160,7 +2160,7 @@ namespace QMX
           to += 128;
         case 0x11:
 
-          std::cout << "Case 0x11 (" << std::dec << 0x11 << ")" << std::endl;
+          // // std::cout << "Case 0x11 (" << std::dec << 0x11 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -2262,7 +2262,7 @@ namespace QMX
           to += 128;
         case 0x12:
 
-          std::cout << "Case 0x12 (" << std::dec << 0x12 << ")" << std::endl;
+          // // std::cout << "Case 0x12 (" << std::dec << 0x12 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -2364,7 +2364,7 @@ namespace QMX
           to += 128;
         case 0x13:
 
-          std::cout << "Case 0x13 (" << std::dec << 0x13 << ")" << std::endl;
+          // // std::cout << "Case 0x13 (" << std::dec << 0x13 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -2466,7 +2466,7 @@ namespace QMX
           to += 128;
         case 0x14:
 
-          std::cout << "Case 0x14 (" << std::dec << 0x14 << ")" << std::endl;
+          // // std::cout << "Case 0x14 (" << std::dec << 0x14 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -2568,7 +2568,7 @@ namespace QMX
           to += 128;
         case 0x15:
 
-          std::cout << "Case 0x15 (" << std::dec << 0x15 << ")" << std::endl;
+          // // std::cout << "Case 0x15 (" << std::dec << 0x15 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -2670,7 +2670,7 @@ namespace QMX
           to += 128;
         case 0x16:
 
-          std::cout << "Case 0x16 (" << std::dec << 0x16 << ")" << std::endl;
+          // // std::cout << "Case 0x16 (" << std::dec << 0x16 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -2772,7 +2772,7 @@ namespace QMX
           to += 128;
         case 0x17:
 
-          std::cout << "Case 0x17 (" << std::dec << 0x17 << ")" << std::endl;
+          // // std::cout << "Case 0x17 (" << std::dec << 0x17 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -2874,7 +2874,7 @@ namespace QMX
           to += 128;
         case 0x18:
 
-          std::cout << "Case 0x18 (" << std::dec << 0x18 << ")" << std::endl;
+          // // std::cout << "Case 0x18 (" << std::dec << 0x18 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -2976,7 +2976,7 @@ namespace QMX
           to += 128;
         case 0x19:
 
-          std::cout << "Case 0x19 (" << std::dec << 0x19 << ")" << std::endl;
+          // // std::cout << "Case 0x19 (" << std::dec << 0x19 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -3078,7 +3078,7 @@ namespace QMX
           to += 128;
         case 0x1a:
 
-          std::cout << "Case 0x1a (" << std::dec << 0x1a << ")" << std::endl;
+          // // std::cout << "Case 0x1a (" << std::dec << 0x1a << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -3180,7 +3180,7 @@ namespace QMX
           to += 128;
         case 0x1b:
 
-          std::cout << "Case 0x1b (" << std::dec << 0x1b << ")" << std::endl;
+          // // std::cout << "Case 0x1b (" << std::dec << 0x1b << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -3282,7 +3282,7 @@ namespace QMX
           to += 128;
         case 0x1c:
 
-          std::cout << "Case 0x1c (" << std::dec << 0x1c << ")" << std::endl;
+          // // std::cout << "Case 0x1c (" << std::dec << 0x1c << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -3384,7 +3384,7 @@ namespace QMX
           to += 128;
         case 0x1d:
 
-          std::cout << "Case 0x1d (" << std::dec << 0x1d << ")" << std::endl;
+          // // std::cout << "Case 0x1d (" << std::dec << 0x1d << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -3486,7 +3486,7 @@ namespace QMX
           to += 128;
         case 0x1e:
 
-          std::cout << "Case 0x1e (" << std::dec << 0x1e << ")" << std::endl;
+          // // std::cout << "Case 0x1e (" << std::dec << 0x1e << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -3588,7 +3588,7 @@ namespace QMX
           to += 128;
         case 0x1f:
 
-          std::cout << "Case 0x1f (" << std::dec << 0x1f << ")" << std::endl;
+          // // std::cout << "Case 0x1f (" << std::dec << 0x1f << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -3689,11 +3689,11 @@ namespace QMX
           in += 16;
           to += 128;
 
-          std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
+          // // std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
           return { (size_t) (in - ((uint8_t *)source) ) , (size_t) (((uint8_t *)source) + len - 1 - keys) ,  (size_t) (to - destination_base) };
         case 0x20:
 
-          std::cout << "Case 0x20 (" << std::dec << 0x20 << ")" << std::endl;
+          // // std::cout << "Case 0x20 (" << std::dec << 0x20 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -3747,7 +3747,7 @@ namespace QMX
           to += 64;
         case 0x21:
 
-          std::cout << "Case 0x21 (" << std::dec << 0x21 << ")" << std::endl;
+          // // std::cout << "Case 0x21 (" << std::dec << 0x21 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -3801,7 +3801,7 @@ namespace QMX
           to += 64;
         case 0x22:
 
-          std::cout << "Case 0x22 (" << std::dec << 0x22 << ")" << std::endl;
+          // // std::cout << "Case 0x22 (" << std::dec << 0x22 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -3855,7 +3855,7 @@ namespace QMX
           to += 64;
         case 0x23:
 
-          std::cout << "Case 0x23 (" << std::dec << 0x23 << ")" << std::endl;
+          // // std::cout << "Case 0x23 (" << std::dec << 0x23 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -3909,7 +3909,7 @@ namespace QMX
           to += 64;
         case 0x24:
 
-          std::cout << "Case 0x24 (" << std::dec << 0x24 << ")" << std::endl;
+          // // std::cout << "Case 0x24 (" << std::dec << 0x24 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -3963,7 +3963,7 @@ namespace QMX
           to += 64;
         case 0x25:
 
-          std::cout << "Case 0x25 (" << std::dec << 0x25 << ")" << std::endl;
+          // // std::cout << "Case 0x25 (" << std::dec << 0x25 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -4017,7 +4017,7 @@ namespace QMX
           to += 64;
         case 0x26:
 
-          std::cout << "Case 0x26 (" << std::dec << 0x26 << ")" << std::endl;
+          // // std::cout << "Case 0x26 (" << std::dec << 0x26 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -4071,7 +4071,7 @@ namespace QMX
           to += 64;
         case 0x27:
 
-          std::cout << "Case 0x27 (" << std::dec << 0x27 << ")" << std::endl;
+          // // std::cout << "Case 0x27 (" << std::dec << 0x27 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -4125,7 +4125,7 @@ namespace QMX
           to += 64;
         case 0x28:
 
-          std::cout << "Case 0x28 (" << std::dec << 0x28 << ")" << std::endl;
+          // // std::cout << "Case 0x28 (" << std::dec << 0x28 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -4179,7 +4179,7 @@ namespace QMX
           to += 64;
         case 0x29:
 
-          std::cout << "Case 0x29 (" << std::dec << 0x29 << ")" << std::endl;
+          // // std::cout << "Case 0x29 (" << std::dec << 0x29 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -4233,7 +4233,7 @@ namespace QMX
           to += 64;
         case 0x2a:
 
-          std::cout << "Case 0x2a (" << std::dec << 0x2a << ")" << std::endl;
+          // // std::cout << "Case 0x2a (" << std::dec << 0x2a << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -4287,7 +4287,7 @@ namespace QMX
           to += 64;
         case 0x2b:
 
-          std::cout << "Case 0x2b (" << std::dec << 0x2b << ")" << std::endl;
+          // // std::cout << "Case 0x2b (" << std::dec << 0x2b << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -4341,7 +4341,7 @@ namespace QMX
           to += 64;
         case 0x2c:
 
-          std::cout << "Case 0x2c (" << std::dec << 0x2c << ")" << std::endl;
+          // // std::cout << "Case 0x2c (" << std::dec << 0x2c << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -4395,7 +4395,7 @@ namespace QMX
           to += 64;
         case 0x2d:
 
-          std::cout << "Case 0x2d (" << std::dec << 0x2d << ")" << std::endl;
+          // // std::cout << "Case 0x2d (" << std::dec << 0x2d << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -4449,7 +4449,7 @@ namespace QMX
           to += 64;
         case 0x2e:
 
-          std::cout << "Case 0x2e (" << std::dec << 0x2e << ")" << std::endl;
+          // // std::cout << "Case 0x2e (" << std::dec << 0x2e << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -4503,7 +4503,7 @@ namespace QMX
           to += 64;
         case 0x2f:
 
-          std::cout << "Case 0x2f (" << std::dec << 0x2f << ")" << std::endl;
+          // // std::cout << "Case 0x2f (" << std::dec << 0x2f << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -4556,11 +4556,11 @@ namespace QMX
           in += 16;
           to += 64;
 
-          std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
+          // // std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
           return { (size_t) (in - ((uint8_t *)source) ) , (size_t) (((uint8_t *)source) + len - 1 - keys) ,  (size_t) (to - destination_base) };
         case 0x30:
 
-          std::cout << "Case 0x30 (" << std::dec << 0x30 << ")" << std::endl;
+          // // std::cout << "Case 0x30 (" << std::dec << 0x30 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -4596,7 +4596,7 @@ namespace QMX
           to += 40;
         case 0x31:
 
-          std::cout << "Case 0x31 (" << std::dec << 0x31 << ")" << std::endl;
+          // // std::cout << "Case 0x31 (" << std::dec << 0x31 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -4632,7 +4632,7 @@ namespace QMX
           to += 40;
         case 0x32:
 
-          std::cout << "Case 0x32 (" << std::dec << 0x32 << ")" << std::endl;
+          // // std::cout << "Case 0x32 (" << std::dec << 0x32 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -4668,7 +4668,7 @@ namespace QMX
           to += 40;
         case 0x33:
 
-          std::cout << "Case 0x33 (" << std::dec << 0x33 << ")" << std::endl;
+          // // std::cout << "Case 0x33 (" << std::dec << 0x33 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -4704,7 +4704,7 @@ namespace QMX
           to += 40;
         case 0x34:
 
-          std::cout << "Case 0x34 (" << std::dec << 0x34 << ")" << std::endl;
+          // // std::cout << "Case 0x34 (" << std::dec << 0x34 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -4740,7 +4740,7 @@ namespace QMX
           to += 40;
         case 0x35:
 
-          std::cout << "Case 0x35 (" << std::dec << 0x35 << ")" << std::endl;
+          // // std::cout << "Case 0x35 (" << std::dec << 0x35 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -4776,7 +4776,7 @@ namespace QMX
           to += 40;
         case 0x36:
 
-          std::cout << "Case 0x36 (" << std::dec << 0x36 << ")" << std::endl;
+          // // std::cout << "Case 0x36 (" << std::dec << 0x36 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -4812,7 +4812,7 @@ namespace QMX
           to += 40;
         case 0x37:
 
-          std::cout << "Case 0x37 (" << std::dec << 0x37 << ")" << std::endl;
+          // // std::cout << "Case 0x37 (" << std::dec << 0x37 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -4848,7 +4848,7 @@ namespace QMX
           to += 40;
         case 0x38:
 
-          std::cout << "Case 0x38 (" << std::dec << 0x38 << ")" << std::endl;
+          // // std::cout << "Case 0x38 (" << std::dec << 0x38 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -4884,7 +4884,7 @@ namespace QMX
           to += 40;
         case 0x39:
 
-          std::cout << "Case 0x39 (" << std::dec << 0x39 << ")" << std::endl;
+          // // std::cout << "Case 0x39 (" << std::dec << 0x39 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -4920,7 +4920,7 @@ namespace QMX
           to += 40;
         case 0x3a:
 
-          std::cout << "Case 0x3a (" << std::dec << 0x3a << ")" << std::endl;
+          // // std::cout << "Case 0x3a (" << std::dec << 0x3a << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -4956,7 +4956,7 @@ namespace QMX
           to += 40;
         case 0x3b:
 
-          std::cout << "Case 0x3b (" << std::dec << 0x3b << ")" << std::endl;
+          // // std::cout << "Case 0x3b (" << std::dec << 0x3b << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -4992,7 +4992,7 @@ namespace QMX
           to += 40;
         case 0x3c:
 
-          std::cout << "Case 0x3c (" << std::dec << 0x3c << ")" << std::endl;
+          // // std::cout << "Case 0x3c (" << std::dec << 0x3c << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5028,7 +5028,7 @@ namespace QMX
           to += 40;
         case 0x3d:
 
-          std::cout << "Case 0x3d (" << std::dec << 0x3d << ")" << std::endl;
+          // // std::cout << "Case 0x3d (" << std::dec << 0x3d << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5064,7 +5064,7 @@ namespace QMX
           to += 40;
         case 0x3e:
 
-          std::cout << "Case 0x3e (" << std::dec << 0x3e << ")" << std::endl;
+          // // std::cout << "Case 0x3e (" << std::dec << 0x3e << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5100,7 +5100,7 @@ namespace QMX
           to += 40;
         case 0x3f:
 
-          std::cout << "Case 0x3f (" << std::dec << 0x3f << ")" << std::endl;
+          // // std::cout << "Case 0x3f (" << std::dec << 0x3f << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5135,11 +5135,11 @@ namespace QMX
           in += 16;
           to += 40;
 
-          std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
+          // // std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
           return { (size_t) (in - ((uint8_t *)source) ) , (size_t) (((uint8_t *)source) + len - 1 - keys) ,  (size_t) (to - destination_base) };
         case 0x40:
 
-          std::cout << "Case 0x40 (" << std::dec << 0x40 << ")" << std::endl;
+          // // std::cout << "Case 0x40 (" << std::dec << 0x40 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5169,7 +5169,7 @@ namespace QMX
           to += 32;
         case 0x41:
 
-          std::cout << "Case 0x41 (" << std::dec << 0x41 << ")" << std::endl;
+          // // std::cout << "Case 0x41 (" << std::dec << 0x41 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5199,7 +5199,7 @@ namespace QMX
           to += 32;
         case 0x42:
 
-          std::cout << "Case 0x42 (" << std::dec << 0x42 << ")" << std::endl;
+          // // std::cout << "Case 0x42 (" << std::dec << 0x42 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5229,7 +5229,7 @@ namespace QMX
           to += 32;
         case 0x43:
 
-          std::cout << "Case 0x43 (" << std::dec << 0x43 << ")" << std::endl;
+          // // std::cout << "Case 0x43 (" << std::dec << 0x43 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5259,7 +5259,7 @@ namespace QMX
           to += 32;
         case 0x44:
 
-          std::cout << "Case 0x44 (" << std::dec << 0x44 << ")" << std::endl;
+          // // std::cout << "Case 0x44 (" << std::dec << 0x44 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5289,7 +5289,7 @@ namespace QMX
           to += 32;
         case 0x45:
 
-          std::cout << "Case 0x45 (" << std::dec << 0x45 << ")" << std::endl;
+          // // std::cout << "Case 0x45 (" << std::dec << 0x45 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5319,7 +5319,7 @@ namespace QMX
           to += 32;
         case 0x46:
 
-          std::cout << "Case 0x46 (" << std::dec << 0x46 << ")" << std::endl;
+          // // std::cout << "Case 0x46 (" << std::dec << 0x46 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5349,7 +5349,7 @@ namespace QMX
           to += 32;
         case 0x47:
 
-          std::cout << "Case 0x47 (" << std::dec << 0x47 << ")" << std::endl;
+          // std::cout << "Case 0x47 (" << std::dec << 0x47 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5379,7 +5379,7 @@ namespace QMX
           to += 32;
         case 0x48:
 
-          std::cout << "Case 0x48 (" << std::dec << 0x48 << ")" << std::endl;
+          // std::cout << "Case 0x48 (" << std::dec << 0x48 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5409,7 +5409,7 @@ namespace QMX
           to += 32;
         case 0x49:
 
-          std::cout << "Case 0x49 (" << std::dec << 0x49 << ")" << std::endl;
+          // std::cout << "Case 0x49 (" << std::dec << 0x49 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5439,7 +5439,7 @@ namespace QMX
           to += 32;
         case 0x4a:
 
-          std::cout << "Case 0x4a (" << std::dec << 0x4a << ")" << std::endl;
+          // std::cout << "Case 0x4a (" << std::dec << 0x4a << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5469,7 +5469,7 @@ namespace QMX
           to += 32;
         case 0x4b:
 
-          std::cout << "Case 0x4b (" << std::dec << 0x4b << ")" << std::endl;
+          // std::cout << "Case 0x4b (" << std::dec << 0x4b << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5499,7 +5499,7 @@ namespace QMX
           to += 32;
         case 0x4c:
 
-          std::cout << "Case 0x4c (" << std::dec << 0x4c << ")" << std::endl;
+          // std::cout << "Case 0x4c (" << std::dec << 0x4c << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5529,7 +5529,7 @@ namespace QMX
           to += 32;
         case 0x4d:
 
-          std::cout << "Case 0x4d (" << std::dec << 0x4d << ")" << std::endl;
+          // std::cout << "Case 0x4d (" << std::dec << 0x4d << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5559,7 +5559,7 @@ namespace QMX
           to += 32;
         case 0x4e:
 
-          std::cout << "Case 0x4e (" << std::dec << 0x4e << ")" << std::endl;
+          // std::cout << "Case 0x4e (" << std::dec << 0x4e << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5589,7 +5589,7 @@ namespace QMX
           to += 32;
         case 0x4f:
 
-          std::cout << "Case 0x4f (" << std::dec << 0x4f << ")" << std::endl;
+          // std::cout << "Case 0x4f (" << std::dec << 0x4f << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5618,11 +5618,11 @@ namespace QMX
           in += 16;
           to += 32;
 
-          std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
+          // std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
           return { (size_t) (in - ((uint8_t *)source) ) , (size_t) (((uint8_t *)source) + len - 1 - keys) ,  (size_t) (to - destination_base) };
         case 0x50:
 
-          std::cout << "Case 0x50 (" << std::dec << 0x50 << ")" << std::endl;
+          // std::cout << "Case 0x50 (" << std::dec << 0x50 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5646,7 +5646,7 @@ namespace QMX
           to += 24;
         case 0x51:
 
-          std::cout << "Case 0x51 (" << std::dec << 0x51 << ")" << std::endl;
+          // std::cout << "Case 0x51 (" << std::dec << 0x51 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5670,7 +5670,7 @@ namespace QMX
           to += 24;
         case 0x52:
 
-          std::cout << "Case 0x52 (" << std::dec << 0x52 << ")" << std::endl;
+          // std::cout << "Case 0x52 (" << std::dec << 0x52 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5694,7 +5694,7 @@ namespace QMX
           to += 24;
         case 0x53:
 
-          std::cout << "Case 0x53 (" << std::dec << 0x53 << ")" << std::endl;
+          // std::cout << "Case 0x53 (" << std::dec << 0x53 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5718,7 +5718,7 @@ namespace QMX
           to += 24;
         case 0x54:
 
-          std::cout << "Case 0x54 (" << std::dec << 0x54 << ")" << std::endl;
+          // std::cout << "Case 0x54 (" << std::dec << 0x54 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5742,7 +5742,7 @@ namespace QMX
           to += 24;
         case 0x55:
 
-          std::cout << "Case 0x55 (" << std::dec << 0x55 << ")" << std::endl;
+          // std::cout << "Case 0x55 (" << std::dec << 0x55 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5766,7 +5766,7 @@ namespace QMX
           to += 24;
         case 0x56:
 
-          std::cout << "Case 0x56 (" << std::dec << 0x56 << ")" << std::endl;
+          // std::cout << "Case 0x56 (" << std::dec << 0x56 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5790,7 +5790,7 @@ namespace QMX
           to += 24;
         case 0x57:
 
-          std::cout << "Case 0x57 (" << std::dec << 0x57 << ")" << std::endl;
+          // std::cout << "Case 0x57 (" << std::dec << 0x57 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5814,7 +5814,7 @@ namespace QMX
           to += 24;
         case 0x58:
 
-          std::cout << "Case 0x58 (" << std::dec << 0x58 << ")" << std::endl;
+          // std::cout << "Case 0x58 (" << std::dec << 0x58 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5838,7 +5838,7 @@ namespace QMX
           to += 24;
         case 0x59:
 
-          std::cout << "Case 0x59 (" << std::dec << 0x59 << ")" << std::endl;
+          // std::cout << "Case 0x59 (" << std::dec << 0x59 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5862,7 +5862,7 @@ namespace QMX
           to += 24;
         case 0x5a:
 
-          std::cout << "Case 0x5a (" << std::dec << 0x5a << ")" << std::endl;
+          // std::cout << "Case 0x5a (" << std::dec << 0x5a << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5886,7 +5886,7 @@ namespace QMX
           to += 24;
         case 0x5b:
 
-          std::cout << "Case 0x5b (" << std::dec << 0x5b << ")" << std::endl;
+          // std::cout << "Case 0x5b (" << std::dec << 0x5b << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5910,7 +5910,7 @@ namespace QMX
           to += 24;
         case 0x5c:
 
-          std::cout << "Case 0x5c (" << std::dec << 0x5c << ")" << std::endl;
+          // std::cout << "Case 0x5c (" << std::dec << 0x5c << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5934,7 +5934,7 @@ namespace QMX
           to += 24;
         case 0x5d:
 
-          std::cout << "Case 0x5d (" << std::dec << 0x5d << ")" << std::endl;
+          // std::cout << "Case 0x5d (" << std::dec << 0x5d << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5958,7 +5958,7 @@ namespace QMX
           to += 24;
         case 0x5e:
 
-          std::cout << "Case 0x5e (" << std::dec << 0x5e << ")" << std::endl;
+          // std::cout << "Case 0x5e (" << std::dec << 0x5e << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -5982,7 +5982,7 @@ namespace QMX
           to += 24;
         case 0x5f:
 
-          std::cout << "Case 0x5f (" << std::dec << 0x5f << ")" << std::endl;
+          // std::cout << "Case 0x5f (" << std::dec << 0x5f << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6005,11 +6005,11 @@ namespace QMX
           in += 16;
           to += 24;
 
-          std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
+          // std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
           return { (size_t) (in - ((uint8_t *)source) ) , (size_t) (((uint8_t *)source) + len - 1 - keys) ,  (size_t) (to - destination_base) };
         case 0x60:
 
-          std::cout << "Case 0x60 (" << std::dec << 0x60 << ")" << std::endl;
+          // std::cout << "Case 0x60 (" << std::dec << 0x60 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6030,7 +6030,7 @@ namespace QMX
           to += 20;
         case 0x61:
 
-          std::cout << "Case 0x61 (" << std::dec << 0x61 << ")" << std::endl;
+          // std::cout << "Case 0x61 (" << std::dec << 0x61 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6051,7 +6051,7 @@ namespace QMX
           to += 20;
         case 0x62:
 
-          std::cout << "Case 0x62 (" << std::dec << 0x62 << ")" << std::endl;
+          // std::cout << "Case 0x62 (" << std::dec << 0x62 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6072,7 +6072,7 @@ namespace QMX
           to += 20;
         case 0x63:
 
-          std::cout << "Case 0x63 (" << std::dec << 0x63 << ")" << std::endl;
+          // std::cout << "Case 0x63 (" << std::dec << 0x63 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6093,7 +6093,7 @@ namespace QMX
           to += 20;
         case 0x64:
 
-          std::cout << "Case 0x64 (" << std::dec << 0x64 << ")" << std::endl;
+          // std::cout << "Case 0x64 (" << std::dec << 0x64 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6114,7 +6114,7 @@ namespace QMX
           to += 20;
         case 0x65:
 
-          std::cout << "Case 0x65 (" << std::dec << 0x65 << ")" << std::endl;
+          // std::cout << "Case 0x65 (" << std::dec << 0x65 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6135,7 +6135,7 @@ namespace QMX
           to += 20;
         case 0x66:
 
-          std::cout << "Case 0x66 (" << std::dec << 0x66 << ")" << std::endl;
+          // std::cout << "Case 0x66 (" << std::dec << 0x66 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6156,7 +6156,7 @@ namespace QMX
           to += 20;
         case 0x67:
 
-          std::cout << "Case 0x67 (" << std::dec << 0x67 << ")" << std::endl;
+          // std::cout << "Case 0x67 (" << std::dec << 0x67 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6177,7 +6177,7 @@ namespace QMX
           to += 20;
         case 0x68:
 
-          std::cout << "Case 0x68 (" << std::dec << 0x68 << ")" << std::endl;
+          // std::cout << "Case 0x68 (" << std::dec << 0x68 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6198,7 +6198,7 @@ namespace QMX
           to += 20;
         case 0x69:
 
-          std::cout << "Case 0x69 (" << std::dec << 0x69 << ")" << std::endl;
+          // std::cout << "Case 0x69 (" << std::dec << 0x69 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6219,7 +6219,7 @@ namespace QMX
           to += 20;
         case 0x6a:
 
-          std::cout << "Case 0x6a (" << std::dec << 0x6a << ")" << std::endl;
+          // std::cout << "Case 0x6a (" << std::dec << 0x6a << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6240,7 +6240,7 @@ namespace QMX
           to += 20;
         case 0x6b:
 
-          std::cout << "Case 0x6b (" << std::dec << 0x6b << ")" << std::endl;
+          // std::cout << "Case 0x6b (" << std::dec << 0x6b << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6261,7 +6261,7 @@ namespace QMX
           to += 20;
         case 0x6c:
 
-          std::cout << "Case 0x6c (" << std::dec << 0x6c << ")" << std::endl;
+          // std::cout << "Case 0x6c (" << std::dec << 0x6c << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6282,7 +6282,7 @@ namespace QMX
           to += 20;
         case 0x6d:
 
-          std::cout << "Case 0x6d (" << std::dec << 0x6d << ")" << std::endl;
+          // std::cout << "Case 0x6d (" << std::dec << 0x6d << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6303,7 +6303,7 @@ namespace QMX
           to += 20;
         case 0x6e:
 
-          std::cout << "Case 0x6e (" << std::dec << 0x6e << ")" << std::endl;
+          // std::cout << "Case 0x6e (" << std::dec << 0x6e << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6324,7 +6324,7 @@ namespace QMX
           to += 20;
         case 0x6f:
 
-          std::cout << "Case 0x6f (" << std::dec << 0x6f << ")" << std::endl;
+          // std::cout << "Case 0x6f (" << std::dec << 0x6f << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6344,11 +6344,11 @@ namespace QMX
           in += 16;
           to += 20;
 
-          std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
+          // std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
           return { (size_t) (in - ((uint8_t *)source) ) , (size_t) (((uint8_t *)source) + len - 1 - keys) ,  (size_t) (to - destination_base) };
         case 0x70:
 
-          std::cout << "Case 0x70 (" << std::dec << 0x70 << ")" << std::endl;
+          // std::cout << "Case 0x70 (" << std::dec << 0x70 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6384,7 +6384,7 @@ namespace QMX
           to += 36;
         case 0x71:
 
-          std::cout << "Case 0x71 (" << std::dec << 0x71 << ")" << std::endl;
+          // std::cout << "Case 0x71 (" << std::dec << 0x71 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6420,7 +6420,7 @@ namespace QMX
           to += 36;
         case 0x72:
 
-          std::cout << "Case 0x72 (" << std::dec << 0x72 << ")" << std::endl;
+          // std::cout << "Case 0x72 (" << std::dec << 0x72 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6456,7 +6456,7 @@ namespace QMX
           to += 36;
         case 0x73:
 
-          std::cout << "Case 0x73 (" << std::dec << 0x73 << ")" << std::endl;
+          // std::cout << "Case 0x73 (" << std::dec << 0x73 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6492,7 +6492,7 @@ namespace QMX
           to += 36;
         case 0x74:
 
-          std::cout << "Case 0x74 (" << std::dec << 0x74 << ")" << std::endl;
+          // std::cout << "Case 0x74 (" << std::dec << 0x74 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6528,7 +6528,7 @@ namespace QMX
           to += 36;
         case 0x75:
 
-          std::cout << "Case 0x75 (" << std::dec << 0x75 << ")" << std::endl;
+          // std::cout << "Case 0x75 (" << std::dec << 0x75 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6564,7 +6564,7 @@ namespace QMX
           to += 36;
         case 0x76:
 
-          std::cout << "Case 0x76 (" << std::dec << 0x76 << ")" << std::endl;
+          // std::cout << "Case 0x76 (" << std::dec << 0x76 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6600,7 +6600,7 @@ namespace QMX
           to += 36;
         case 0x77:
 
-          std::cout << "Case 0x77 (" << std::dec << 0x77 << ")" << std::endl;
+          // std::cout << "Case 0x77 (" << std::dec << 0x77 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6636,7 +6636,7 @@ namespace QMX
           to += 36;
         case 0x78:
 
-          std::cout << "Case 0x78 (" << std::dec << 0x78 << ")" << std::endl;
+          // std::cout << "Case 0x78 (" << std::dec << 0x78 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6672,7 +6672,7 @@ namespace QMX
           to += 36;
         case 0x79:
 
-          std::cout << "Case 0x79 (" << std::dec << 0x79 << ")" << std::endl;
+          // std::cout << "Case 0x79 (" << std::dec << 0x79 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6708,7 +6708,7 @@ namespace QMX
           to += 36;
         case 0x7a:
 
-          std::cout << "Case 0x7a (" << std::dec << 0x7a << ")" << std::endl;
+          // std::cout << "Case 0x7a (" << std::dec << 0x7a << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6744,7 +6744,7 @@ namespace QMX
           to += 36;
         case 0x7b:
 
-          std::cout << "Case 0x7b (" << std::dec << 0x7b << ")" << std::endl;
+          // std::cout << "Case 0x7b (" << std::dec << 0x7b << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6780,7 +6780,7 @@ namespace QMX
           to += 36;
         case 0x7c:
 
-          std::cout << "Case 0x7c (" << std::dec << 0x7c << ")" << std::endl;
+          // std::cout << "Case 0x7c (" << std::dec << 0x7c << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6816,7 +6816,7 @@ namespace QMX
           to += 36;
         case 0x7d:
 
-          std::cout << "Case 0x7d (" << std::dec << 0x7d << ")" << std::endl;
+          // std::cout << "Case 0x7d (" << std::dec << 0x7d << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6852,7 +6852,7 @@ namespace QMX
           to += 36;
         case 0x7e:
 
-          std::cout << "Case 0x7e (" << std::dec << 0x7e << ")" << std::endl;
+          // std::cout << "Case 0x7e (" << std::dec << 0x7e << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6888,7 +6888,7 @@ namespace QMX
           to += 36;
         case 0x7f:
 
-          std::cout << "Case 0x7f (" << std::dec << 0x7f << ")" << std::endl;
+          // std::cout << "Case 0x7f (" << std::dec << 0x7f << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6923,11 +6923,11 @@ namespace QMX
           in += 32;
           to += 36;
 
-          std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
+          // std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
           return { (size_t) (in - ((uint8_t *)source) ) , (size_t) (((uint8_t *)source) + len - 1 - keys) ,  (size_t) (to - destination_base) };
         case 0x80:
 
-          std::cout << "Case 0x80 (" << std::dec << 0x80 << ")" << std::endl;
+          // std::cout << "Case 0x80 (" << std::dec << 0x80 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6948,7 +6948,7 @@ namespace QMX
           to += 16;
         case 0x81:
 
-          std::cout << "Case 0x81 (" << std::dec << 0x81 << ")" << std::endl;
+          // std::cout << "Case 0x81 (" << std::dec << 0x81 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6969,7 +6969,7 @@ namespace QMX
           to += 16;
         case 0x82:
 
-          std::cout << "Case 0x82 (" << std::dec << 0x82 << ")" << std::endl;
+          // std::cout << "Case 0x82 (" << std::dec << 0x82 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -6990,7 +6990,7 @@ namespace QMX
           to += 16;
         case 0x83:
 
-          std::cout << "Case 0x83 (" << std::dec << 0x83 << ")" << std::endl;
+          // std::cout << "Case 0x83 (" << std::dec << 0x83 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7011,7 +7011,7 @@ namespace QMX
           to += 16;
         case 0x84:
 
-          std::cout << "Case 0x84 (" << std::dec << 0x84 << ")" << std::endl;
+          // std::cout << "Case 0x84 (" << std::dec << 0x84 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7032,7 +7032,7 @@ namespace QMX
           to += 16;
         case 0x85:
 
-          std::cout << "Case 0x85 (" << std::dec << 0x85 << ")" << std::endl;
+          // std::cout << "Case 0x85 (" << std::dec << 0x85 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7053,7 +7053,7 @@ namespace QMX
           to += 16;
         case 0x86:
 
-          std::cout << "Case 0x86 (" << std::dec << 0x86 << ")" << std::endl;
+          // std::cout << "Case 0x86 (" << std::dec << 0x86 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7074,7 +7074,7 @@ namespace QMX
           to += 16;
         case 0x87:
 
-          std::cout << "Case 0x87 (" << std::dec << 0x87 << ")" << std::endl;
+          // std::cout << "Case 0x87 (" << std::dec << 0x87 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7095,7 +7095,7 @@ namespace QMX
           to += 16;
         case 0x88:
 
-          std::cout << "Case 0x88 (" << std::dec << 0x88 << ")" << std::endl;
+          // std::cout << "Case 0x88 (" << std::dec << 0x88 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7116,7 +7116,7 @@ namespace QMX
           to += 16;
         case 0x89:
 
-          std::cout << "Case 0x89 (" << std::dec << 0x89 << ")" << std::endl;
+          // std::cout << "Case 0x89 (" << std::dec << 0x89 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7137,7 +7137,7 @@ namespace QMX
           to += 16;
         case 0x8a:
 
-          std::cout << "Case 0x8a (" << std::dec << 0x8a << ")" << std::endl;
+          // std::cout << "Case 0x8a (" << std::dec << 0x8a << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7158,7 +7158,7 @@ namespace QMX
           to += 16;
         case 0x8b:
 
-          std::cout << "Case 0x8b (" << std::dec << 0x8b << ")" << std::endl;
+          // std::cout << "Case 0x8b (" << std::dec << 0x8b << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7179,7 +7179,7 @@ namespace QMX
           to += 16;
         case 0x8c:
 
-          std::cout << "Case 0x8c (" << std::dec << 0x8c << ")" << std::endl;
+          // std::cout << "Case 0x8c (" << std::dec << 0x8c << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7200,7 +7200,7 @@ namespace QMX
           to += 16;
         case 0x8d:
 
-          std::cout << "Case 0x8d (" << std::dec << 0x8d << ")" << std::endl;
+          // std::cout << "Case 0x8d (" << std::dec << 0x8d << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7221,7 +7221,7 @@ namespace QMX
           to += 16;
         case 0x8e:
 
-          std::cout << "Case 0x8e (" << std::dec << 0x8e << ")" << std::endl;
+          // std::cout << "Case 0x8e (" << std::dec << 0x8e << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7242,7 +7242,7 @@ namespace QMX
           to += 16;
         case 0x8f:
 
-          std::cout << "Case 0x8f (" << std::dec << 0x8f << ")" << std::endl;
+          // std::cout << "Case 0x8f (" << std::dec << 0x8f << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7262,11 +7262,11 @@ namespace QMX
           in += 16;
           to += 16;
 
-          std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
+          // std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
           return { (size_t) (in - ((uint8_t *)source) ) , (size_t) (((uint8_t *)source) + len - 1 - keys) ,  (size_t) (to - destination_base) };
         case 0x90:
 
-          std::cout << "Case 0x90 (" << std::dec << 0x90 << ")" << std::endl;
+          // std::cout << "Case 0x90 (" << std::dec << 0x90 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7296,7 +7296,7 @@ namespace QMX
           to += 28;
         case 0x91:
 
-          std::cout << "Case 0x91 (" << std::dec << 0x91 << ")" << std::endl;
+          // std::cout << "Case 0x91 (" << std::dec << 0x91 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7326,7 +7326,7 @@ namespace QMX
           to += 28;
         case 0x92:
 
-          std::cout << "Case 0x92 (" << std::dec << 0x92 << ")" << std::endl;
+          // std::cout << "Case 0x92 (" << std::dec << 0x92 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7356,7 +7356,7 @@ namespace QMX
           to += 28;
         case 0x93:
 
-          std::cout << "Case 0x93 (" << std::dec << 0x93 << ")" << std::endl;
+          // std::cout << "Case 0x93 (" << std::dec << 0x93 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7386,7 +7386,7 @@ namespace QMX
           to += 28;
         case 0x94:
 
-          std::cout << "Case 0x94 (" << std::dec << 0x94 << ")" << std::endl;
+          // std::cout << "Case 0x94 (" << std::dec << 0x94 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7416,7 +7416,7 @@ namespace QMX
           to += 28;
         case 0x95:
 
-          std::cout << "Case 0x95 (" << std::dec << 0x95 << ")" << std::endl;
+          // std::cout << "Case 0x95 (" << std::dec << 0x95 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7446,7 +7446,7 @@ namespace QMX
           to += 28;
         case 0x96:
 
-          std::cout << "Case 0x96 (" << std::dec << 0x96 << ")" << std::endl;
+          // std::cout << "Case 0x96 (" << std::dec << 0x96 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7476,7 +7476,7 @@ namespace QMX
           to += 28;
         case 0x97:
 
-          std::cout << "Case 0x97 (" << std::dec << 0x97 << ")" << std::endl;
+          // std::cout << "Case 0x97 (" << std::dec << 0x97 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7506,7 +7506,7 @@ namespace QMX
           to += 28;
         case 0x98:
 
-          std::cout << "Case 0x98 (" << std::dec << 0x98 << ")" << std::endl;
+          // std::cout << "Case 0x98 (" << std::dec << 0x98 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7536,7 +7536,7 @@ namespace QMX
           to += 28;
         case 0x99:
 
-          std::cout << "Case 0x99 (" << std::dec << 0x99 << ")" << std::endl;
+          // std::cout << "Case 0x99 (" << std::dec << 0x99 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7566,7 +7566,7 @@ namespace QMX
           to += 28;
         case 0x9a:
 
-          std::cout << "Case 0x9a (" << std::dec << 0x9a << ")" << std::endl;
+          // std::cout << "Case 0x9a (" << std::dec << 0x9a << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7596,7 +7596,7 @@ namespace QMX
           to += 28;
         case 0x9b:
 
-          std::cout << "Case 0x9b (" << std::dec << 0x9b << ")" << std::endl;
+          // std::cout << "Case 0x9b (" << std::dec << 0x9b << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7626,7 +7626,7 @@ namespace QMX
           to += 28;
         case 0x9c:
 
-          std::cout << "Case 0x9c (" << std::dec << 0x9c << ")" << std::endl;
+          // std::cout << "Case 0x9c (" << std::dec << 0x9c << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7656,7 +7656,7 @@ namespace QMX
           to += 28;
         case 0x9d:
 
-          std::cout << "Case 0x9d (" << std::dec << 0x9d << ")" << std::endl;
+          // std::cout << "Case 0x9d (" << std::dec << 0x9d << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7686,7 +7686,7 @@ namespace QMX
           to += 28;
         case 0x9e:
 
-          std::cout << "Case 0x9e (" << std::dec << 0x9e << ")" << std::endl;
+          // std::cout << "Case 0x9e (" << std::dec << 0x9e << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7716,7 +7716,7 @@ namespace QMX
           to += 28;
         case 0x9f:
 
-          std::cout << "Case 0x9f (" << std::dec << 0x9f << ")" << std::endl;
+          // std::cout << "Case 0x9f (" << std::dec << 0x9f << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7745,11 +7745,11 @@ namespace QMX
           in += 32;
           to += 28;
 
-          std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
+          // std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
           return { (size_t) (in - ((uint8_t *)source) ) , (size_t) (((uint8_t *)source) + len - 1 - keys) ,  (size_t) (to - destination_base) };
         case 0xa0:
 
-          std::cout << "Case 0xa0 (" << std::dec << 0xa0 << ")" << std::endl;
+          // std::cout << "Case 0xa0 (" << std::dec << 0xa0 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7764,7 +7764,7 @@ namespace QMX
           to += 12;
         case 0xa1:
 
-          std::cout << "Case 0xa1 (" << std::dec << 0xa1 << ")" << std::endl;
+          // std::cout << "Case 0xa1 (" << std::dec << 0xa1 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7779,7 +7779,7 @@ namespace QMX
           to += 12;
         case 0xa2:
 
-          std::cout << "Case 0xa2 (" << std::dec << 0xa2 << ")" << std::endl;
+          // std::cout << "Case 0xa2 (" << std::dec << 0xa2 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7794,7 +7794,7 @@ namespace QMX
           to += 12;
         case 0xa3:
 
-          std::cout << "Case 0xa3 (" << std::dec << 0xa3 << ")" << std::endl;
+          // std::cout << "Case 0xa3 (" << std::dec << 0xa3 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7809,7 +7809,7 @@ namespace QMX
           to += 12;
         case 0xa4:
 
-          std::cout << "Case 0xa4 (" << std::dec << 0xa4 << ")" << std::endl;
+          // std::cout << "Case 0xa4 (" << std::dec << 0xa4 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7824,7 +7824,7 @@ namespace QMX
           to += 12;
         case 0xa5:
 
-          std::cout << "Case 0xa5 (" << std::dec << 0xa5 << ")" << std::endl;
+          // std::cout << "Case 0xa5 (" << std::dec << 0xa5 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7839,7 +7839,7 @@ namespace QMX
           to += 12;
         case 0xa6:
 
-          std::cout << "Case 0xa6 (" << std::dec << 0xa6 << ")" << std::endl;
+          // std::cout << "Case 0xa6 (" << std::dec << 0xa6 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7854,7 +7854,7 @@ namespace QMX
           to += 12;
         case 0xa7:
 
-          std::cout << "Case 0xa7 (" << std::dec << 0xa7 << ")" << std::endl;
+          // std::cout << "Case 0xa7 (" << std::dec << 0xa7 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7869,7 +7869,7 @@ namespace QMX
           to += 12;
         case 0xa8:
 
-          std::cout << "Case 0xa8 (" << std::dec << 0xa8 << ")" << std::endl;
+          // std::cout << "Case 0xa8 (" << std::dec << 0xa8 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7884,7 +7884,7 @@ namespace QMX
           to += 12;
         case 0xa9:
 
-          std::cout << "Case 0xa9 (" << std::dec << 0xa9 << ")" << std::endl;
+          // std::cout << "Case 0xa9 (" << std::dec << 0xa9 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7899,7 +7899,7 @@ namespace QMX
           to += 12;
         case 0xaa:
 
-          std::cout << "Case 0xaa (" << std::dec << 0xaa << ")" << std::endl;
+          // std::cout << "Case 0xaa (" << std::dec << 0xaa << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7914,7 +7914,7 @@ namespace QMX
           to += 12;
         case 0xab:
 
-          std::cout << "Case 0xab (" << std::dec << 0xab << ")" << std::endl;
+          // std::cout << "Case 0xab (" << std::dec << 0xab << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7929,7 +7929,7 @@ namespace QMX
           to += 12;
         case 0xac:
 
-          std::cout << "Case 0xac (" << std::dec << 0xac << ")" << std::endl;
+          // std::cout << "Case 0xac (" << std::dec << 0xac << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7944,7 +7944,7 @@ namespace QMX
           to += 12;
         case 0xad:
 
-          std::cout << "Case 0xad (" << std::dec << 0xad << ")" << std::endl;
+          // std::cout << "Case 0xad (" << std::dec << 0xad << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7959,7 +7959,7 @@ namespace QMX
           to += 12;
         case 0xae:
 
-          std::cout << "Case 0xae (" << std::dec << 0xae << ")" << std::endl;
+          // std::cout << "Case 0xae (" << std::dec << 0xae << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7974,7 +7974,7 @@ namespace QMX
           to += 12;
         case 0xaf:
 
-          std::cout << "Case 0xaf (" << std::dec << 0xaf << ")" << std::endl;
+          // std::cout << "Case 0xaf (" << std::dec << 0xaf << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -7988,11 +7988,11 @@ namespace QMX
           in += 16;
           to += 12;
 
-          std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
+          // std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
           return { (size_t) (in - ((uint8_t *)source) ) , (size_t) (((uint8_t *)source) + len - 1 - keys) ,  (size_t) (to - destination_base) };
         case 0xb0:
 
-          std::cout << "Case 0xb0 (" << std::dec << 0xb0 << ")" << std::endl;
+          // std::cout << "Case 0xb0 (" << std::dec << 0xb0 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8016,7 +8016,7 @@ namespace QMX
           to += 20;
         case 0xb1:
 
-          std::cout << "Case 0xb1 (" << std::dec << 0xb1 << ")" << std::endl;
+          // std::cout << "Case 0xb1 (" << std::dec << 0xb1 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8040,7 +8040,7 @@ namespace QMX
           to += 20;
         case 0xb2:
 
-          std::cout << "Case 0xb2 (" << std::dec << 0xb2 << ")" << std::endl;
+          // std::cout << "Case 0xb2 (" << std::dec << 0xb2 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8064,7 +8064,7 @@ namespace QMX
           to += 20;
         case 0xb3:
 
-          std::cout << "Case 0xb3 (" << std::dec << 0xb3 << ")" << std::endl;
+          // std::cout << "Case 0xb3 (" << std::dec << 0xb3 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8088,7 +8088,7 @@ namespace QMX
           to += 20;
         case 0xb4:
 
-          std::cout << "Case 0xb4 (" << std::dec << 0xb4 << ")" << std::endl;
+          // std::cout << "Case 0xb4 (" << std::dec << 0xb4 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8112,7 +8112,7 @@ namespace QMX
           to += 20;
         case 0xb5:
 
-          std::cout << "Case 0xb5 (" << std::dec << 0xb5 << ")" << std::endl;
+          // std::cout << "Case 0xb5 (" << std::dec << 0xb5 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8136,7 +8136,7 @@ namespace QMX
           to += 20;
         case 0xb6:
 
-          std::cout << "Case 0xb6 (" << std::dec << 0xb6 << ")" << std::endl;
+          // std::cout << "Case 0xb6 (" << std::dec << 0xb6 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8160,7 +8160,7 @@ namespace QMX
           to += 20;
         case 0xb7:
 
-          std::cout << "Case 0xb7 (" << std::dec << 0xb7 << ")" << std::endl;
+          // std::cout << "Case 0xb7 (" << std::dec << 0xb7 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8184,7 +8184,7 @@ namespace QMX
           to += 20;
         case 0xb8:
 
-          std::cout << "Case 0xb8 (" << std::dec << 0xb8 << ")" << std::endl;
+          // std::cout << "Case 0xb8 (" << std::dec << 0xb8 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8208,7 +8208,7 @@ namespace QMX
           to += 20;
         case 0xb9:
 
-          std::cout << "Case 0xb9 (" << std::dec << 0xb9 << ")" << std::endl;
+          // std::cout << "Case 0xb9 (" << std::dec << 0xb9 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8232,7 +8232,7 @@ namespace QMX
           to += 20;
         case 0xba:
 
-          std::cout << "Case 0xba (" << std::dec << 0xba << ")" << std::endl;
+          // std::cout << "Case 0xba (" << std::dec << 0xba << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8256,7 +8256,7 @@ namespace QMX
           to += 20;
         case 0xbb:
 
-          std::cout << "Case 0xbb (" << std::dec << 0xbb << ")" << std::endl;
+          // std::cout << "Case 0xbb (" << std::dec << 0xbb << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8280,7 +8280,7 @@ namespace QMX
           to += 20;
         case 0xbc:
 
-          std::cout << "Case 0xbc (" << std::dec << 0xbc << ")" << std::endl;
+          // std::cout << "Case 0xbc (" << std::dec << 0xbc << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8304,7 +8304,7 @@ namespace QMX
           to += 20;
         case 0xbd:
 
-          std::cout << "Case 0xbd (" << std::dec << 0xbd << ")" << std::endl;
+          // std::cout << "Case 0xbd (" << std::dec << 0xbd << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8328,7 +8328,7 @@ namespace QMX
           to += 20;
         case 0xbe:
 
-          std::cout << "Case 0xbe (" << std::dec << 0xbe << ")" << std::endl;
+          // std::cout << "Case 0xbe (" << std::dec << 0xbe << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8352,7 +8352,7 @@ namespace QMX
           to += 20;
         case 0xbf:
 
-          std::cout << "Case 0xbf (" << std::dec << 0xbf << ")" << std::endl;
+          // std::cout << "Case 0xbf (" << std::dec << 0xbf << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8375,11 +8375,11 @@ namespace QMX
           in += 32;
           to += 20;
 
-          std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
+          // std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
           return { (size_t) (in - ((uint8_t *)source) ) , (size_t) (((uint8_t *)source) + len - 1 - keys) ,  (size_t) (to - destination_base) };
         case 0xc0:
 
-          std::cout << "Case 0xc0 (" << std::dec << 0xc0 << ")" << std::endl;
+          // std::cout << "Case 0xc0 (" << std::dec << 0xc0 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8391,7 +8391,7 @@ namespace QMX
           to += 8;
         case 0xc1:
 
-          std::cout << "Case 0xc1 (" << std::dec << 0xc1 << ")" << std::endl;
+          // std::cout << "Case 0xc1 (" << std::dec << 0xc1 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8403,7 +8403,7 @@ namespace QMX
           to += 8;
         case 0xc2:
 
-          std::cout << "Case 0xc2 (" << std::dec << 0xc2 << ")" << std::endl;
+          // std::cout << "Case 0xc2 (" << std::dec << 0xc2 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8415,7 +8415,7 @@ namespace QMX
           to += 8;
         case 0xc3:
 
-          std::cout << "Case 0xc3 (" << std::dec << 0xc3 << ")" << std::endl;
+          // std::cout << "Case 0xc3 (" << std::dec << 0xc3 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8427,7 +8427,7 @@ namespace QMX
           to += 8;
         case 0xc4:
 
-          std::cout << "Case 0xc4 (" << std::dec << 0xc4 << ")" << std::endl;
+          // std::cout << "Case 0xc4 (" << std::dec << 0xc4 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8439,7 +8439,7 @@ namespace QMX
           to += 8;
         case 0xc5:
 
-          std::cout << "Case 0xc5 (" << std::dec << 0xc5 << ")" << std::endl;
+          // std::cout << "Case 0xc5 (" << std::dec << 0xc5 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8451,7 +8451,7 @@ namespace QMX
           to += 8;
         case 0xc6:
 
-          std::cout << "Case 0xc6 (" << std::dec << 0xc6 << ")" << std::endl;
+          // std::cout << "Case 0xc6 (" << std::dec << 0xc6 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8463,7 +8463,7 @@ namespace QMX
           to += 8;
         case 0xc7:
 
-          std::cout << "Case 0xc7 (" << std::dec << 0xc7 << ")" << std::endl;
+          // std::cout << "Case 0xc7 (" << std::dec << 0xc7 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8475,7 +8475,7 @@ namespace QMX
           to += 8;
         case 0xc8:
 
-          std::cout << "Case 0xc8 (" << std::dec << 0xc8 << ")" << std::endl;
+          // std::cout << "Case 0xc8 (" << std::dec << 0xc8 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8487,7 +8487,7 @@ namespace QMX
           to += 8;
         case 0xc9:
 
-          std::cout << "Case 0xc9 (" << std::dec << 0xc9 << ")" << std::endl;
+          // std::cout << "Case 0xc9 (" << std::dec << 0xc9 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8499,7 +8499,7 @@ namespace QMX
           to += 8;
         case 0xca:
 
-          std::cout << "Case 0xca (" << std::dec << 0xca << ")" << std::endl;
+          // std::cout << "Case 0xca (" << std::dec << 0xca << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8511,7 +8511,7 @@ namespace QMX
           to += 8;
         case 0xcb:
 
-          std::cout << "Case 0xcb (" << std::dec << 0xcb << ")" << std::endl;
+          // std::cout << "Case 0xcb (" << std::dec << 0xcb << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8523,7 +8523,7 @@ namespace QMX
           to += 8;
         case 0xcc:
 
-          std::cout << "Case 0xcc (" << std::dec << 0xcc << ")" << std::endl;
+          // std::cout << "Case 0xcc (" << std::dec << 0xcc << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8535,7 +8535,7 @@ namespace QMX
           to += 8;
         case 0xcd:
 
-          std::cout << "Case 0xcd (" << std::dec << 0xcd << ")" << std::endl;
+          // std::cout << "Case 0xcd (" << std::dec << 0xcd << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8547,7 +8547,7 @@ namespace QMX
           to += 8;
         case 0xce:
 
-          std::cout << "Case 0xce (" << std::dec << 0xce << ")" << std::endl;
+          // std::cout << "Case 0xce (" << std::dec << 0xce << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8559,7 +8559,7 @@ namespace QMX
           to += 8;
         case 0xcf:
 
-          std::cout << "Case 0xcf (" << std::dec << 0xcf << ")" << std::endl;
+          // std::cout << "Case 0xcf (" << std::dec << 0xcf << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8570,11 +8570,11 @@ namespace QMX
           in += 16;
           to += 8;
 
-          std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
+          // std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
           return { (size_t) (in - ((uint8_t *)source) ) , (size_t) (((uint8_t *)source) + len - 1 - keys) ,  (size_t) (to - destination_base) };
         case 0xd0:
 
-          std::cout << "Case 0xd0 (" << std::dec << 0xd0 << ")" << std::endl;
+          // std::cout << "Case 0xd0 (" << std::dec << 0xd0 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8592,7 +8592,7 @@ namespace QMX
           to += 12;
         case 0xd1:
 
-          std::cout << "Case 0xd1 (" << std::dec << 0xd1 << ")" << std::endl;
+          // std::cout << "Case 0xd1 (" << std::dec << 0xd1 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8610,7 +8610,7 @@ namespace QMX
           to += 12;
         case 0xd2:
 
-          std::cout << "Case 0xd2 (" << std::dec << 0xd2 << ")" << std::endl;
+          // std::cout << "Case 0xd2 (" << std::dec << 0xd2 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8628,7 +8628,7 @@ namespace QMX
           to += 12;
         case 0xd3:
 
-          std::cout << "Case 0xd3 (" << std::dec << 0xd3 << ")" << std::endl;
+          // std::cout << "Case 0xd3 (" << std::dec << 0xd3 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8646,7 +8646,7 @@ namespace QMX
           to += 12;
         case 0xd4:
 
-          std::cout << "Case 0xd4 (" << std::dec << 0xd4 << ")" << std::endl;
+          // std::cout << "Case 0xd4 (" << std::dec << 0xd4 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8664,7 +8664,7 @@ namespace QMX
           to += 12;
         case 0xd5:
 
-          std::cout << "Case 0xd5 (" << std::dec << 0xd5 << ")" << std::endl;
+          // std::cout << "Case 0xd5 (" << std::dec << 0xd5 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8682,7 +8682,7 @@ namespace QMX
           to += 12;
         case 0xd6:
 
-          std::cout << "Case 0xd6 (" << std::dec << 0xd6 << ")" << std::endl;
+          // std::cout << "Case 0xd6 (" << std::dec << 0xd6 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8700,7 +8700,7 @@ namespace QMX
           to += 12;
         case 0xd7:
 
-          std::cout << "Case 0xd7 (" << std::dec << 0xd7 << ")" << std::endl;
+          // std::cout << "Case 0xd7 (" << std::dec << 0xd7 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8718,7 +8718,7 @@ namespace QMX
           to += 12;
         case 0xd8:
 
-          std::cout << "Case 0xd8 (" << std::dec << 0xd8 << ")" << std::endl;
+          // std::cout << "Case 0xd8 (" << std::dec << 0xd8 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8736,7 +8736,7 @@ namespace QMX
           to += 12;
         case 0xd9:
 
-          std::cout << "Case 0xd9 (" << std::dec << 0xd9 << ")" << std::endl;
+          // std::cout << "Case 0xd9 (" << std::dec << 0xd9 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8754,7 +8754,7 @@ namespace QMX
           to += 12;
         case 0xda:
 
-          std::cout << "Case 0xda (" << std::dec << 0xda << ")" << std::endl;
+          // std::cout << "Case 0xda (" << std::dec << 0xda << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8772,7 +8772,7 @@ namespace QMX
           to += 12;
         case 0xdb:
 
-          std::cout << "Case 0xdb (" << std::dec << 0xdb << ")" << std::endl;
+          // std::cout << "Case 0xdb (" << std::dec << 0xdb << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8790,7 +8790,7 @@ namespace QMX
           to += 12;
         case 0xdc:
 
-          std::cout << "Case 0xdc (" << std::dec << 0xdc << ")" << std::endl;
+          // std::cout << "Case 0xdc (" << std::dec << 0xdc << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8808,7 +8808,7 @@ namespace QMX
           to += 12;
         case 0xdd:
 
-          std::cout << "Case 0xdd (" << std::dec << 0xdd << ")" << std::endl;
+          // std::cout << "Case 0xdd (" << std::dec << 0xdd << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8826,7 +8826,7 @@ namespace QMX
           to += 12;
         case 0xde:
 
-          std::cout << "Case 0xde (" << std::dec << 0xde << ")" << std::endl;
+          // std::cout << "Case 0xde (" << std::dec << 0xde << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8844,7 +8844,7 @@ namespace QMX
           to += 12;
         case 0xdf:
 
-          std::cout << "Case 0xdf (" << std::dec << 0xdf << ")" << std::endl;
+          // std::cout << "Case 0xdf (" << std::dec << 0xdf << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -8861,11 +8861,11 @@ namespace QMX
           in += 32;
           to += 12;
 
-          std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
+          // std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
           return { (size_t) (in - ((uint8_t *)source) ) , (size_t) (((uint8_t *)source) + len - 1 - keys) ,  (size_t) (to - destination_base) };
         case 0xe0:
 
-          std::cout << "Case 0xe0 (" << std::dec << 0xe0 << ")" << std::endl;
+          // std::cout << "Case 0xe0 (" << std::dec << 0xe0 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -8873,7 +8873,7 @@ namespace QMX
           to += 4;
         case 0xe1:
 
-          std::cout << "Case 0xe1 (" << std::dec << 0xe1 << ")" << std::endl;
+          // std::cout << "Case 0xe1 (" << std::dec << 0xe1 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -8881,7 +8881,7 @@ namespace QMX
           to += 4;
         case 0xe2:
 
-          std::cout << "Case 0xe2 (" << std::dec << 0xe2 << ")" << std::endl;
+          // std::cout << "Case 0xe2 (" << std::dec << 0xe2 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -8889,7 +8889,7 @@ namespace QMX
           to += 4;
         case 0xe3:
 
-          std::cout << "Case 0xe3 (" << std::dec << 0xe3 << ")" << std::endl;
+          // std::cout << "Case 0xe3 (" << std::dec << 0xe3 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -8897,7 +8897,7 @@ namespace QMX
           to += 4;
         case 0xe4:
 
-          std::cout << "Case 0xe4 (" << std::dec << 0xe4 << ")" << std::endl;
+          // std::cout << "Case 0xe4 (" << std::dec << 0xe4 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -8905,7 +8905,7 @@ namespace QMX
           to += 4;
         case 0xe5:
 
-          std::cout << "Case 0xe5 (" << std::dec << 0xe5 << ")" << std::endl;
+          // std::cout << "Case 0xe5 (" << std::dec << 0xe5 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -8913,7 +8913,7 @@ namespace QMX
           to += 4;
         case 0xe6:
 
-          std::cout << "Case 0xe6 (" << std::dec << 0xe6 << ")" << std::endl;
+          // std::cout << "Case 0xe6 (" << std::dec << 0xe6 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -8921,7 +8921,7 @@ namespace QMX
           to += 4;
         case 0xe7:
 
-          std::cout << "Case 0xe7 (" << std::dec << 0xe7 << ")" << std::endl;
+          // std::cout << "Case 0xe7 (" << std::dec << 0xe7 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -8929,7 +8929,7 @@ namespace QMX
           to += 4;
         case 0xe8:
 
-          std::cout << "Case 0xe8 (" << std::dec << 0xe8 << ")" << std::endl;
+          // std::cout << "Case 0xe8 (" << std::dec << 0xe8 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -8937,7 +8937,7 @@ namespace QMX
           to += 4;
         case 0xe9:
 
-          std::cout << "Case 0xe9 (" << std::dec << 0xe9 << ")" << std::endl;
+          // std::cout << "Case 0xe9 (" << std::dec << 0xe9 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -8945,7 +8945,7 @@ namespace QMX
           to += 4;
         case 0xea:
 
-          std::cout << "Case 0xea (" << std::dec << 0xea << ")" << std::endl;
+          // std::cout << "Case 0xea (" << std::dec << 0xea << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -8953,7 +8953,7 @@ namespace QMX
           to += 4;
         case 0xeb:
 
-          std::cout << "Case 0xeb (" << std::dec << 0xeb << ")" << std::endl;
+          // std::cout << "Case 0xeb (" << std::dec << 0xeb << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -8961,7 +8961,7 @@ namespace QMX
           to += 4;
         case 0xec:
 
-          std::cout << "Case 0xec (" << std::dec << 0xec << ")" << std::endl;
+          // std::cout << "Case 0xec (" << std::dec << 0xec << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -8969,7 +8969,7 @@ namespace QMX
           to += 4;
         case 0xed:
 
-          std::cout << "Case 0xed (" << std::dec << 0xed << ")" << std::endl;
+          // std::cout << "Case 0xed (" << std::dec << 0xed << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -8977,7 +8977,7 @@ namespace QMX
           to += 4;
         case 0xee:
 
-          std::cout << "Case 0xee (" << std::dec << 0xee << ")" << std::endl;
+          // std::cout << "Case 0xee (" << std::dec << 0xee << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -8985,101 +8985,101 @@ namespace QMX
           to += 4;
         case 0xef:
 
-          std::cout << "Case 0xef (" << std::dec << 0xef << ")" << std::endl;
+          // std::cout << "Case 0xef (" << std::dec << 0xef << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
           in += 16;
           to += 4;
 
-          std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
+          // std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
           return { (size_t) (in - ((uint8_t *)source) ) , (size_t) (((uint8_t *)source) + len - 1 - keys) ,  (size_t) (to - destination_base) };
         case 0xf0:
 
-          std::cout << "Case 0xf0 (" << std::dec << 0xf0 << ")" << std::endl;
+          // std::cout << "Case 0xf0 (" << std::dec << 0xf0 << ")" << std::endl;
 
           in++; // LCOV_EXCL_LINE
         case 0xf1:
 
-          std::cout << "Case 0xf1 (" << std::dec << 0xf1 << ")" << std::endl;
+          // std::cout << "Case 0xf1 (" << std::dec << 0xf1 << ")" << std::endl;
 
           in++; // LCOV_EXCL_LINE
         case 0xf2:
 
-          std::cout << "Case 0xf2 (" << std::dec << 0xf2 << ")" << std::endl;
+          // std::cout << "Case 0xf2 (" << std::dec << 0xf2 << ")" << std::endl;
 
           in++; // LCOV_EXCL_LINE
         case 0xf3:
 
-          std::cout << "Case 0xf3 (" << std::dec << 0xf3 << ")" << std::endl;
+          // std::cout << "Case 0xf3 (" << std::dec << 0xf3 << ")" << std::endl;
 
           in++; // LCOV_EXCL_LINE
         case 0xf4:
 
-          std::cout << "Case 0xf4 (" << std::dec << 0xf4 << ")" << std::endl;
+          // std::cout << "Case 0xf4 (" << std::dec << 0xf4 << ")" << std::endl;
 
           in++; // LCOV_EXCL_LINE
         case 0xf5:
 
-          std::cout << "Case 0xf5 (" << std::dec << 0xf5 << ")" << std::endl;
+          // std::cout << "Case 0xf5 (" << std::dec << 0xf5 << ")" << std::endl;
 
           in++; // LCOV_EXCL_LINE
         case 0xf6:
 
-          std::cout << "Case 0xf6 (" << std::dec << 0xf6 << ")" << std::endl;
+          // std::cout << "Case 0xf6 (" << std::dec << 0xf6 << ")" << std::endl;
 
           in++; // LCOV_EXCL_LINE
         case 0xf7:
 
-          std::cout << "Case 0xf7 (" << std::dec << 0xf7 << ")" << std::endl;
+          // std::cout << "Case 0xf7 (" << std::dec << 0xf7 << ")" << std::endl;
 
           in++; // LCOV_EXCL_LINE
         case 0xf8:
 
-          std::cout << "Case 0xf8 (" << std::dec << 0xf8 << ")" << std::endl;
+          // std::cout << "Case 0xf8 (" << std::dec << 0xf8 << ")" << std::endl;
 
           in++; // LCOV_EXCL_LINE
         case 0xf9:
 
-          std::cout << "Case 0xf9 (" << std::dec << 0xf9 << ")" << std::endl;
+          // std::cout << "Case 0xf9 (" << std::dec << 0xf9 << ")" << std::endl;
 
           in++; // LCOV_EXCL_LINE
         case 0xfa:
 
-          std::cout << "Case 0xfa (" << std::dec << 0xfa << ")" << std::endl;
+          // std::cout << "Case 0xfa (" << std::dec << 0xfa << ")" << std::endl;
 
           in++; // LCOV_EXCL_LINE
         case 0xfb:
 
-          std::cout << "Case 0xfb (" << std::dec << 0xfb << ")" << std::endl;
+          // std::cout << "Case 0xfb (" << std::dec << 0xfb << ")" << std::endl;
 
           in++; // LCOV_EXCL_LINE
         case 0xfc:
 
-          std::cout << "Case 0xfc (" << std::dec << 0xfc << ")" << std::endl;
+          // std::cout << "Case 0xfc (" << std::dec << 0xfc << ")" << std::endl;
 
           in++; // LCOV_EXCL_LINE
         case 0xfd:
 
-          std::cout << "Case 0xfd (" << std::dec << 0xfd << ")" << std::endl;
+          // std::cout << "Case 0xfd (" << std::dec << 0xfd << ")" << std::endl;
 
           in++; // LCOV_EXCL_LINE
         case 0xfe:
 
-          std::cout << "Case 0xfe (" << std::dec << 0xfe << ")" << std::endl;
+          // std::cout << "Case 0xfe (" << std::dec << 0xfe << ")" << std::endl;
 
           in++; // LCOV_EXCL_LINE
         case 0xff:
 
-          std::cout << "Case 0xff (" << std::dec << 0xff << ")" << std::endl;
+          // std::cout << "Case 0xff (" << std::dec << 0xff << ")" << std::endl;
 
           in++;  // LCOV_EXCL_LINE
 
-          std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
+          // std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << "; *to = " << ((std::uint64_t)to) << "; to offset = " << ((std::uint64_t)(to - destination_base)) << std::endl;
           return { (size_t) (in - ((uint8_t *)source) ) , (size_t) (((uint8_t *)source) + len - 1 - keys) ,  (size_t) (to - destination_base) }; // LCOV_EXCL_LINE
         }
       }
-      std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << std::endl;
+      // std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << std::endl;
       return { (size_t) (in - ((uint8_t *)source) ) , (size_t) (((uint8_t *)source) + len - 1 - keys) ,  (size_t) (to - destination_base) };
     }
 
@@ -9113,12 +9113,12 @@ namespace QMX
       while (in <= keys) // <= because there can be a boundary case where the
                          // final key is 255*0 bit integers
       {
-        std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << std::endl;
+        // std::cout << "* *In = " << ((std::uint16_t)*in) << "; In = " << ((std::uint64_t)in) << "; *keys = " << ((std::uint16_t)*keys) << "; keys = " << ((std::uint64_t)keys) << std::endl;
         switch (*keys--)
         {
         case 0x00:
 
-          std::cout << "Case 0x00 (" << std::dec << 0x00 << ")" << std::endl;
+          // std::cout << "Case 0x00 (" << std::dec << 0x00 << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -9188,7 +9188,7 @@ namespace QMX
           to += 256;
         case 0x01:
 
-          std::cout << "Case 0x01 (" << std::dec << 0x01 << ")" << std::endl;
+          // std::cout << "Case 0x01 (" << std::dec << 0x01 << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -9258,7 +9258,7 @@ namespace QMX
           to += 256;
         case 0x02:
 
-          std::cout << "Case 0x02 (" << std::dec << 0x02 << ")" << std::endl;
+          // std::cout << "Case 0x02 (" << std::dec << 0x02 << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -9328,7 +9328,7 @@ namespace QMX
           to += 256;
         case 0x03:
 
-          std::cout << "Case 0x03 (" << std::dec << 0x03 << ")" << std::endl;
+          // std::cout << "Case 0x03 (" << std::dec << 0x03 << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -9398,7 +9398,7 @@ namespace QMX
           to += 256;
         case 0x04:
 
-          std::cout << "Case 0x04 (" << std::dec << 0x04 << ")" << std::endl;
+          // std::cout << "Case 0x04 (" << std::dec << 0x04 << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -9468,7 +9468,7 @@ namespace QMX
           to += 256;
         case 0x05:
 
-          std::cout << "Case 0x05 (" << std::dec << 0x05 << ")" << std::endl;
+          // std::cout << "Case 0x05 (" << std::dec << 0x05 << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -9538,7 +9538,7 @@ namespace QMX
           to += 256;
         case 0x06:
 
-          std::cout << "Case 0x06 (" << std::dec << 0x06 << ")" << std::endl;
+          // std::cout << "Case 0x06 (" << std::dec << 0x06 << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -9608,7 +9608,7 @@ namespace QMX
           to += 256;
         case 0x07:
 
-          std::cout << "Case 0x07 (" << std::dec << 0x07 << ")" << std::endl;
+          // std::cout << "Case 0x07 (" << std::dec << 0x07 << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -9678,7 +9678,7 @@ namespace QMX
           to += 256;
         case 0x08:
 
-          std::cout << "Case 0x08 (" << std::dec << 0x08 << ")" << std::endl;
+          // std::cout << "Case 0x08 (" << std::dec << 0x08 << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -9748,7 +9748,7 @@ namespace QMX
           to += 256;
         case 0x09:
 
-          std::cout << "Case 0x09 (" << std::dec << 0x09 << ")" << std::endl;
+          // std::cout << "Case 0x09 (" << std::dec << 0x09 << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -9818,7 +9818,7 @@ namespace QMX
           to += 256;
         case 0x0a:
 
-          std::cout << "Case 0x0a (" << std::dec << 0x0a << ")" << std::endl;
+          // std::cout << "Case 0x0a (" << std::dec << 0x0a << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -9888,7 +9888,7 @@ namespace QMX
           to += 256;
         case 0x0b:
 
-          std::cout << "Case 0x0b (" << std::dec << 0x0b << ")" << std::endl;
+          // std::cout << "Case 0x0b (" << std::dec << 0x0b << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -9958,7 +9958,7 @@ namespace QMX
           to += 256;
         case 0x0c:
 
-          std::cout << "Case 0x0c (" << std::dec << 0x0c << ")" << std::endl;
+          // std::cout << "Case 0x0c (" << std::dec << 0x0c << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -10028,7 +10028,7 @@ namespace QMX
           to += 256;
         case 0x0d:
 
-          std::cout << "Case 0x0d (" << std::dec << 0x0d << ")" << std::endl;
+          // std::cout << "Case 0x0d (" << std::dec << 0x0d << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -10098,7 +10098,7 @@ namespace QMX
           to += 256;
         case 0x0e:
 
-          std::cout << "Case 0x0e (" << std::dec << 0x0e << ")" << std::endl;
+          // std::cout << "Case 0x0e (" << std::dec << 0x0e << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -10168,7 +10168,7 @@ namespace QMX
           to += 256;
         case 0x0f:
 
-          std::cout << "Case 0x0f (" << std::dec << 0x0f << ")" << std::endl;
+          // std::cout << "Case 0x0f (" << std::dec << 0x0f << ")" << std::endl;
 
           tmp = _mm_loadu_si128((__m128i *)static_mask_1);
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -10239,7 +10239,7 @@ namespace QMX
           break;
         case 0x10:
 
-          std::cout << "Case 0x10 (" << std::dec << 0x10 << ")" << std::endl;
+          // std::cout << "Case 0x10 (" << std::dec << 0x10 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -10341,7 +10341,7 @@ namespace QMX
           to += 128;
         case 0x11:
 
-          std::cout << "Case 0x11 (" << std::dec << 0x11 << ")" << std::endl;
+          // std::cout << "Case 0x11 (" << std::dec << 0x11 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -10443,7 +10443,7 @@ namespace QMX
           to += 128;
         case 0x12:
 
-          std::cout << "Case 0x12 (" << std::dec << 0x12 << ")" << std::endl;
+          // std::cout << "Case 0x12 (" << std::dec << 0x12 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -10545,7 +10545,7 @@ namespace QMX
           to += 128;
         case 0x13:
 
-          std::cout << "Case 0x13 (" << std::dec << 0x13 << ")" << std::endl;
+          // std::cout << "Case 0x13 (" << std::dec << 0x13 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -10647,7 +10647,7 @@ namespace QMX
           to += 128;
         case 0x14:
 
-          std::cout << "Case 0x14 (" << std::dec << 0x14 << ")" << std::endl;
+          // std::cout << "Case 0x14 (" << std::dec << 0x14 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -10749,7 +10749,7 @@ namespace QMX
           to += 128;
         case 0x15:
 
-          std::cout << "Case 0x15 (" << std::dec << 0x15 << ")" << std::endl;
+          // std::cout << "Case 0x15 (" << std::dec << 0x15 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -10851,7 +10851,7 @@ namespace QMX
           to += 128;
         case 0x16:
 
-          std::cout << "Case 0x16 (" << std::dec << 0x16 << ")" << std::endl;
+          // std::cout << "Case 0x16 (" << std::dec << 0x16 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -10953,7 +10953,7 @@ namespace QMX
           to += 128;
         case 0x17:
 
-          std::cout << "Case 0x17 (" << std::dec << 0x17 << ")" << std::endl;
+          // std::cout << "Case 0x17 (" << std::dec << 0x17 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -11055,7 +11055,7 @@ namespace QMX
           to += 128;
         case 0x18:
 
-          std::cout << "Case 0x18 (" << std::dec << 0x18 << ")" << std::endl;
+          // std::cout << "Case 0x18 (" << std::dec << 0x18 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -11157,7 +11157,7 @@ namespace QMX
           to += 128;
         case 0x19:
 
-          std::cout << "Case 0x19 (" << std::dec << 0x19 << ")" << std::endl;
+          // std::cout << "Case 0x19 (" << std::dec << 0x19 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -11259,7 +11259,7 @@ namespace QMX
           to += 128;
         case 0x1a:
 
-          std::cout << "Case 0x1a (" << std::dec << 0x1a << ")" << std::endl;
+          // std::cout << "Case 0x1a (" << std::dec << 0x1a << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -11361,7 +11361,7 @@ namespace QMX
           to += 128;
         case 0x1b:
 
-          std::cout << "Case 0x1b (" << std::dec << 0x1b << ")" << std::endl;
+          // std::cout << "Case 0x1b (" << std::dec << 0x1b << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -11463,7 +11463,7 @@ namespace QMX
           to += 128;
         case 0x1c:
 
-          std::cout << "Case 0x1c (" << std::dec << 0x1c << ")" << std::endl;
+          // std::cout << "Case 0x1c (" << std::dec << 0x1c << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -11565,7 +11565,7 @@ namespace QMX
           to += 128;
         case 0x1d:
 
-          std::cout << "Case 0x1d (" << std::dec << 0x1d << ")" << std::endl;
+          // std::cout << "Case 0x1d (" << std::dec << 0x1d << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -11667,7 +11667,7 @@ namespace QMX
           to += 128;
         case 0x1e:
 
-          std::cout << "Case 0x1e (" << std::dec << 0x1e << ")" << std::endl;
+          // std::cout << "Case 0x1e (" << std::dec << 0x1e << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -11769,7 +11769,7 @@ namespace QMX
           to += 128;
         case 0x1f:
 
-          std::cout << "Case 0x1f (" << std::dec << 0x1f << ")" << std::endl;
+          // std::cout << "Case 0x1f (" << std::dec << 0x1f << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -11872,7 +11872,7 @@ namespace QMX
           break;
         case 0x20:
 
-          std::cout << "Case 0x20 (" << std::dec << 0x20 << ")" << std::endl;
+          // std::cout << "Case 0x20 (" << std::dec << 0x20 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -11926,7 +11926,7 @@ namespace QMX
           to += 64;
         case 0x21:
 
-          std::cout << "Case 0x21 (" << std::dec << 0x21 << ")" << std::endl;
+          // std::cout << "Case 0x21 (" << std::dec << 0x21 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -11980,7 +11980,7 @@ namespace QMX
           to += 64;
         case 0x22:
 
-          std::cout << "Case 0x22 (" << std::dec << 0x22 << ")" << std::endl;
+          // std::cout << "Case 0x22 (" << std::dec << 0x22 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -12034,7 +12034,7 @@ namespace QMX
           to += 64;
         case 0x23:
 
-          std::cout << "Case 0x23 (" << std::dec << 0x23 << ")" << std::endl;
+          // std::cout << "Case 0x23 (" << std::dec << 0x23 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -12088,7 +12088,7 @@ namespace QMX
           to += 64;
         case 0x24:
 
-          std::cout << "Case 0x24 (" << std::dec << 0x24 << ")" << std::endl;
+          // std::cout << "Case 0x24 (" << std::dec << 0x24 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -12142,7 +12142,7 @@ namespace QMX
           to += 64;
         case 0x25:
 
-          std::cout << "Case 0x25 (" << std::dec << 0x25 << ")" << std::endl;
+          // std::cout << "Case 0x25 (" << std::dec << 0x25 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -12196,7 +12196,7 @@ namespace QMX
           to += 64;
         case 0x26:
 
-          std::cout << "Case 0x26 (" << std::dec << 0x26 << ")" << std::endl;
+          // std::cout << "Case 0x26 (" << std::dec << 0x26 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -12250,7 +12250,7 @@ namespace QMX
           to += 64;
         case 0x27:
 
-          std::cout << "Case 0x27 (" << std::dec << 0x27 << ")" << std::endl;
+          // std::cout << "Case 0x27 (" << std::dec << 0x27 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -12304,7 +12304,7 @@ namespace QMX
           to += 64;
         case 0x28:
 
-          std::cout << "Case 0x28 (" << std::dec << 0x28 << ")" << std::endl;
+          // std::cout << "Case 0x28 (" << std::dec << 0x28 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -12358,7 +12358,7 @@ namespace QMX
           to += 64;
         case 0x29:
 
-          std::cout << "Case 0x29 (" << std::dec << 0x29 << ")" << std::endl;
+          // std::cout << "Case 0x29 (" << std::dec << 0x29 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -12412,7 +12412,7 @@ namespace QMX
           to += 64;
         case 0x2a:
 
-          std::cout << "Case 0x2a (" << std::dec << 0x2a << ")" << std::endl;
+          // std::cout << "Case 0x2a (" << std::dec << 0x2a << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -12466,7 +12466,7 @@ namespace QMX
           to += 64;
         case 0x2b:
 
-          std::cout << "Case 0x2b (" << std::dec << 0x2b << ")" << std::endl;
+          // std::cout << "Case 0x2b (" << std::dec << 0x2b << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -12520,7 +12520,7 @@ namespace QMX
           to += 64;
         case 0x2c:
 
-          std::cout << "Case 0x2c (" << std::dec << 0x2c << ")" << std::endl;
+          // std::cout << "Case 0x2c (" << std::dec << 0x2c << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -12574,7 +12574,7 @@ namespace QMX
           to += 64;
         case 0x2d:
 
-          std::cout << "Case 0x2d (" << std::dec << 0x2d << ")" << std::endl;
+          // std::cout << "Case 0x2d (" << std::dec << 0x2d << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -12628,7 +12628,7 @@ namespace QMX
           to += 64;
         case 0x2e:
 
-          std::cout << "Case 0x2e (" << std::dec << 0x2e << ")" << std::endl;
+          // std::cout << "Case 0x2e (" << std::dec << 0x2e << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -12682,7 +12682,7 @@ namespace QMX
           to += 64;
         case 0x2f:
 
-          std::cout << "Case 0x2f (" << std::dec << 0x2f << ")" << std::endl;
+          // std::cout << "Case 0x2f (" << std::dec << 0x2f << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -12737,7 +12737,7 @@ namespace QMX
           break;
         case 0x30:
 
-          std::cout << "Case 0x30 (" << std::dec << 0x30 << ")" << std::endl;
+          // std::cout << "Case 0x30 (" << std::dec << 0x30 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -12773,7 +12773,7 @@ namespace QMX
           to += 40;
         case 0x31:
 
-          std::cout << "Case 0x31 (" << std::dec << 0x31 << ")" << std::endl;
+          // std::cout << "Case 0x31 (" << std::dec << 0x31 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -12809,7 +12809,7 @@ namespace QMX
           to += 40;
         case 0x32:
 
-          std::cout << "Case 0x32 (" << std::dec << 0x32 << ")" << std::endl;
+          // std::cout << "Case 0x32 (" << std::dec << 0x32 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -12845,7 +12845,7 @@ namespace QMX
           to += 40;
         case 0x33:
 
-          std::cout << "Case 0x33 (" << std::dec << 0x33 << ")" << std::endl;
+          // std::cout << "Case 0x33 (" << std::dec << 0x33 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -12881,7 +12881,7 @@ namespace QMX
           to += 40;
         case 0x34:
 
-          std::cout << "Case 0x34 (" << std::dec << 0x34 << ")" << std::endl;
+          // std::cout << "Case 0x34 (" << std::dec << 0x34 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -12917,7 +12917,7 @@ namespace QMX
           to += 40;
         case 0x35:
 
-          std::cout << "Case 0x35 (" << std::dec << 0x35 << ")" << std::endl;
+          // std::cout << "Case 0x35 (" << std::dec << 0x35 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -12953,7 +12953,7 @@ namespace QMX
           to += 40;
         case 0x36:
 
-          std::cout << "Case 0x36 (" << std::dec << 0x36 << ")" << std::endl;
+          // std::cout << "Case 0x36 (" << std::dec << 0x36 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -12989,7 +12989,7 @@ namespace QMX
           to += 40;
         case 0x37:
 
-          std::cout << "Case 0x37 (" << std::dec << 0x37 << ")" << std::endl;
+          // std::cout << "Case 0x37 (" << std::dec << 0x37 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13025,7 +13025,7 @@ namespace QMX
           to += 40;
         case 0x38:
 
-          std::cout << "Case 0x38 (" << std::dec << 0x38 << ")" << std::endl;
+          // std::cout << "Case 0x38 (" << std::dec << 0x38 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13061,7 +13061,7 @@ namespace QMX
           to += 40;
         case 0x39:
 
-          std::cout << "Case 0x39 (" << std::dec << 0x39 << ")" << std::endl;
+          // std::cout << "Case 0x39 (" << std::dec << 0x39 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13097,7 +13097,7 @@ namespace QMX
           to += 40;
         case 0x3a:
 
-          std::cout << "Case 0x3a (" << std::dec << 0x3a << ")" << std::endl;
+          // std::cout << "Case 0x3a (" << std::dec << 0x3a << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13133,7 +13133,7 @@ namespace QMX
           to += 40;
         case 0x3b:
 
-          std::cout << "Case 0x3b (" << std::dec << 0x3b << ")" << std::endl;
+          // std::cout << "Case 0x3b (" << std::dec << 0x3b << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13169,7 +13169,7 @@ namespace QMX
           to += 40;
         case 0x3c:
 
-          std::cout << "Case 0x3c (" << std::dec << 0x3c << ")" << std::endl;
+          // std::cout << "Case 0x3c (" << std::dec << 0x3c << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13205,7 +13205,7 @@ namespace QMX
           to += 40;
         case 0x3d:
 
-          std::cout << "Case 0x3d (" << std::dec << 0x3d << ")" << std::endl;
+          // std::cout << "Case 0x3d (" << std::dec << 0x3d << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13241,7 +13241,7 @@ namespace QMX
           to += 40;
         case 0x3e:
 
-          std::cout << "Case 0x3e (" << std::dec << 0x3e << ")" << std::endl;
+          // std::cout << "Case 0x3e (" << std::dec << 0x3e << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13277,7 +13277,7 @@ namespace QMX
           to += 40;
         case 0x3f:
 
-          std::cout << "Case 0x3f (" << std::dec << 0x3f << ")" << std::endl;
+          // std::cout << "Case 0x3f (" << std::dec << 0x3f << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13314,7 +13314,7 @@ namespace QMX
           break;
         case 0x40:
 
-          std::cout << "Case 0x40 (" << std::dec << 0x40 << ")" << std::endl;
+          // std::cout << "Case 0x40 (" << std::dec << 0x40 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13344,7 +13344,7 @@ namespace QMX
           to += 32;
         case 0x41:
 
-          std::cout << "Case 0x41 (" << std::dec << 0x41 << ")" << std::endl;
+          // std::cout << "Case 0x41 (" << std::dec << 0x41 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13374,7 +13374,7 @@ namespace QMX
           to += 32;
         case 0x42:
 
-          std::cout << "Case 0x42 (" << std::dec << 0x42 << ")" << std::endl;
+          // std::cout << "Case 0x42 (" << std::dec << 0x42 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13404,7 +13404,7 @@ namespace QMX
           to += 32;
         case 0x43:
 
-          std::cout << "Case 0x43 (" << std::dec << 0x43 << ")" << std::endl;
+          // std::cout << "Case 0x43 (" << std::dec << 0x43 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13434,7 +13434,7 @@ namespace QMX
           to += 32;
         case 0x44:
 
-          std::cout << "Case 0x44 (" << std::dec << 0x44 << ")" << std::endl;
+          // std::cout << "Case 0x44 (" << std::dec << 0x44 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13464,7 +13464,7 @@ namespace QMX
           to += 32;
         case 0x45:
 
-          std::cout << "Case 0x45 (" << std::dec << 0x45 << ")" << std::endl;
+          // std::cout << "Case 0x45 (" << std::dec << 0x45 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13494,7 +13494,7 @@ namespace QMX
           to += 32;
         case 0x46:
 
-          std::cout << "Case 0x46 (" << std::dec << 0x46 << ")" << std::endl;
+          // std::cout << "Case 0x46 (" << std::dec << 0x46 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13524,7 +13524,7 @@ namespace QMX
           to += 32;
         case 0x47:
 
-          std::cout << "Case 0x47 (" << std::dec << 0x47 << ")" << std::endl;
+          // std::cout << "Case 0x47 (" << std::dec << 0x47 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13554,7 +13554,7 @@ namespace QMX
           to += 32;
         case 0x48:
 
-          std::cout << "Case 0x48 (" << std::dec << 0x48 << ")" << std::endl;
+          // std::cout << "Case 0x48 (" << std::dec << 0x48 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13584,7 +13584,7 @@ namespace QMX
           to += 32;
         case 0x49:
 
-          std::cout << "Case 0x49 (" << std::dec << 0x49 << ")" << std::endl;
+          // std::cout << "Case 0x49 (" << std::dec << 0x49 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13614,7 +13614,7 @@ namespace QMX
           to += 32;
         case 0x4a:
 
-          std::cout << "Case 0x4a (" << std::dec << 0x4a << ")" << std::endl;
+          // std::cout << "Case 0x4a (" << std::dec << 0x4a << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13644,7 +13644,7 @@ namespace QMX
           to += 32;
         case 0x4b:
 
-          std::cout << "Case 0x4b (" << std::dec << 0x4b << ")" << std::endl;
+          // std::cout << "Case 0x4b (" << std::dec << 0x4b << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13674,7 +13674,7 @@ namespace QMX
           to += 32;
         case 0x4c:
 
-          std::cout << "Case 0x4c (" << std::dec << 0x4c << ")" << std::endl;
+          // std::cout << "Case 0x4c (" << std::dec << 0x4c << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13704,7 +13704,7 @@ namespace QMX
           to += 32;
         case 0x4d:
 
-          std::cout << "Case 0x4d (" << std::dec << 0x4d << ")" << std::endl;
+          // std::cout << "Case 0x4d (" << std::dec << 0x4d << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13734,7 +13734,7 @@ namespace QMX
           to += 32;
         case 0x4e:
 
-          std::cout << "Case 0x4e (" << std::dec << 0x4e << ")" << std::endl;
+          // std::cout << "Case 0x4e (" << std::dec << 0x4e << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13764,7 +13764,7 @@ namespace QMX
           to += 32;
         case 0x4f:
 
-          std::cout << "Case 0x4f (" << std::dec << 0x4f << ")" << std::endl;
+          // std::cout << "Case 0x4f (" << std::dec << 0x4f << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13795,7 +13795,7 @@ namespace QMX
           break;
         case 0x50:
 
-          std::cout << "Case 0x50 (" << std::dec << 0x50 << ")" << std::endl;
+          // std::cout << "Case 0x50 (" << std::dec << 0x50 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13819,7 +13819,7 @@ namespace QMX
           to += 24;
         case 0x51:
 
-          std::cout << "Case 0x51 (" << std::dec << 0x51 << ")" << std::endl;
+          // std::cout << "Case 0x51 (" << std::dec << 0x51 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13843,7 +13843,7 @@ namespace QMX
           to += 24;
         case 0x52:
 
-          std::cout << "Case 0x52 (" << std::dec << 0x52 << ")" << std::endl;
+          // std::cout << "Case 0x52 (" << std::dec << 0x52 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13867,7 +13867,7 @@ namespace QMX
           to += 24;
         case 0x53:
 
-          std::cout << "Case 0x53 (" << std::dec << 0x53 << ")" << std::endl;
+          // std::cout << "Case 0x53 (" << std::dec << 0x53 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13891,7 +13891,7 @@ namespace QMX
           to += 24;
         case 0x54:
 
-          std::cout << "Case 0x54 (" << std::dec << 0x54 << ")" << std::endl;
+          // std::cout << "Case 0x54 (" << std::dec << 0x54 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13915,7 +13915,7 @@ namespace QMX
           to += 24;
         case 0x55:
 
-          std::cout << "Case 0x55 (" << std::dec << 0x55 << ")" << std::endl;
+          // std::cout << "Case 0x55 (" << std::dec << 0x55 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13939,7 +13939,7 @@ namespace QMX
           to += 24;
         case 0x56:
 
-          std::cout << "Case 0x56 (" << std::dec << 0x56 << ")" << std::endl;
+          // std::cout << "Case 0x56 (" << std::dec << 0x56 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13963,7 +13963,7 @@ namespace QMX
           to += 24;
         case 0x57:
 
-          std::cout << "Case 0x57 (" << std::dec << 0x57 << ")" << std::endl;
+          // std::cout << "Case 0x57 (" << std::dec << 0x57 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -13987,7 +13987,7 @@ namespace QMX
           to += 24;
         case 0x58:
 
-          std::cout << "Case 0x58 (" << std::dec << 0x58 << ")" << std::endl;
+          // std::cout << "Case 0x58 (" << std::dec << 0x58 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14011,7 +14011,7 @@ namespace QMX
           to += 24;
         case 0x59:
 
-          std::cout << "Case 0x59 (" << std::dec << 0x59 << ")" << std::endl;
+          // std::cout << "Case 0x59 (" << std::dec << 0x59 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14035,7 +14035,7 @@ namespace QMX
           to += 24;
         case 0x5a:
 
-          std::cout << "Case 0x5a (" << std::dec << 0x5a << ")" << std::endl;
+          // std::cout << "Case 0x5a (" << std::dec << 0x5a << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14059,7 +14059,7 @@ namespace QMX
           to += 24;
         case 0x5b:
 
-          std::cout << "Case 0x5b (" << std::dec << 0x5b << ")" << std::endl;
+          // std::cout << "Case 0x5b (" << std::dec << 0x5b << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14083,7 +14083,7 @@ namespace QMX
           to += 24;
         case 0x5c:
 
-          std::cout << "Case 0x5c (" << std::dec << 0x5c << ")" << std::endl;
+          // std::cout << "Case 0x5c (" << std::dec << 0x5c << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14107,7 +14107,7 @@ namespace QMX
           to += 24;
         case 0x5d:
 
-          std::cout << "Case 0x5d (" << std::dec << 0x5d << ")" << std::endl;
+          // std::cout << "Case 0x5d (" << std::dec << 0x5d << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14131,7 +14131,7 @@ namespace QMX
           to += 24;
         case 0x5e:
 
-          std::cout << "Case 0x5e (" << std::dec << 0x5e << ")" << std::endl;
+          // std::cout << "Case 0x5e (" << std::dec << 0x5e << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14155,7 +14155,7 @@ namespace QMX
           to += 24;
         case 0x5f:
 
-          std::cout << "Case 0x5f (" << std::dec << 0x5f << ")" << std::endl;
+          // std::cout << "Case 0x5f (" << std::dec << 0x5f << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14180,7 +14180,7 @@ namespace QMX
           break;
         case 0x60:
 
-          std::cout << "Case 0x60 (" << std::dec << 0x60 << ")" << std::endl;
+          // std::cout << "Case 0x60 (" << std::dec << 0x60 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14201,7 +14201,7 @@ namespace QMX
           to += 20;
         case 0x61:
 
-          std::cout << "Case 0x61 (" << std::dec << 0x61 << ")" << std::endl;
+          // std::cout << "Case 0x61 (" << std::dec << 0x61 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14222,7 +14222,7 @@ namespace QMX
           to += 20;
         case 0x62:
 
-          std::cout << "Case 0x62 (" << std::dec << 0x62 << ")" << std::endl;
+          // std::cout << "Case 0x62 (" << std::dec << 0x62 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14243,7 +14243,7 @@ namespace QMX
           to += 20;
         case 0x63:
 
-          std::cout << "Case 0x63 (" << std::dec << 0x63 << ")" << std::endl;
+          // std::cout << "Case 0x63 (" << std::dec << 0x63 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14264,7 +14264,7 @@ namespace QMX
           to += 20;
         case 0x64:
 
-          std::cout << "Case 0x64 (" << std::dec << 0x64 << ")" << std::endl;
+          // std::cout << "Case 0x64 (" << std::dec << 0x64 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14285,7 +14285,7 @@ namespace QMX
           to += 20;
         case 0x65:
 
-          std::cout << "Case 0x65 (" << std::dec << 0x65 << ")" << std::endl;
+          // std::cout << "Case 0x65 (" << std::dec << 0x65 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14306,7 +14306,7 @@ namespace QMX
           to += 20;
         case 0x66:
 
-          std::cout << "Case 0x66 (" << std::dec << 0x66 << ")" << std::endl;
+          // std::cout << "Case 0x66 (" << std::dec << 0x66 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14327,7 +14327,7 @@ namespace QMX
           to += 20;
         case 0x67:
 
-          std::cout << "Case 0x67 (" << std::dec << 0x67 << ")" << std::endl;
+          // std::cout << "Case 0x67 (" << std::dec << 0x67 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14348,7 +14348,7 @@ namespace QMX
           to += 20;
         case 0x68:
 
-          std::cout << "Case 0x68 (" << std::dec << 0x68 << ")" << std::endl;
+          // std::cout << "Case 0x68 (" << std::dec << 0x68 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14369,7 +14369,7 @@ namespace QMX
           to += 20;
         case 0x69:
 
-          std::cout << "Case 0x69 (" << std::dec << 0x69 << ")" << std::endl;
+          // std::cout << "Case 0x69 (" << std::dec << 0x69 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14390,7 +14390,7 @@ namespace QMX
           to += 20;
         case 0x6a:
 
-          std::cout << "Case 0x6a (" << std::dec << 0x6a << ")" << std::endl;
+          // std::cout << "Case 0x6a (" << std::dec << 0x6a << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14411,7 +14411,7 @@ namespace QMX
           to += 20;
         case 0x6b:
 
-          std::cout << "Case 0x6b (" << std::dec << 0x6b << ")" << std::endl;
+          // std::cout << "Case 0x6b (" << std::dec << 0x6b << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14432,7 +14432,7 @@ namespace QMX
           to += 20;
         case 0x6c:
 
-          std::cout << "Case 0x6c (" << std::dec << 0x6c << ")" << std::endl;
+          // std::cout << "Case 0x6c (" << std::dec << 0x6c << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14453,7 +14453,7 @@ namespace QMX
           to += 20;
         case 0x6d:
 
-          std::cout << "Case 0x6d (" << std::dec << 0x6d << ")" << std::endl;
+          // std::cout << "Case 0x6d (" << std::dec << 0x6d << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14474,7 +14474,7 @@ namespace QMX
           to += 20;
         case 0x6e:
 
-          std::cout << "Case 0x6e (" << std::dec << 0x6e << ")" << std::endl;
+          // std::cout << "Case 0x6e (" << std::dec << 0x6e << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14495,7 +14495,7 @@ namespace QMX
           to += 20;
         case 0x6f:
 
-          std::cout << "Case 0x6f (" << std::dec << 0x6f << ")" << std::endl;
+          // std::cout << "Case 0x6f (" << std::dec << 0x6f << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14517,7 +14517,7 @@ namespace QMX
           break;
         case 0x70:
 
-          std::cout << "Case 0x70 (" << std::dec << 0x70 << ")" << std::endl;
+          // std::cout << "Case 0x70 (" << std::dec << 0x70 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14553,7 +14553,7 @@ namespace QMX
           to += 36;
         case 0x71:
 
-          std::cout << "Case 0x71 (" << std::dec << 0x71 << ")" << std::endl;
+          // std::cout << "Case 0x71 (" << std::dec << 0x71 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14589,7 +14589,7 @@ namespace QMX
           to += 36;
         case 0x72:
 
-          std::cout << "Case 0x72 (" << std::dec << 0x72 << ")" << std::endl;
+          // std::cout << "Case 0x72 (" << std::dec << 0x72 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14625,7 +14625,7 @@ namespace QMX
           to += 36;
         case 0x73:
 
-          std::cout << "Case 0x73 (" << std::dec << 0x73 << ")" << std::endl;
+          // std::cout << "Case 0x73 (" << std::dec << 0x73 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14661,7 +14661,7 @@ namespace QMX
           to += 36;
         case 0x74:
 
-          std::cout << "Case 0x74 (" << std::dec << 0x74 << ")" << std::endl;
+          // std::cout << "Case 0x74 (" << std::dec << 0x74 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14697,7 +14697,7 @@ namespace QMX
           to += 36;
         case 0x75:
 
-          std::cout << "Case 0x75 (" << std::dec << 0x75 << ")" << std::endl;
+          // std::cout << "Case 0x75 (" << std::dec << 0x75 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14733,7 +14733,7 @@ namespace QMX
           to += 36;
         case 0x76:
 
-          std::cout << "Case 0x76 (" << std::dec << 0x76 << ")" << std::endl;
+          // std::cout << "Case 0x76 (" << std::dec << 0x76 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14769,7 +14769,7 @@ namespace QMX
           to += 36;
         case 0x77:
 
-          std::cout << "Case 0x77 (" << std::dec << 0x77 << ")" << std::endl;
+          // std::cout << "Case 0x77 (" << std::dec << 0x77 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14805,7 +14805,7 @@ namespace QMX
           to += 36;
         case 0x78:
 
-          std::cout << "Case 0x78 (" << std::dec << 0x78 << ")" << std::endl;
+          // std::cout << "Case 0x78 (" << std::dec << 0x78 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14841,7 +14841,7 @@ namespace QMX
           to += 36;
         case 0x79:
 
-          std::cout << "Case 0x79 (" << std::dec << 0x79 << ")" << std::endl;
+          // std::cout << "Case 0x79 (" << std::dec << 0x79 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14877,7 +14877,7 @@ namespace QMX
           to += 36;
         case 0x7a:
 
-          std::cout << "Case 0x7a (" << std::dec << 0x7a << ")" << std::endl;
+          // std::cout << "Case 0x7a (" << std::dec << 0x7a << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14913,7 +14913,7 @@ namespace QMX
           to += 36;
         case 0x7b:
 
-          std::cout << "Case 0x7b (" << std::dec << 0x7b << ")" << std::endl;
+          // std::cout << "Case 0x7b (" << std::dec << 0x7b << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14949,7 +14949,7 @@ namespace QMX
           to += 36;
         case 0x7c:
 
-          std::cout << "Case 0x7c (" << std::dec << 0x7c << ")" << std::endl;
+          // std::cout << "Case 0x7c (" << std::dec << 0x7c << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -14985,7 +14985,7 @@ namespace QMX
           to += 36;
         case 0x7d:
 
-          std::cout << "Case 0x7d (" << std::dec << 0x7d << ")" << std::endl;
+          // std::cout << "Case 0x7d (" << std::dec << 0x7d << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15021,7 +15021,7 @@ namespace QMX
           to += 36;
         case 0x7e:
 
-          std::cout << "Case 0x7e (" << std::dec << 0x7e << ")" << std::endl;
+          // std::cout << "Case 0x7e (" << std::dec << 0x7e << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15057,7 +15057,7 @@ namespace QMX
           to += 36;
         case 0x7f:
 
-          std::cout << "Case 0x7f (" << std::dec << 0x7f << ")" << std::endl;
+          // std::cout << "Case 0x7f (" << std::dec << 0x7f << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15094,7 +15094,7 @@ namespace QMX
           break;
         case 0x80:
 
-          std::cout << "Case 0x80 (" << std::dec << 0x80 << ")" << std::endl;
+          // std::cout << "Case 0x80 (" << std::dec << 0x80 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15115,7 +15115,7 @@ namespace QMX
           to += 16;
         case 0x81:
 
-          std::cout << "Case 0x81 (" << std::dec << 0x81 << ")" << std::endl;
+          // std::cout << "Case 0x81 (" << std::dec << 0x81 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15136,7 +15136,7 @@ namespace QMX
           to += 16;
         case 0x82:
 
-          std::cout << "Case 0x82 (" << std::dec << 0x82 << ")" << std::endl;
+          // std::cout << "Case 0x82 (" << std::dec << 0x82 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15157,7 +15157,7 @@ namespace QMX
           to += 16;
         case 0x83:
 
-          std::cout << "Case 0x83 (" << std::dec << 0x83 << ")" << std::endl;
+          // std::cout << "Case 0x83 (" << std::dec << 0x83 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15178,7 +15178,7 @@ namespace QMX
           to += 16;
         case 0x84:
 
-          std::cout << "Case 0x84 (" << std::dec << 0x84 << ")" << std::endl;
+          // std::cout << "Case 0x84 (" << std::dec << 0x84 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15199,7 +15199,7 @@ namespace QMX
           to += 16;
         case 0x85:
 
-          std::cout << "Case 0x85 (" << std::dec << 0x85 << ")" << std::endl;
+          // std::cout << "Case 0x85 (" << std::dec << 0x85 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15220,7 +15220,7 @@ namespace QMX
           to += 16;
         case 0x86:
 
-          std::cout << "Case 0x86 (" << std::dec << 0x86 << ")" << std::endl;
+          // std::cout << "Case 0x86 (" << std::dec << 0x86 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15241,7 +15241,7 @@ namespace QMX
           to += 16;
         case 0x87:
 
-          std::cout << "Case 0x87 (" << std::dec << 0x87 << ")" << std::endl;
+          // std::cout << "Case 0x87 (" << std::dec << 0x87 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15262,7 +15262,7 @@ namespace QMX
           to += 16;
         case 0x88:
 
-          std::cout << "Case 0x88 (" << std::dec << 0x88 << ")" << std::endl;
+          // std::cout << "Case 0x88 (" << std::dec << 0x88 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15283,7 +15283,7 @@ namespace QMX
           to += 16;
         case 0x89:
 
-          std::cout << "Case 0x89 (" << std::dec << 0x89 << ")" << std::endl;
+          // std::cout << "Case 0x89 (" << std::dec << 0x89 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15304,7 +15304,7 @@ namespace QMX
           to += 16;
         case 0x8a:
 
-          std::cout << "Case 0x8a (" << std::dec << 0x8a << ")" << std::endl;
+          // std::cout << "Case 0x8a (" << std::dec << 0x8a << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15325,7 +15325,7 @@ namespace QMX
           to += 16;
         case 0x8b:
 
-          std::cout << "Case 0x8b (" << std::dec << 0x8b << ")" << std::endl;
+          // std::cout << "Case 0x8b (" << std::dec << 0x8b << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15346,7 +15346,7 @@ namespace QMX
           to += 16;
         case 0x8c:
 
-          std::cout << "Case 0x8c (" << std::dec << 0x8c << ")" << std::endl;
+          // std::cout << "Case 0x8c (" << std::dec << 0x8c << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15367,7 +15367,7 @@ namespace QMX
           to += 16;
         case 0x8d:
 
-          std::cout << "Case 0x8d (" << std::dec << 0x8d << ")" << std::endl;
+          // std::cout << "Case 0x8d (" << std::dec << 0x8d << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15388,7 +15388,7 @@ namespace QMX
           to += 16;
         case 0x8e:
 
-          std::cout << "Case 0x8e (" << std::dec << 0x8e << ")" << std::endl;
+          // std::cout << "Case 0x8e (" << std::dec << 0x8e << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15409,7 +15409,7 @@ namespace QMX
           to += 16;
         case 0x8f:
 
-          std::cout << "Case 0x8f (" << std::dec << 0x8f << ")" << std::endl;
+          // std::cout << "Case 0x8f (" << std::dec << 0x8f << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15431,7 +15431,7 @@ namespace QMX
           break;
         case 0x90:
 
-          std::cout << "Case 0x90 (" << std::dec << 0x90 << ")" << std::endl;
+          // std::cout << "Case 0x90 (" << std::dec << 0x90 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15461,7 +15461,7 @@ namespace QMX
           to += 28;
         case 0x91:
 
-          std::cout << "Case 0x91 (" << std::dec << 0x91 << ")" << std::endl;
+          // std::cout << "Case 0x91 (" << std::dec << 0x91 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15491,7 +15491,7 @@ namespace QMX
           to += 28;
         case 0x92:
 
-          std::cout << "Case 0x92 (" << std::dec << 0x92 << ")" << std::endl;
+          // std::cout << "Case 0x92 (" << std::dec << 0x92 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15521,7 +15521,7 @@ namespace QMX
           to += 28;
         case 0x93:
 
-          std::cout << "Case 0x93 (" << std::dec << 0x93 << ")" << std::endl;
+          // std::cout << "Case 0x93 (" << std::dec << 0x93 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15551,7 +15551,7 @@ namespace QMX
           to += 28;
         case 0x94:
 
-          std::cout << "Case 0x94 (" << std::dec << 0x94 << ")" << std::endl;
+          // std::cout << "Case 0x94 (" << std::dec << 0x94 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15581,7 +15581,7 @@ namespace QMX
           to += 28;
         case 0x95:
 
-          std::cout << "Case 0x95 (" << std::dec << 0x95 << ")" << std::endl;
+          // std::cout << "Case 0x95 (" << std::dec << 0x95 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15611,7 +15611,7 @@ namespace QMX
           to += 28;
         case 0x96:
 
-          std::cout << "Case 0x96 (" << std::dec << 0x96 << ")" << std::endl;
+          // std::cout << "Case 0x96 (" << std::dec << 0x96 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15641,7 +15641,7 @@ namespace QMX
           to += 28;
         case 0x97:
 
-          std::cout << "Case 0x97 (" << std::dec << 0x97 << ")" << std::endl;
+          // std::cout << "Case 0x97 (" << std::dec << 0x97 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15671,7 +15671,7 @@ namespace QMX
           to += 28;
         case 0x98:
 
-          std::cout << "Case 0x98 (" << std::dec << 0x98 << ")" << std::endl;
+          // std::cout << "Case 0x98 (" << std::dec << 0x98 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15701,7 +15701,7 @@ namespace QMX
           to += 28;
         case 0x99:
 
-          std::cout << "Case 0x99 (" << std::dec << 0x99 << ")" << std::endl;
+          // std::cout << "Case 0x99 (" << std::dec << 0x99 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15731,7 +15731,7 @@ namespace QMX
           to += 28;
         case 0x9a:
 
-          std::cout << "Case 0x9a (" << std::dec << 0x9a << ")" << std::endl;
+          // std::cout << "Case 0x9a (" << std::dec << 0x9a << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15761,7 +15761,7 @@ namespace QMX
           to += 28;
         case 0x9b:
 
-          std::cout << "Case 0x9b (" << std::dec << 0x9b << ")" << std::endl;
+          // std::cout << "Case 0x9b (" << std::dec << 0x9b << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15791,7 +15791,7 @@ namespace QMX
           to += 28;
         case 0x9c:
 
-          std::cout << "Case 0x9c (" << std::dec << 0x9c << ")" << std::endl;
+          // std::cout << "Case 0x9c (" << std::dec << 0x9c << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15821,7 +15821,7 @@ namespace QMX
           to += 28;
         case 0x9d:
 
-          std::cout << "Case 0x9d (" << std::dec << 0x9d << ")" << std::endl;
+          // std::cout << "Case 0x9d (" << std::dec << 0x9d << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15851,7 +15851,7 @@ namespace QMX
           to += 28;
         case 0x9e:
 
-          std::cout << "Case 0x9e (" << std::dec << 0x9e << ")" << std::endl;
+          // std::cout << "Case 0x9e (" << std::dec << 0x9e << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15881,7 +15881,7 @@ namespace QMX
           to += 28;
         case 0x9f:
 
-          std::cout << "Case 0x9f (" << std::dec << 0x9f << ")" << std::endl;
+          // std::cout << "Case 0x9f (" << std::dec << 0x9f << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15912,7 +15912,7 @@ namespace QMX
           break;
         case 0xa0:
 
-          std::cout << "Case 0xa0 (" << std::dec << 0xa0 << ")" << std::endl;
+          // std::cout << "Case 0xa0 (" << std::dec << 0xa0 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15927,7 +15927,7 @@ namespace QMX
           to += 12;
         case 0xa1:
 
-          std::cout << "Case 0xa1 (" << std::dec << 0xa1 << ")" << std::endl;
+          // std::cout << "Case 0xa1 (" << std::dec << 0xa1 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15942,7 +15942,7 @@ namespace QMX
           to += 12;
         case 0xa2:
 
-          std::cout << "Case 0xa2 (" << std::dec << 0xa2 << ")" << std::endl;
+          // std::cout << "Case 0xa2 (" << std::dec << 0xa2 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15957,7 +15957,7 @@ namespace QMX
           to += 12;
         case 0xa3:
 
-          std::cout << "Case 0xa3 (" << std::dec << 0xa3 << ")" << std::endl;
+          // std::cout << "Case 0xa3 (" << std::dec << 0xa3 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15972,7 +15972,7 @@ namespace QMX
           to += 12;
         case 0xa4:
 
-          std::cout << "Case 0xa4 (" << std::dec << 0xa4 << ")" << std::endl;
+          // std::cout << "Case 0xa4 (" << std::dec << 0xa4 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -15987,7 +15987,7 @@ namespace QMX
           to += 12;
         case 0xa5:
 
-          std::cout << "Case 0xa5 (" << std::dec << 0xa5 << ")" << std::endl;
+          // std::cout << "Case 0xa5 (" << std::dec << 0xa5 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16002,7 +16002,7 @@ namespace QMX
           to += 12;
         case 0xa6:
 
-          std::cout << "Case 0xa6 (" << std::dec << 0xa6 << ")" << std::endl;
+          // std::cout << "Case 0xa6 (" << std::dec << 0xa6 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16017,7 +16017,7 @@ namespace QMX
           to += 12;
         case 0xa7:
 
-          std::cout << "Case 0xa7 (" << std::dec << 0xa7 << ")" << std::endl;
+          // std::cout << "Case 0xa7 (" << std::dec << 0xa7 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16032,7 +16032,7 @@ namespace QMX
           to += 12;
         case 0xa8:
 
-          std::cout << "Case 0xa8 (" << std::dec << 0xa8 << ")" << std::endl;
+          // std::cout << "Case 0xa8 (" << std::dec << 0xa8 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16047,7 +16047,7 @@ namespace QMX
           to += 12;
         case 0xa9:
 
-          std::cout << "Case 0xa9 (" << std::dec << 0xa9 << ")" << std::endl;
+          // std::cout << "Case 0xa9 (" << std::dec << 0xa9 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16062,7 +16062,7 @@ namespace QMX
           to += 12;
         case 0xaa:
 
-          std::cout << "Case 0xaa (" << std::dec << 0xaa << ")" << std::endl;
+          // std::cout << "Case 0xaa (" << std::dec << 0xaa << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16077,7 +16077,7 @@ namespace QMX
           to += 12;
         case 0xab:
 
-          std::cout << "Case 0xab (" << std::dec << 0xab << ")" << std::endl;
+          // std::cout << "Case 0xab (" << std::dec << 0xab << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16092,7 +16092,7 @@ namespace QMX
           to += 12;
         case 0xac:
 
-          std::cout << "Case 0xac (" << std::dec << 0xac << ")" << std::endl;
+          // std::cout << "Case 0xac (" << std::dec << 0xac << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16107,7 +16107,7 @@ namespace QMX
           to += 12;
         case 0xad:
 
-          std::cout << "Case 0xad (" << std::dec << 0xad << ")" << std::endl;
+          // std::cout << "Case 0xad (" << std::dec << 0xad << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16122,7 +16122,7 @@ namespace QMX
           to += 12;
         case 0xae:
 
-          std::cout << "Case 0xae (" << std::dec << 0xae << ")" << std::endl;
+          // std::cout << "Case 0xae (" << std::dec << 0xae << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16137,7 +16137,7 @@ namespace QMX
           to += 12;
         case 0xaf:
 
-          std::cout << "Case 0xaf (" << std::dec << 0xaf << ")" << std::endl;
+          // std::cout << "Case 0xaf (" << std::dec << 0xaf << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16153,7 +16153,7 @@ namespace QMX
           break;
         case 0xb0:
 
-          std::cout << "Case 0xb0 (" << std::dec << 0xb0 << ")" << std::endl;
+          // std::cout << "Case 0xb0 (" << std::dec << 0xb0 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16177,7 +16177,7 @@ namespace QMX
           to += 20;
         case 0xb1:
 
-          std::cout << "Case 0xb1 (" << std::dec << 0xb1 << ")" << std::endl;
+          // std::cout << "Case 0xb1 (" << std::dec << 0xb1 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16201,7 +16201,7 @@ namespace QMX
           to += 20;
         case 0xb2:
 
-          std::cout << "Case 0xb2 (" << std::dec << 0xb2 << ")" << std::endl;
+          // std::cout << "Case 0xb2 (" << std::dec << 0xb2 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16225,7 +16225,7 @@ namespace QMX
           to += 20;
         case 0xb3:
 
-          std::cout << "Case 0xb3 (" << std::dec << 0xb3 << ")" << std::endl;
+          // std::cout << "Case 0xb3 (" << std::dec << 0xb3 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16249,7 +16249,7 @@ namespace QMX
           to += 20;
         case 0xb4:
 
-          std::cout << "Case 0xb4 (" << std::dec << 0xb4 << ")" << std::endl;
+          // std::cout << "Case 0xb4 (" << std::dec << 0xb4 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16273,7 +16273,7 @@ namespace QMX
           to += 20;
         case 0xb5:
 
-          std::cout << "Case 0xb5 (" << std::dec << 0xb5 << ")" << std::endl;
+          // std::cout << "Case 0xb5 (" << std::dec << 0xb5 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16297,7 +16297,7 @@ namespace QMX
           to += 20;
         case 0xb6:
 
-          std::cout << "Case 0xb6 (" << std::dec << 0xb6 << ")" << std::endl;
+          // std::cout << "Case 0xb6 (" << std::dec << 0xb6 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16321,7 +16321,7 @@ namespace QMX
           to += 20;
         case 0xb7:
 
-          std::cout << "Case 0xb7 (" << std::dec << 0xb7 << ")" << std::endl;
+          // std::cout << "Case 0xb7 (" << std::dec << 0xb7 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16345,7 +16345,7 @@ namespace QMX
           to += 20;
         case 0xb8:
 
-          std::cout << "Case 0xb8 (" << std::dec << 0xb8 << ")" << std::endl;
+          // std::cout << "Case 0xb8 (" << std::dec << 0xb8 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16369,7 +16369,7 @@ namespace QMX
           to += 20;
         case 0xb9:
 
-          std::cout << "Case 0xb9 (" << std::dec << 0xb9 << ")" << std::endl;
+          // std::cout << "Case 0xb9 (" << std::dec << 0xb9 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16393,7 +16393,7 @@ namespace QMX
           to += 20;
         case 0xba:
 
-          std::cout << "Case 0xba (" << std::dec << 0xba << ")" << std::endl;
+          // std::cout << "Case 0xba (" << std::dec << 0xba << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16417,7 +16417,7 @@ namespace QMX
           to += 20;
         case 0xbb:
 
-          std::cout << "Case 0xbb (" << std::dec << 0xbb << ")" << std::endl;
+          // std::cout << "Case 0xbb (" << std::dec << 0xbb << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16441,7 +16441,7 @@ namespace QMX
           to += 20;
         case 0xbc:
 
-          std::cout << "Case 0xbc (" << std::dec << 0xbc << ")" << std::endl;
+          // std::cout << "Case 0xbc (" << std::dec << 0xbc << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16465,7 +16465,7 @@ namespace QMX
           to += 20;
         case 0xbd:
 
-          std::cout << "Case 0xbd (" << std::dec << 0xbd << ")" << std::endl;
+          // std::cout << "Case 0xbd (" << std::dec << 0xbd << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16489,7 +16489,7 @@ namespace QMX
           to += 20;
         case 0xbe:
 
-          std::cout << "Case 0xbe (" << std::dec << 0xbe << ")" << std::endl;
+          // std::cout << "Case 0xbe (" << std::dec << 0xbe << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16513,7 +16513,7 @@ namespace QMX
           to += 20;
         case 0xbf:
 
-          std::cout << "Case 0xbf (" << std::dec << 0xbf << ")" << std::endl;
+          // std::cout << "Case 0xbf (" << std::dec << 0xbf << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16538,7 +16538,7 @@ namespace QMX
           break;
         case 0xc0:
 
-          std::cout << "Case 0xc0 (" << std::dec << 0xc0 << ")" << std::endl;
+          // std::cout << "Case 0xc0 (" << std::dec << 0xc0 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16550,7 +16550,7 @@ namespace QMX
           to += 8;
         case 0xc1:
 
-          std::cout << "Case 0xc1 (" << std::dec << 0xc1 << ")" << std::endl;
+          // std::cout << "Case 0xc1 (" << std::dec << 0xc1 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16562,7 +16562,7 @@ namespace QMX
           to += 8;
         case 0xc2:
 
-          std::cout << "Case 0xc2 (" << std::dec << 0xc2 << ")" << std::endl;
+          // std::cout << "Case 0xc2 (" << std::dec << 0xc2 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16574,7 +16574,7 @@ namespace QMX
           to += 8;
         case 0xc3:
 
-          std::cout << "Case 0xc3 (" << std::dec << 0xc3 << ")" << std::endl;
+          // std::cout << "Case 0xc3 (" << std::dec << 0xc3 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16586,7 +16586,7 @@ namespace QMX
           to += 8;
         case 0xc4:
 
-          std::cout << "Case 0xc4 (" << std::dec << 0xc4 << ")" << std::endl;
+          // std::cout << "Case 0xc4 (" << std::dec << 0xc4 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16598,7 +16598,7 @@ namespace QMX
           to += 8;
         case 0xc5:
 
-          std::cout << "Case 0xc5 (" << std::dec << 0xc5 << ")" << std::endl;
+          // std::cout << "Case 0xc5 (" << std::dec << 0xc5 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16610,7 +16610,7 @@ namespace QMX
           to += 8;
         case 0xc6:
 
-          std::cout << "Case 0xc6 (" << std::dec << 0xc6 << ")" << std::endl;
+          // std::cout << "Case 0xc6 (" << std::dec << 0xc6 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16622,7 +16622,7 @@ namespace QMX
           to += 8;
         case 0xc7:
 
-          std::cout << "Case 0xc7 (" << std::dec << 0xc7 << ")" << std::endl;
+          // std::cout << "Case 0xc7 (" << std::dec << 0xc7 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16634,7 +16634,7 @@ namespace QMX
           to += 8;
         case 0xc8:
 
-          std::cout << "Case 0xc8 (" << std::dec << 0xc8 << ")" << std::endl;
+          // std::cout << "Case 0xc8 (" << std::dec << 0xc8 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16646,7 +16646,7 @@ namespace QMX
           to += 8;
         case 0xc9:
 
-          std::cout << "Case 0xc9 (" << std::dec << 0xc9 << ")" << std::endl;
+          // std::cout << "Case 0xc9 (" << std::dec << 0xc9 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16658,7 +16658,7 @@ namespace QMX
           to += 8;
         case 0xca:
 
-          std::cout << "Case 0xca (" << std::dec << 0xca << ")" << std::endl;
+          // std::cout << "Case 0xca (" << std::dec << 0xca << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16670,7 +16670,7 @@ namespace QMX
           to += 8;
         case 0xcb:
 
-          std::cout << "Case 0xcb (" << std::dec << 0xcb << ")" << std::endl;
+          // std::cout << "Case 0xcb (" << std::dec << 0xcb << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16682,7 +16682,7 @@ namespace QMX
           to += 8;
         case 0xcc:
 
-          std::cout << "Case 0xcc (" << std::dec << 0xcc << ")" << std::endl;
+          // std::cout << "Case 0xcc (" << std::dec << 0xcc << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16694,7 +16694,7 @@ namespace QMX
           to += 8;
         case 0xcd:
 
-          std::cout << "Case 0xcd (" << std::dec << 0xcd << ")" << std::endl;
+          // std::cout << "Case 0xcd (" << std::dec << 0xcd << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16706,7 +16706,7 @@ namespace QMX
           to += 8;
         case 0xce:
 
-          std::cout << "Case 0xce (" << std::dec << 0xce << ")" << std::endl;
+          // std::cout << "Case 0xce (" << std::dec << 0xce << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16718,7 +16718,7 @@ namespace QMX
           to += 8;
         case 0xcf:
 
-          std::cout << "Case 0xcf (" << std::dec << 0xcf << ")" << std::endl;
+          // std::cout << "Case 0xcf (" << std::dec << 0xcf << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16731,7 +16731,7 @@ namespace QMX
           break;
         case 0xd0:
 
-          std::cout << "Case 0xd0 (" << std::dec << 0xd0 << ")" << std::endl;
+          // std::cout << "Case 0xd0 (" << std::dec << 0xd0 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16749,7 +16749,7 @@ namespace QMX
           to += 12;
         case 0xd1:
 
-          std::cout << "Case 0xd1 (" << std::dec << 0xd1 << ")" << std::endl;
+          // std::cout << "Case 0xd1 (" << std::dec << 0xd1 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16767,7 +16767,7 @@ namespace QMX
           to += 12;
         case 0xd2:
 
-          std::cout << "Case 0xd2 (" << std::dec << 0xd2 << ")" << std::endl;
+          // std::cout << "Case 0xd2 (" << std::dec << 0xd2 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16785,7 +16785,7 @@ namespace QMX
           to += 12;
         case 0xd3:
 
-          std::cout << "Case 0xd3 (" << std::dec << 0xd3 << ")" << std::endl;
+          // std::cout << "Case 0xd3 (" << std::dec << 0xd3 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16803,7 +16803,7 @@ namespace QMX
           to += 12;
         case 0xd4:
 
-          std::cout << "Case 0xd4 (" << std::dec << 0xd4 << ")" << std::endl;
+          // std::cout << "Case 0xd4 (" << std::dec << 0xd4 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16821,7 +16821,7 @@ namespace QMX
           to += 12;
         case 0xd5:
 
-          std::cout << "Case 0xd5 (" << std::dec << 0xd5 << ")" << std::endl;
+          // std::cout << "Case 0xd5 (" << std::dec << 0xd5 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16839,7 +16839,7 @@ namespace QMX
           to += 12;
         case 0xd6:
 
-          std::cout << "Case 0xd6 (" << std::dec << 0xd6 << ")" << std::endl;
+          // std::cout << "Case 0xd6 (" << std::dec << 0xd6 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16857,7 +16857,7 @@ namespace QMX
           to += 12;
         case 0xd7:
 
-          std::cout << "Case 0xd7 (" << std::dec << 0xd7 << ")" << std::endl;
+          // std::cout << "Case 0xd7 (" << std::dec << 0xd7 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16875,7 +16875,7 @@ namespace QMX
           to += 12;
         case 0xd8:
 
-          std::cout << "Case 0xd8 (" << std::dec << 0xd8 << ")" << std::endl;
+          // std::cout << "Case 0xd8 (" << std::dec << 0xd8 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16893,7 +16893,7 @@ namespace QMX
           to += 12;
         case 0xd9:
 
-          std::cout << "Case 0xd9 (" << std::dec << 0xd9 << ")" << std::endl;
+          // std::cout << "Case 0xd9 (" << std::dec << 0xd9 << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16911,7 +16911,7 @@ namespace QMX
           to += 12;
         case 0xda:
 
-          std::cout << "Case 0xda (" << std::dec << 0xda << ")" << std::endl;
+          // std::cout << "Case 0xda (" << std::dec << 0xda << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16929,7 +16929,7 @@ namespace QMX
           to += 12;
         case 0xdb:
 
-          std::cout << "Case 0xdb (" << std::dec << 0xdb << ")" << std::endl;
+          // std::cout << "Case 0xdb (" << std::dec << 0xdb << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16947,7 +16947,7 @@ namespace QMX
           to += 12;
         case 0xdc:
 
-          std::cout << "Case 0xdc (" << std::dec << 0xdc << ")" << std::endl;
+          // std::cout << "Case 0xdc (" << std::dec << 0xdc << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16965,7 +16965,7 @@ namespace QMX
           to += 12;
         case 0xdd:
 
-          std::cout << "Case 0xdd (" << std::dec << 0xdd << ")" << std::endl;
+          // std::cout << "Case 0xdd (" << std::dec << 0xdd << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -16983,7 +16983,7 @@ namespace QMX
           to += 12;
         case 0xde:
 
-          std::cout << "Case 0xde (" << std::dec << 0xde << ")" << std::endl;
+          // std::cout << "Case 0xde (" << std::dec << 0xde << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -17001,7 +17001,7 @@ namespace QMX
           to += 12;
         case 0xdf:
 
-          std::cout << "Case 0xdf (" << std::dec << 0xdf << ")" << std::endl;
+          // std::cout << "Case 0xdf (" << std::dec << 0xdf << ")" << std::endl;
 
           byte_stream = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to),
@@ -17020,7 +17020,7 @@ namespace QMX
           break;
         case 0xe0:
 
-          std::cout << "Case 0xe0 (" << std::dec << 0xe0 << ")" << std::endl;
+          // std::cout << "Case 0xe0 (" << std::dec << 0xe0 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -17028,7 +17028,7 @@ namespace QMX
           to += 4;
         case 0xe1:
 
-          std::cout << "Case 0xe1 (" << std::dec << 0xe1 << ")" << std::endl;
+          // std::cout << "Case 0xe1 (" << std::dec << 0xe1 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -17036,7 +17036,7 @@ namespace QMX
           to += 4;
         case 0xe2:
 
-          std::cout << "Case 0xe2 (" << std::dec << 0xe2 << ")" << std::endl;
+          // std::cout << "Case 0xe2 (" << std::dec << 0xe2 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -17044,7 +17044,7 @@ namespace QMX
           to += 4;
         case 0xe3:
 
-          std::cout << "Case 0xe3 (" << std::dec << 0xe3 << ")" << std::endl;
+          // std::cout << "Case 0xe3 (" << std::dec << 0xe3 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -17052,7 +17052,7 @@ namespace QMX
           to += 4;
         case 0xe4:
 
-          std::cout << "Case 0xe4 (" << std::dec << 0xe4 << ")" << std::endl;
+          // std::cout << "Case 0xe4 (" << std::dec << 0xe4 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -17060,7 +17060,7 @@ namespace QMX
           to += 4;
         case 0xe5:
 
-          std::cout << "Case 0xe5 (" << std::dec << 0xe5 << ")" << std::endl;
+          // std::cout << "Case 0xe5 (" << std::dec << 0xe5 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -17068,7 +17068,7 @@ namespace QMX
           to += 4;
         case 0xe6:
 
-          std::cout << "Case 0xe6 (" << std::dec << 0xe6 << ")" << std::endl;
+          // std::cout << "Case 0xe6 (" << std::dec << 0xe6 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -17076,7 +17076,7 @@ namespace QMX
           to += 4;
         case 0xe7:
 
-          std::cout << "Case 0xe7 (" << std::dec << 0xe7 << ")" << std::endl;
+          // std::cout << "Case 0xe7 (" << std::dec << 0xe7 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -17084,7 +17084,7 @@ namespace QMX
           to += 4;
         case 0xe8:
 
-          std::cout << "Case 0xe8 (" << std::dec << 0xe8 << ")" << std::endl;
+          // std::cout << "Case 0xe8 (" << std::dec << 0xe8 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -17092,7 +17092,7 @@ namespace QMX
           to += 4;
         case 0xe9:
 
-          std::cout << "Case 0xe9 (" << std::dec << 0xe9 << ")" << std::endl;
+          // std::cout << "Case 0xe9 (" << std::dec << 0xe9 << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -17100,7 +17100,7 @@ namespace QMX
           to += 4;
         case 0xea:
 
-          std::cout << "Case 0xea (" << std::dec << 0xea << ")" << std::endl;
+          // std::cout << "Case 0xea (" << std::dec << 0xea << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -17108,7 +17108,7 @@ namespace QMX
           to += 4;
         case 0xeb:
 
-          std::cout << "Case 0xeb (" << std::dec << 0xeb << ")" << std::endl;
+          // std::cout << "Case 0xeb (" << std::dec << 0xeb << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -17116,7 +17116,7 @@ namespace QMX
           to += 4;
         case 0xec:
 
-          std::cout << "Case 0xec (" << std::dec << 0xec << ")" << std::endl;
+          // std::cout << "Case 0xec (" << std::dec << 0xec << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -17124,7 +17124,7 @@ namespace QMX
           to += 4;
         case 0xed:
 
-          std::cout << "Case 0xed (" << std::dec << 0xed << ")" << std::endl;
+          // std::cout << "Case 0xed (" << std::dec << 0xed << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -17132,7 +17132,7 @@ namespace QMX
           to += 4;
         case 0xee:
 
-          std::cout << "Case 0xee (" << std::dec << 0xee << ")" << std::endl;
+          // std::cout << "Case 0xee (" << std::dec << 0xee << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -17140,7 +17140,7 @@ namespace QMX
           to += 4;
         case 0xef:
 
-          std::cout << "Case 0xef (" << std::dec << 0xef << ")" << std::endl;
+          // std::cout << "Case 0xef (" << std::dec << 0xef << ")" << std::endl;
 
           tmp = _mm_loadu_si128(reinterpret_cast<__m128i *>(in));
           _mm_storeu_si128(reinterpret_cast<__m128i *>(to), tmp);
@@ -17149,82 +17149,82 @@ namespace QMX
           break;
         case 0xf0:
 
-          std::cout << "Case 0xf0 (" << std::dec << 0xf0 << ")" << std::endl;
+          // std::cout << "Case 0xf0 (" << std::dec << 0xf0 << ")" << std::endl;
 
           in++; // LCOV_EXCL_LINE
         case 0xf1:
 
-          std::cout << "Case 0xf1 (" << std::dec << 0xf1 << ")" << std::endl;
+          // std::cout << "Case 0xf1 (" << std::dec << 0xf1 << ")" << std::endl;
 
           in++; // LCOV_EXCL_LINE
         case 0xf2:
 
-          std::cout << "Case 0xf2 (" << std::dec << 0xf2 << ")" << std::endl;
+          // std::cout << "Case 0xf2 (" << std::dec << 0xf2 << ")" << std::endl;
 
           in++; // LCOV_EXCL_LINE
         case 0xf3:
 
-          std::cout << "Case 0xf3 (" << std::dec << 0xf3 << ")" << std::endl;
+          // std::cout << "Case 0xf3 (" << std::dec << 0xf3 << ")" << std::endl;
 
           in++; // LCOV_EXCL_LINE
         case 0xf4:
 
-          std::cout << "Case 0xf4 (" << std::dec << 0xf4 << ")" << std::endl;
+          // std::cout << "Case 0xf4 (" << std::dec << 0xf4 << ")" << std::endl;
 
           in++; // LCOV_EXCL_LINE
         case 0xf5:
 
-          std::cout << "Case 0xf5 (" << std::dec << 0xf5 << ")" << std::endl;
+          // std::cout << "Case 0xf5 (" << std::dec << 0xf5 << ")" << std::endl;
 
           in++; // LCOV_EXCL_LINE
         case 0xf6:
 
-          std::cout << "Case 0xf6 (" << std::dec << 0xf6 << ")" << std::endl;
+          // std::cout << "Case 0xf6 (" << std::dec << 0xf6 << ")" << std::endl;
 
           in++; // LCOV_EXCL_LINE
         case 0xf7:
 
-          std::cout << "Case 0xf7 (" << std::dec << 0xf7 << ")" << std::endl;
+          // std::cout << "Case 0xf7 (" << std::dec << 0xf7 << ")" << std::endl;
 
           in++; // LCOV_EXCL_LINE
         case 0xf8:
 
-          std::cout << "Case 0xf8 (" << std::dec << 0xf8 << ")" << std::endl;
+          // std::cout << "Case 0xf8 (" << std::dec << 0xf8 << ")" << std::endl;
 
           in++; // LCOV_EXCL_LINE
         case 0xf9:
 
-          std::cout << "Case 0xf9 (" << std::dec << 0xf9 << ")" << std::endl;
+          // std::cout << "Case 0xf9 (" << std::dec << 0xf9 << ")" << std::endl;
 
           in++; // LCOV_EXCL_LINE
         case 0xfa:
 
-          std::cout << "Case 0xfa (" << std::dec << 0xfa << ")" << std::endl;
+          // std::cout << "Case 0xfa (" << std::dec << 0xfa << ")" << std::endl;
 
           in++; // LCOV_EXCL_LINE
         case 0xfb:
 
-          std::cout << "Case 0xfb (" << std::dec << 0xfb << ")" << std::endl;
+          // std::cout << "Case 0xfb (" << std::dec << 0xfb << ")" << std::endl;
 
           in++; // LCOV_EXCL_LINE
         case 0xfc:
 
-          std::cout << "Case 0xfc (" << std::dec << 0xfc << ")" << std::endl;
+          // std::cout << "Case 0xfc (" << std::dec << 0xfc << ")" << std::endl;
 
           in++; // LCOV_EXCL_LINE
         case 0xfd:
 
-          std::cout << "Case 0xfd (" << std::dec << 0xfd << ")" << std::endl;
+          // std::cout << "Case 0xfd (" << std::dec << 0xfd << ")" << std::endl;
 
           in++; // LCOV_EXCL_LINE
         case 0xfe:
 
-          std::cout << "Case 0xfe (" << std::dec << 0xfe << ")" << std::endl;
+          // std::cout << "Case 0xfe (" << std::dec << 0xfe << ")" << std::endl;
 
           in++; // LCOV_EXCL_LINE
         case 0xff:
 
-          std::cout << "Case 0xff (" << std::dec << 0xff << ")" << std::endl;
+          // std::cout << "Case 0xff (" << std::dec << 0xff << ")" << std::endl;
 
           in++;  // LCOV_EXCL_LINE
           break; // LCOV_EXCL_LINE

@@ -2,6 +2,7 @@
 #include <logger.h>
 #include <cstdio>
 #include <stdexcept>
+#include <iostream>
 
 namespace samg {
     class Logger {

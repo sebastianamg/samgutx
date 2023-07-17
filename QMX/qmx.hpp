@@ -208,7 +208,7 @@ namespace QMX
     return maximum(maximum(a, b), maximum(c, d));
   }
 
-  class QMXCodec
+  class Codec
   {
   private:
     uint8_t *length_buffer;        ///< Stores the number of bits needed to compress each
@@ -468,7 +468,7 @@ namespace QMX
     /*!
             @brief Constructor
     */
-    QMXCodec()
+    Codec()
         : length_buffer(nullptr), length_buffer_length(0),
           full_length_buffer(new uint32_t[256 * 16]),
           _offsets_({0,0,0}),
@@ -484,7 +484,7 @@ namespace QMX
     /*!
             @brief Destructor
     */
-    virtual ~QMXCodec()
+    virtual ~Codec()
     {
       delete[] length_buffer;
       delete[] full_length_buffer;
@@ -848,9 +848,9 @@ namespace QMX
      * @return true 
      * @return false 
      */
-    bool has_more() {
-      size_t  source_offset = offsets[QMX_SOURCE_OFFSET],
-              keys_offset = offsets[QMX_KEYS_OFFSET];
+    bool has_more(const void *source, const size_t len) {
+      size_t  source_offset = this->_offsets_[QMX_SOURCE_OFFSET],
+              keys_offset = this->_offsets_[QMX_KEYS_OFFSET];
       uint8_t *in = (uint8_t *)source + source_offset;
       uint8_t *keys = ((uint8_t *)source) + len - 1 - keys_offset;
       return in <= keys;

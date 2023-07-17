@@ -301,9 +301,9 @@ namespace samg {
             const void print() {
                 std::cout << "WordSequenceSerializer --- sequence: " << std::endl;
                 for (Type v : this->sequence) {
-                    std::cout << v << std::endl;
+                    std::cout << v << " ";
                 }
-                
+                std::cout << std::endl;
             }
     };
 }

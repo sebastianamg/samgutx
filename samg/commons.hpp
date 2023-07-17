@@ -42,5 +42,13 @@ namespace samg {
             std::cout << std::endl;
         }
         /***************************************************************/
+        template <typename InputIterator, typename Container>
+        void copy_to_stack(InputIterator begin, InputIterator end, Container& stack) {
+            while (begin != end) {
+                stack.push(*begin);
+                begin++;
+            }
+        }
+        /***************************************************************/
     }
 }

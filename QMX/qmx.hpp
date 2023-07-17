@@ -864,17 +864,24 @@ namespace QMX
     * @return std::vector<integer> 
     */
    std::vector<integer> decode_next_integers(const void *source, const size_t len) {
+    // std::cout << "decode_next_integers --- (1)" << std::endl;
     if(this->decode_next_first_call) {
+      // std::cout << "\t decode_next_integers --- (1)" << std::endl;
       this->_restart_traversal_();
+      // std::cout << "\t decode_next_integers --- (2)" << std::endl;
       this->decode_next_first_call = false;
+      // std::cout << "\t decode_next_integers --- (3)" << std::endl;
     }
     std::vector<integer> decoded = std::vector<integer>(512);
-    // // std::cout << "(1)" << std::endl;
+    // std::cout << "decode_next_integers --- (4)" << std::endl;
+    
     this->_offsets_[QMX_DESTINATION_OFFSET] = 0;
+    // std::cout << "decode_next_integers --- (5) --- source[0]" << ((integer*)source)[0] << "; len = " << len << std::endl;
     this->_offsets_ = partial_decode(&decoded[0], 0, source, len, this->_offsets_);
-    // // std::cout << "(2)" << std::endl;
+    // std::cout << "decode_next_integers --- (6)" << std::endl;
+    
     decoded.resize(this->_offsets_[QMX_DESTINATION_OFFSET]);
-    // // std::cout << "(3)" << std::endl;
+    // std::cout << "decode_next_integers --- (7)" << std::endl;
     return decoded;
    } 
 

@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <iostream>
 
 namespace samg {
     enum FileFormat {
@@ -230,6 +231,14 @@ namespace samg {
                 WordSequenceSerializer::store_binary_sequence<Type>(this->sequence,file_name);
             }
 
+            std::vector<Type> get_remaining_values() {
+                std::vector<Type> V;
+                while(this->has_more()) {
+                    V.push_back(this->get_value());
+                }
+                return V;
+            }
+
             std::vector<Type> get_next_values(std::uint64_t length) {
                 std::vector<Type> V ;
                 for (std::uint64_t i = 0 ; i < length; i++) {
@@ -287,6 +296,14 @@ namespace samg {
 
             const std::uint64_t size() const {
                 return this->sequence.size();
+            }
+
+            const void print() {
+                std::cout << "WordSequenceSerializer --- sequence: " << std::endl;
+                for (Type v : this->sequence) {
+                    std::cout << v << std::endl;
+                }
+                
             }
     };
 }

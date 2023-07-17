@@ -841,6 +841,21 @@ namespace QMX
             COMPRESS_INTEGER_QMX_IMPROVED::DECODES...
             ---------------------------------------
     */
+
+    /**
+     * @brief This function allows verifying whether traversal reaches the last elements or not. 
+     * 
+     * @return true 
+     * @return false 
+     */
+    bool has_more() {
+      size_t  source_offset = offsets[QMX_SOURCE_OFFSET],
+              keys_offset = offsets[QMX_KEYS_OFFSET];
+      uint8_t *in = (uint8_t *)source + source_offset;
+      uint8_t *keys = ((uint8_t *)source) + len - 1 - keys_offset;
+      return in <= keys;
+    }
+
    /**
     * @brief Decode integers from a next SIMD word. 
     * 

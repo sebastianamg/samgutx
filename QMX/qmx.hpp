@@ -863,7 +863,7 @@ namespace QMX
     * @param len [in] The length (in bytes) of the source buffer.
     * @return std::vector<integer> 
     */
-   std::vector<integer> decode_next(const void *source, const size_t len) {
+   std::vector<integer> decode_next_integers(const void *source, const size_t len) {
     if(this->decode_next_first_call) {
       this->_restart_traversal_();
       this->decode_next_first_call = false;

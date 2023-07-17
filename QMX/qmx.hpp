@@ -868,9 +868,13 @@ namespace QMX
       this->_restart_traversal_();
       this->decode_next_first_call = false;
     }
-    std::vector<integer> decoded = std::vector<integer>(256);
+    std::vector<integer> decoded = std::vector<integer>(512);
+    std::cout << "(1)" << std::endl;
+    this->_offsets_[QMX_DESTINATION_OFFSET] = 0;
     this->_offsets_ = partial_decode(&decoded[0], 0, source, len, this->_offsets_);
+    std::cout << "(2)" << std::endl;
     decoded.resize(this->_offsets_[QMX_DESTINATION_OFFSET]);
+    std::cout << "(3)" << std::endl;
     return decoded;
    } 
 

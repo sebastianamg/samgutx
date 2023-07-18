@@ -2,6 +2,7 @@
 #include <string>
 #include <sstream>
 #include <cstdint>
+#include <iomanip>
 
 namespace samg {
     namespace utils {

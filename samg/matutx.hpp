@@ -8,6 +8,7 @@ namespace samg {
         K2T,
         MDX,
         KNT,
+        QMX,
         Unknown
     };
     /**
@@ -35,6 +36,11 @@ namespace samg {
         position = file_name.find(".k2t");
         if (position != std::string::npos) {
             return FileFormat::K2T;
+        } 
+
+        position = file_name.find(".qmx");
+        if (position != std::string::npos) {
+            return FileFormat::QMX;
         } 
 
         return FileFormat::Unknown;

@@ -1,3 +1,6 @@
+[![License: BSD 2-Clause](https://img.shields.io/badge/License-BSD%202--Clause-red.svg)](https://opensource.org/licenses/BSD-2-Clause)
+
+
 # Introduction
 
 The following is the detail of one-header libraries available in this repository:

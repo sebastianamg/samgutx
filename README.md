@@ -12,7 +12,6 @@ The following is the detail of one-header libraries available in this repository
     * `std::string append_info_and_extension(const std::string file_name, const std::string to_append,const std::string new_ext)`: This function allows appending a string to and replace the extension of a file name. 
     * `std::string change_extension(const std::string file_name, const std::string new_ext)`: This function allows replacing the extension of a file name by a new one, regardless the previous extension is.
     * `std::string change_extension(const std::string file_name, const std::string old_ext, const std::string new_ext)`: This function allows replacing a given old extension of file name by a new one.
-  * `matutx.hpp`: It provides functions and a class to serialize a sequence of integers called `WordSequenceSerializer`. Available functions and a class are as follows:
     * `WordSequenceSerializer` class: This class allows serializing and deserializing a sequence of integers defined through its template. The class provides the following members:
       * `WordSequenceSerializer()`: This constructor gets the serializer ready to start a new serialization. 
       *  `WordSequenceSerializer(const std::string file_name)`: This constructor gets the serializer ready to deserialize data from a binary file.

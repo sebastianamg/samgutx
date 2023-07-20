@@ -2,6 +2,42 @@
 #include <string>
 #include <iostream>
 
+/**
+ * ---------------------------------------------------------------
+ * Released under the 2-Clause BSD License 
+ * (a.k.a. Simplified BSD License or FreeBSD License)
+ * @note [link https://opensource.org/license/bsd-2-clause/ BSD-2-Clause]
+ * ---------------------------------------------------------------
+ * 
+ * @copyright (c) 2023 Sebastián AMG (@sebastianamg)
+ * 
+ * Redistribution and use in source and binary forms, with or 
+ * without modification, are permitted provided 
+ * that the following conditions are met:
+ *  1.  Redistributions of source code must retain the above 
+ *      copyright notice, this list of conditions and the 
+ *      following disclaimer.
+ * 
+ *  2.  Redistributions in binary form must reproduce the 
+ *      above copyright notice, this list of conditions and
+ *      the following disclaimer in the documentation and/or 
+ *      other materials provided with the distribution.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
+ * CONTRIBUTORS “AS IS” AND ANY EXPRESS OR IMPLIED WARRANTIES, 
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR 
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, 
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT 
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN 
+ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF 
+ * THE POSSIBILITY OF SUCH DAMAGE. 
+ */
+
 namespace samg {
     enum FileFormat {
         MTX,
@@ -46,6 +82,14 @@ namespace samg {
         return FileFormat::Unknown;
     }
 
+    /**
+     * @brief This function allows appending a string to and replace the extension of a file name. 
+     * 
+     * @param file_name 
+     * @param to_append 
+     * @param new_ext 
+     * @return std::string 
+     */
     std::string append_info_and_extension(const std::string file_name, const std::string to_append,const std::string new_ext) {
         std::string new_file_name = file_name;
         std::size_t position = new_file_name.find_last_of(".");
@@ -57,6 +101,13 @@ namespace samg {
         return new_file_name;
     }
 
+    /**
+     * @brief This function allows replacing the extension of a file name by a new one regardless the previous extension is. 
+     * 
+     * @param file_name 
+     * @param new_ext 
+     * @return std::string 
+     */
     std::string change_extension(const std::string file_name, const std::string new_ext) {
         std::string new_file_name = file_name;
         std::size_t position = new_file_name.find_last_of(".") + 1UL;
@@ -68,6 +119,14 @@ namespace samg {
         return new_file_name;
     }
 
+    /**
+     * @brief This function allows replacing a given old extension of file name by a new one. 
+     * 
+     * @param file_name 
+     * @param old_ext 
+     * @param new_ext 
+     * @return std::string 
+     */
     std::string change_extension(const std::string file_name, const std::string old_ext, const std::string new_ext) {
         std::string new_file_name = file_name;
         std::size_t position = new_file_name.find(old_ext);
@@ -79,6 +138,11 @@ namespace samg {
         return new_file_name;
     }
 
+    /**
+     * @brief The class WordSequenceSerializer allows serializing and deserializing a sequence of integers defined through its template. 
+     * 
+     * @tparam Type 
+     */
     template<typename Type> class WordSequenceSerializer {
         private:
             std::vector<Type> sequence;
@@ -167,11 +231,28 @@ namespace samg {
 
 
         public:
+            /**
+             * @brief Construct a new word sequence serializer object to start a new serialization.
+             */
             WordSequenceSerializer(): current_index(0ULL) {}
+            
+            /**
+             * @brief Construct a new word sequence serializer object to retrieve data serialized and stored in the input file.
+             * 
+             * @param file_name
+             */
             WordSequenceSerializer(const std::string file_name): current_index(0ULL) {
                 this->sequence = WordSequenceSerializer::retrieve_binary_sequence<Type>(file_name);
             }
 
+            /**
+             * @brief This function allows parsing integer values stored in an input vector of type TypeSrc into type TypeTrg.
+             * 
+             * @tparam TypeSrc 
+             * @tparam TypeTrg 
+             * @param V 
+             * @return std::vector<TypeTrg> 
+             */
             template<typename TypeSrc, typename TypeTrg = Type> std::vector<TypeTrg> parse_values(std::vector<TypeSrc> V) {
                 std::vector<TypeTrg> T;
                 if( sizeof(TypeSrc) == sizeof(TypeTrg) ) {
@@ -184,48 +265,139 @@ namespace samg {
                 return T;
             }
 
-            template<typename TypeSrc, typename TypeTrg=Type> std::vector<TypeTrg> parse_value(TypeSrc v) {
+            /**
+             * @brief This function allows parsing an integer value of type TypeSrc into type TypeTrg.
+             * 
+             * @tparam TypeSrc 
+             * @tparam TypeTrg 
+             * @param v 
+             * @return TypeTrg 
+             */
+            template<typename TypeSrc, typename TypeTrg=Type> TypeTrg parse_value(TypeSrc v) {
                 std::vector<TypeSrc> V = {v};
-                return this->parse_values<TypeSrc>(V);
+                return this->parse_values<TypeSrc>(V)[0];
+            }
+            // template<typename TypeSrc, typename TypeTrg=Type> std::vector<TypeTrg> parse_value(TypeSrc v) {
+            //     std::vector<TypeSrc> V = {v};
+            //     return this->parse_values<TypeSrc>(V);
+            // }
+
+
+            /**
+             * @brief This function allows adding an 8/16/32/64-bits value. 
+             * 
+             * @param v 
+             */
+            template<typename TypeSrc> void add_value(TypeSrc v) {
+                static_assert(
+                    std::is_same_v<TypeSrc, std::uint8_t> ||
+                    std::is_same_v<TypeSrc, std::uint16_t> ||
+                    std::is_same_v<TypeSrc, std::uint32_t> ||
+                    std::is_same_v<TypeSrc, std::uint64_t>,
+                    "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
+                this->sequence.push_back(this->parse_value<TypeSrc>(v));
             }
 
-            void add_value(std::uint8_t v) {
-                std::vector<Type> trg = this->parse_value<std::uint8_t>(v);
-                this->sequence.insert(this->sequence.end(),trg.begin(),trg.end());
-            }
-            void add_value(std::uint16_t v) {
-                std::vector<Type> trg = this->parse_value<std::uint16_t>(v);
-                this->sequence.insert(this->sequence.end(),trg.begin(),trg.end());
-            }
-            void add_value(std::uint32_t v) {
-                std::vector<Type> trg = this->parse_value<std::uint32_t>(v);
-                this->sequence.insert(this->sequence.end(),trg.begin(),trg.end());
-            }
-            void add_value(std::uint64_t v) {
-                std::vector<Type> trg = this->parse_value<std::uint64_t>(v);
-                this->sequence.insert(this->sequence.end(),trg.begin(),trg.end());
-            }
+            // /**
+            //  * @brief This function allows adding an 8-bits value. 
+            //  * 
+            //  * @param v 
+            //  */
+            // template<typename TypeSrc> void add_value(std::uint8_t v) {
+            //     // std::vector<Type> trg = this->parse_value<std::uint8_t>(v);
+            //     // this->sequence.insert(this->sequence.end(),trg.begin(),trg.end());
+            //     this->sequence.push_back(this->parse_value<std::uint8_t>(v));
+            // }
+
+            // /**
+            //  * @brief This function allows adding a 16-bits value. 
+            //  * 
+            //  * @param v 
+            //  */
+            // void add_value(std::uint16_t v) {
+            //     // std::vector<Type> trg = this->parse_value<std::uint16_t>(v);
+            //     // this->sequence.insert(this->sequence.end(),trg.begin(),trg.end());
+            //     this->sequence.push_back(this->parse_value<std::uint16_t>(v));
+            // }
+
+            // /**
+            //  * @brief This function allows adding a 32-bits value. 
+            //  * 
+            //  * @param v 
+            //  */
+            // void add_value(std::uint32_t v) {
+            //     // std::vector<Type> trg = this->parse_value<std::uint32_t>(v);
+            //     // this->sequence.insert(this->sequence.end(),trg.begin(),trg.end());
+            //     this->sequence.push_back(this->parse_value<std::uint32_t>(v));
+            // }
+
+            // /**
+            //  * @brief This function allows adding a 64-bits value. 
+            //  * 
+            //  * @param v 
+            //  */
+            // void add_value(std::uint64_t v) {
+            //     // std::vector<Type> trg = this->parse_value<std::uint64_t>(v);
+            //     // this->sequence.insert(this->sequence.end(),trg.begin(),trg.end());
+            //     this->sequence.push_back(this->parse_value<std::uint64_t>(v));
+            // }
+
+            /**
+             * @brief This function allows adding a collection of l unsigned integer values. 
+             * 
+             * @param v 
+             */
             template<typename TypeSrc> void add_values(const TypeSrc *v, const std::size_t l) {
                 std::vector<TypeSrc> V;
                 V.insert(V.end(),v,v+l);
                 this->add_values(V);
             }
+
+            /**
+             * @brief This function allows adding a collection of unsigned integer values. 
+             * 
+             * @param v 
+             */
             template<typename TypeSrc> void add_values(const std::vector<TypeSrc> V) {
+                static_assert(
+                    std::is_same_v<TypeSrc, std::uint8_t> ||
+                    std::is_same_v<TypeSrc, std::uint16_t> ||
+                    std::is_same_v<TypeSrc, std::uint32_t> ||
+                    std::is_same_v<TypeSrc, std::uint64_t>,
+                    "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
                 std::vector<Type> X = this->parse_values<TypeSrc>(V);
                 this->sequence.insert(this->sequence.end(),X.begin(),X.end());
             }
+
+            /**
+             * @brief This function allows serializing a string.
+             * 
+             * @param v 
+             */
             void add_value(std::string v) {
                 std::vector<Type> V = WordSequenceSerializer::convert_string_to_vector<Type>(v);
                 this->add_value(v.length()); // Storing the original length (number of characters/bytes) of the key. 
                 this->add_value(V.size()); // Storing the length (number of words<Type>) of the key. 
                 this->sequence.insert(this->sequence.end(), V.begin(), V.end());
             }
+
+            /**
+             * @brief This function allows adding a std::map<std::string,std::string> entry.
+             * 
+             * @param p map<std::string,std::string>'s entry
+             */
             void add_map_entry(const std::pair<std::string,std::string> p) {
                 // Adding key:
                 this->add_value(p.first);
                 // Adding value:
                 this->add_value(p.second);
             }
+
+            /**
+             * @brief This function allows adding a map<std::string,std::string>.
+             * 
+             * @param m 
+             */
             void add_map(std::map<std::string,std::string> m) {
                 this->add_value(m.size());
                 for (std::pair<std::string,std::string> p : m) {
@@ -233,10 +405,20 @@ namespace samg {
                 }
             }
 
+            /**
+             * @brief This function allows saving the serialization into a given file. 
+             * 
+             * @param file_name 
+             */
             void save(const std::string file_name) {
                 WordSequenceSerializer::store_binary_sequence<Type>(this->sequence,file_name);
             }
 
+            /**
+             * @brief This function allows getting remaining values from the serialization starting from where an internal index is. 
+             * 
+             * @return std::vector<Type> 
+             */
             std::vector<Type> get_remaining_values() {
                 std::vector<Type> V;
                 while(this->has_more()) {
@@ -245,6 +427,12 @@ namespace samg {
                 return V;
             }
 
+            /**
+             * @brief This function allows retrieving the next `length` values. 
+             * 
+             * @param length 
+             * @return std::vector<Type> 
+             */
             std::vector<Type> get_next_values(std::uint64_t length) {
                 std::vector<Type> V ;
                 for (std::uint64_t i = 0 ; i < length; i++) {
@@ -253,6 +441,13 @@ namespace samg {
                 return V;
             }
 
+            /**
+             * @brief This function allows retrieving the next `length` values starting at `beginning_index`.
+             * 
+             * @param beginning_index 
+             * @param length 
+             * @return std::vector<Type> 
+             */
             std::vector<Type> get_values(std::uint64_t beginning_index, std::uint64_t length) const {
                 std::vector<Type> V;
                 for (std::uint64_t i = beginning_index ; i < (beginning_index+length); i++) {
@@ -261,14 +456,30 @@ namespace samg {
                 return V;
             }
 
+            /**
+             * @brief This function allows getting the `i`-th value from the serialization. 
+             * 
+             * @param i 
+             * @return const Type 
+             */
             const Type get_value(const std::uint64_t i) const {
                 return this->sequence[i];
             }
 
+            /**
+             * @brief This function allows retrieving the next value, based on an internal index. 
+             * 
+             * @return const Type 
+             */
             const Type get_value() {
                 return this->sequence[this->current_index++];
             }
 
+            /**
+             * @brief This function allows retrieving a serialized string. 
+             * 
+             * @return std::string 
+             */
             std::string get_string_value() {
                 const std::uint64_t bytes_length = this->get_value(),
                                     words_legnth = this->get_value();
@@ -277,12 +488,22 @@ namespace samg {
                 return str;
             }
 
+            /**
+             * @brief This function allows retrieving a serialized `std::map<std::string,std::string>`'s entry.
+             * 
+             * @return std::pair<std::string,std::string> 
+             */
             std::pair<std::string,std::string> get_map_entry() {
                 std::string key = this->get_string_value();
                 std::string value = this->get_string_value();
                 return std::pair<std::string,std::string>(key,value);
             }
 
+            /**
+             * @brief This function allows retrieving a serialized `std::map<std::string,std::string>`.
+             * 
+             * @return std::map<std::string,std::string> 
+             */
             std::map<std::string,std::string> get_map() {
                 const std::uint64_t length = this->get_value();
                 std::map<std::string,std::string> map;
@@ -292,18 +513,38 @@ namespace samg {
                 return map;
             }
 
-            const bool has_more() {
+            /**
+             * @brief This method allows verifying whether the serialization has or not more elements. 
+             * 
+             * @return true 
+             * @return false 
+             */
+            const bool has_more() const {
                 return this->current_index < this->sequence.size();
             }
 
-            const std::uint64_t get_current_index() {
+            /**
+             * @brief This methods returns the current internal index.
+             * 
+             * @return const std::uint64_t 
+             */
+            const std::uint64_t get_current_index() const {
                 return this->current_index;
             }
 
+            /**
+             * @brief This method returns the number of Type words that composes the serialization. 
+             * 
+             * @return const std::uint64_t 
+             */
             const std::uint64_t size() const {
                 return this->sequence.size();
             }
 
+            /**
+             * @brief This method displays the sequence of Type words that compose the serialization. 
+             * 
+             */
             const void print() {
                 std::cout << "WordSequenceSerializer --- sequence: " << std::endl;
                 for (Type v : this->sequence) {

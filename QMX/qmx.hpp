@@ -1,21 +1,48 @@
-/*
-		COMPRESS_INTEGER_QMX_IMPROVED.H
-		-------------------------------
-		Copyright (c) 2014-2017 Andrew Trotman
-		Released under the 2-clause BSD license
-   (See:https://en.wikipedia.org/wiki/BSD_licenses)
-*/
-/*!
-		@file
-		@brief Improved QMX Compression.
-		@author Andrew Trotman
-		@copyright 2016 Andrew Trotman
+/**
+ * ---------------------------------------------------------------
+ * Released under the 2-Clause BSD License 
+ * (a.k.a. Simplified BSD License or FreeBSD License)
+ * @note [link https://opensource.org/license/bsd-2-clause/ BSD-2-Clause]
+ * ---------------------------------------------------------------
+ * 
+ * @copyright (c) 2014-2017 Andrew Trotman
+ * 
+ * Redistribution and use in source and binary forms, with or 
+ * without modification, are permitted provided 
+ * that the following conditions are met:
+ *  1.  Redistributions of source code must retain the above 
+ *      copyright notice, this list of conditions and the 
+ *      following disclaimer.
+ * 
+ *  2.  Redistributions in binary form must reproduce the 
+ *      above copyright notice, this list of conditions and
+ *      the following disclaimer in the documentation and/or 
+ *      other materials provided with the distribution.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
+ * CONTRIBUTORS “AS IS” AND ANY EXPRESS OR IMPLIED WARRANTIES, 
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR 
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, 
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT 
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN 
+ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF 
+ * THE POSSIBILITY OF SUCH DAMAGE. 
+ */
 
-		@note Modified by @sebastianamg in july, 2023.
+/**
+ * @file qmx.hpp
+ * @brief Improved QMX Compression.
+ * @author Andrew Trotman
+ * @cite A. Trotman and J. Lin, “In Vacuo and In Situ Evaluation of SIMD Codecs,” in Proceedings of the 21st Australasian Document Computing Symposium, in ADCS ’16. New York, NY, USA: Association for Computing Machinery, Dec. 2016, pp. 1–8. doi: 10.1145/3015022.3015023.
+ * @note Modified from [link https://github.com/amallia/QMX @amallia QMX] by Sebastián AMG (@sebastianamg) in July, 2023.
+ * @note A mechanism to get a set of integers from a `SIMD` word at a time was added.
+ */
 
-		Additions:
-		* A mechanism to get a set of integers from SIMD word to SIMD word was added.
-*/
 #pragma once
 
 #include <array>

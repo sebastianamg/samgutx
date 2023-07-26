@@ -39,6 +39,45 @@ The following is the detail of one-header libraries available in this repository
       * `const std::uint64_t get_current_index() const`: This method returns the current internal index.
       * `const std::uint64_t size() const`: This method returns the number of Type words that composes the serialization. 
       * `const void print()`: This method displays the sequence of Type words that compose the serialization.
+* `GRCodec`: 
+  * `gr-codec.hpp`: It contains an implementation of Golomb-Rice codec. It requires [sdsl-lite](https://github.com/simongog/sdsl-lite) library!
+
+# Examples
+
+## `GRCodec/samg::grcodec::GRCodec`
+
+```c++
+// test.cpp
+// To compile: `g++-11 -ggdb -g3 -I ~/include/ -L ~/lib/ trial_bitvector.cpp -o trial_bitvector -lsdsl`
+#include <GRCodec/gr-codec.hpp>
+#include <iostream>
+#include <sstream>
+
+void show_bitvector(sdsl::bit_vector v) {
+    for (std::size_t i = v.size()-1; 0 <= i && i < v.size() ; --i) {
+        std::cout << v[i];
+    }
+}
+
+int main(int argc, char const *argv[]) {
+    const std::size_t m = 7;
+    std::cout << "m = "<< m <<"" << std::endl;
+    samg::grcodec::GRCodec<std::uint32_t> codec(m,samg::grcodec::GRCodecType::GOLOMB_RICE);
+    
+    for (std::uint32_t j = 0ul; j < 100ul; j++) {
+        codec.append(j);
+        std::cout << "\t GR( " << j << " ) " << " |bits|= " << codec.length() << " ---> " << codec <<std::endl;
+    }
+    
+    while( codec.has_more() ) {
+        std::cout << "\t next = " << codec.next() << " |bits|= " << codec.length() << " ---> " << codec <<std::endl;
+    }
+
+    return 0;
+}
+```
+
+# Licence
 
 All the software of this repository is licenced under the [BSD-2-Clause](https://opensource.org/license/bsd-2-clause/) as follows:
 

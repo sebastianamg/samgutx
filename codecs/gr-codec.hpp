@@ -458,5 +458,25 @@ namespace samg {
                     return strm;
                 }
         };
+
+        /**
+         * @brief This class represents a Rice-runs encoding of integers of type Type.
+         * 
+         * @tparam Type 
+         */
+        template<typename Type> class RiceRuns {
+            static_assert(
+                    std::is_same_v<Type, std::uint8_t> ||
+                    std::is_same_v<Type, std::uint16_t> ||
+                    std::is_same_v<Type, std::uint32_t> ||
+                    std::is_same_v<Type, std::uint64_t>,
+                    "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
+            private:
+                
+            public:
+                RiceRuns() {
+
+                }
+        };
     }
 }

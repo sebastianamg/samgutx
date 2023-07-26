@@ -47,8 +47,8 @@ The following is the detail of one-header libraries available in this repository
 ## `GRCodec/samg::grcodec::GRCodec`
 
 ```c++
-// test.cpp
-// To compile: `g++-11 -ggdb -g3 -I ~/include/ -L ~/lib/ trial_bitvector.cpp -o trial_bitvector -lsdsl`
+// gr-test.cpp
+// To compile: `g++-11 -ggdb -g3 -I ~/include/ -L ~/lib/ gr-test.cpp -o gr-test -lsdsl`
 #include <GRCodec/gr-codec.hpp>
 #include <iostream>
 #include <sstream>

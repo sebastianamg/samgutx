@@ -4,9 +4,10 @@
 # Introduction
 
 The following is the detail of one-header libraries available in this repository:
-* `QMX`:
+* `codecs`:
   * `qmx.hpp`: It is an unsigned 32-bits integer encoder/decoder modified from [@amallia's QMX repository](https://github.com/amallia/QMX). A mechanism to get a set of integers from a 128-bits `SIMD` word at a time was added. Copyright © 2014-2017 Andrew Trotman under the [BSD-2-Clause](https://opensource.org/license/bsd-2-clause/) licence. The implementation is based on:
   > A. Trotman and J. Lin, "In Vacuo and In Situ Evaluation of SIMD Codecs," in Proceedings of the 21st Australasian Document Computing Symposium, in ADCS ’16. New York, NY, USA: Association for Computing Machinery, Dec. 2016, pp. 1–8. doi: 10.1145/3015022.3015023. 
+  * `gr-codec.hpp`: It contains an implementation of Golomb-Rice codec. It requires [sdsl-lite](https://github.com/simongog/sdsl-lite) library!
 * `samg`:
   * `commons.hpp`: It contains methods for converting objects and vectors to string (the object requires implementing `operator<<`), printing a vector, copying data to a `std::stack` from a range defined by `begin` and `end` iterators, and converting time (`std::double_t`) to string.  
   * `logger.hpp`: It contains a wrap class for [`c-logger`](https://github.com/adaxiik/c-logger) implemented by @adaxiik. The wrapper class, called `samg::Logger` provides with methods to output `debug`, `info`, `warn`, `error`, and `fatal` messages, along with a method to directly output a `stdout` message. Furthermore, it provides with a mechanism to "turn" on and off the logger. Since this is a one-header file, @adaxiik's `c-logger` has been replicated within the file. 
@@ -39,17 +40,15 @@ The following is the detail of one-header libraries available in this repository
       * `const std::uint64_t get_current_index() const`: This method returns the current internal index.
       * `const std::uint64_t size() const`: This method returns the number of Type words that composes the serialization. 
       * `const void print()`: This method displays the sequence of Type words that compose the serialization.
-* `GRCodec`: 
-  * `gr-codec.hpp`: It contains an implementation of Golomb-Rice codec. It requires [sdsl-lite](https://github.com/simongog/sdsl-lite) library!
 
 # Examples
 
-## `GRCodec/samg::grcodec::GRCodec`
+## `codecs/samg::grcodec::GRCodec`
 
 ```c++
 // gr-test.cpp
 // To compile: `g++-11 -ggdb -g3 -I ~/include/ -L ~/lib/ gr-test.cpp -o gr-test -lsdsl`
-#include <GRCodec/gr-codec.hpp>
+#include <codecs/gr-codec.hpp>
 #include <iostream>
 #include <sstream>
 

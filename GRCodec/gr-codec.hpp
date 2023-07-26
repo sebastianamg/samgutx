@@ -43,16 +43,28 @@
 
 namespace samg {
     namespace grcodec {
+
+        enum GRCodecType {
+            GOLOMB_RICE,
+            EXPONENTIAL_GOLOMB
+        };
+
+        /**
+         * @brief This class represents a Golomb-Rice encoding of a sequence of integers.
+         * 
+         * @tparam Type 
+         */
         template<typename Type> class GRCodec {
             static_assert(
-                    std::is_same_v<TypeSrc, std::uint8_t> ||
-                    std::is_same_v<TypeSrc, std::uint16_t> ||
-                    std::is_same_v<TypeSrc, std::uint32_t> ||
-                    std::is_same_v<TypeSrc, std::uint64_t>,
+                    std::is_same_v<Type, std::uint8_t> ||
+                    std::is_same_v<Type, std::uint16_t> ||
+                    std::is_same_v<Type, std::uint32_t> ||
+                    std::is_same_v<Type, std::uint64_t>,
                     "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
             private:
                 static const std::size_t BITS_PER_BYTE = sizeof(std::uint8_t)*8;
                 std::size_t m;
+                sdsl::bit_vector sequence;
 
                 /**
                  * @brief This function allows computing the log2 of x.
@@ -60,7 +72,7 @@ namespace samg {
                  * @param x 
                  * @return std::double_t 
                  */
-                std::double_t log2(double x) {
+                static const std::double_t log2(const double x) {
                    return std::log(x) / std::log(2.0);
                 }
 
@@ -71,7 +83,7 @@ namespace samg {
                  * @return true 
                  * @return false 
                  */
-                bool _is_power_of_2_(Type x) {
+                const bool _is_power_of_2_(const Type x) const {
                     /* Examples:
                     x         = 0000 0111 = 7
                     x - 1     = 0000 0110
@@ -96,66 +108,155 @@ namespace samg {
                  * @param r 
                  * @return std::vector<std::uint8_t> 
                  */
-                sdsl::bit_vector _encode_(const Type n, const Type q, const Type r) {
+                sdsl::bit_vector _encode_golomb_rice_(const Type n) {
                     Type    q = std::floor( ((std::double_t) n) / ((std::double_t)this->m) ),
                             r = n - ( this->m * q );
 
-                    if( this->_is_power_of_2_(n) ) { // Acting as Rice encoder.
+                    if( this->_is_power_of_2_(this->m) ) { // Acting as Rice encoder.
                         return this->_rice_encode_(n, q, r);   
                     } else { // Acting as Golomb encoder.
                         return this->_golomb_encode_(n, q, r);
                     }
                 }
 
+                /**
+                 * @brief This function allows encoding n using the Rice algorithm. 
+                 * 
+                 * @param n 
+                 * @param q 
+                 * @param r 
+                 * @return sdsl::bit_vector 
+                 */
                 sdsl::bit_vector _rice_encode_(const Type n, const Type q, const Type r) {
-                    sdsl::bit_vector q_unary(q+1);
-                    for (std::size_t i = q; i > 0; i--) {
-                        q_unary[i] = 1;
-                    } // q_unary[0] = 0 as the sdsl::bit_vector initialization default value is 0. 
+                    std::size_t r_bits = (std::size_t)this->log2(this->m);
+                    sdsl::bit_vector v(r_bits + q + 1);
+                    v.set_int(0,r,GRCodec::BITS_PER_BYTE);
+
+                    for (std::size_t i = r_bits + 1; i < (r_bits + q + 1); ++i) {
+                        v[i] = 1;
+                    } // v[r_bits] = 0 as the sdsl::bit_vector initialization default value is 0. 
                     
-                    std::size_t r_bits = (std::size_t)this->log2(r);
-                    sdsl::bit_vector r_binary(r_bits);
-                    r_binary.set_int(0,r,GRCodec::BITS_PER_BYTE);
-
-                    const std::size_t r_initial_size = r_binary.size();
-                    r_binary.bit_resize( r_initial_size + q_unary.size() );
-
-                    for (std::size_t i = r_initial_size; i < r_binary.size(); i+=GRCodec::BITS_PER_BYTE){
-                        std::uint8_t x = q_unary.get_int(i-r_initial_size,GRCodec::BITS_PER_BYTE);
-                        r_binary.set_int(i,x,GRCodec::BITS_PER_BYTE);
-                    }
-
-                    return r_binary;
+                    return v;
                 }
 
+                /**
+                 * @brief This function allows encoding n using the Golomb algorithm. 
+                 * 
+                 * @param n 
+                 * @param q 
+                 * @param r 
+                 * @return sdsl::bit_vector 
+                 */
                 sdsl::bit_vector _golomb_encode_(const Type n, const Type q, const Type r) {
-                    return sdsl::bit_vector(1);
+                    std::size_t c = std::pow(2,std::ceil(GRCodec::log2(this->m))) - this->m;
+                    std::double_t x = this->log2(this->m);
+                    bool phase = r < c;
+                    std::size_t r_bits = (std::size_t) ( phase ? std::floor(x) : std::ceil(x) );
+                    sdsl::bit_vector v(r_bits + q + 1);
+                    
+                    if( phase ) {
+                        v.set_int(0,r,GRCodec::BITS_PER_BYTE);
+                    } else {
+                        v.set_int(0,r+c,GRCodec::BITS_PER_BYTE);
+                    }
+
+                    for (std::size_t i = r_bits + 1; i < (r_bits + q + 1); ++i) {
+                        v[i] = 1;
+                    } // v[r_bits] = 0 as the sdsl::bit_vector initialization default value is 0. 
+                    
+                    return v;
+                }
+
+                /**
+                 * @brief This function allows referring decoding computation to either Rice or Golomb functions based on whether n is a power of 2 or not, respectively. 
+                 * 
+                 * @param v 
+                 * @return Type 
+                 */
+                Type _decode_golomb_rice_(sdsl::bit_vector &v) {
+                    std::size_t A = 0ul, 
+                                s = std::ceil(this->log2(this->m)),
+                                i = v.size()-1;
+
+                    for (; 0 <= i && i < v.size() ; --i) {
+                        if( v[i] == 1 ) {
+                            ++A;
+                            v[i] = 0;
+                        } else { 
+                            break;
+                        }
+                    }
+
+                    if( this->_is_power_of_2_(this->m) ) { // Acting as Rice decoder.
+                        return this->_rice_decode_(v, A);
+                    } else { // Acting as Golomb decoder.
+                        return this->_golomb_decode_(v, A);
+                    }
+                }
+
+                /**
+                 * @brief This function allows decoding n using the Rice algorithm. 
+                 * 
+                 * @param v 
+                 * @param A 
+                 * @return Type 
+                 */
+                Type _rice_decode_(sdsl::bit_vector &v, const std::size_t A) {
+                    Type R = v.get_int( 0, sizeof(Type) * BITS_PER_BYTE );
+                    return ( this->m * A ) + R;
+                }
+
+                /**
+                 * @brief This function allows decoding n using the Golomb algorithm. 
+                 * 
+                 * @param v 
+                 * @param A 
+                 * @return Type 
+                 */
+                Type _golomb_decode_(sdsl::bit_vector &v, const std::size_t A) {
+                    std::size_t c = std::pow(2,std::ceil(GRCodec::log2(this->m))) - this->m;
+                    Type R = v.get_int( 0, sizeof(Type) * BITS_PER_BYTE ),
+                            n = this->_rice_decode_(v,A);
+
+                    return ( R >= c )? ( n - c ) : n;
                 }
 
             public:
-                enum GRCodecType {
-                    GOLOMB_RICE,
-                    EXPONENTIAL_GOLOMB
-                } type;
+                GRCodecType type;
 
-                GRCodec(std::size_t m, GRCodecType type=GRCodecType::GOLOMB_RICE): 
-                    m{m}, 
-                    type{type} 
+                explicit GRCodec(const std::size_t m, const GRCodecType type=GRCodecType::GOLOMB_RICE): 
+                    m(m), 
+                    type(type) 
                 {}
 
-
-                sdsl::bit_vector _encode_(const Type n) {
-                    switch (expression)
-                    {
+                sdsl::bit_vector encode(const Type n) {
+                    switch (this->type) {
                         case GRCodecType::GOLOMB_RICE:
-                            return this->_encode_(n);
+                            return this->_encode_golomb_rice_(n);
                         default:
                             throw std::runtime_error("Not valid or not implemented algorithm!");
                     }
                 }
                 
                 Type decode(sdsl::bit_vector v) {
-                    return 0;
+                    switch (this->type) {
+                        case GRCodecType::GOLOMB_RICE:
+                            return this->_decode_golomb_rice_(v);
+                        default:
+                            throw std::runtime_error("Not valid or not implemented algorithm!");
+                    }
+                }
+
+                sdsl::bit_vector get_bit_vector() {
+                    return this->sequence;
+                }
+
+                friend std::ostream & operator<<(std::ostream & strm, const GRCodec &codec) {
+                    sdsl::bit_vector v = codec.get_bit_vector();
+                    for (std::size_t i = v.size()-1; 0 <= i && i < v.size() ; --i) {
+                        strm << v[i];
+                    }
+                    return strm;
                 }
         };
     }

@@ -35,12 +35,13 @@
  */
 #pragma once
 
-#include <vector>
-#include <cstdint>
 #include <cmath>
-#include <cassert>
+#include <cstdint>
 #include <type_traits>
+#include <vector>
 #include <stdexcept>
+#include <cassert>
+#include <utility>
 #include <sdsl/bit_vectors.hpp>
 
 namespace samg {
@@ -311,7 +312,15 @@ namespace samg {
             public:
                 GRCodecType type;
 
-                explicit GRCodec(const std::size_t m, const GRCodecType type=GRCodecType::GOLOMB_RICE): 
+                GRCodec(const std::size_t m, const GRCodecType type=GRCodecType::GOLOMB_RICE): 
+                    m(m), 
+                    type(type)
+                {
+                    this->restart();
+                }
+
+                GRCodec(sdsl::bit_vector sequence, const std::size_t m, const GRCodecType type=GRCodecType::GOLOMB_RICE): 
+                    sequence(sequence),
                     m(m), 
                     type(type)
                 {
@@ -459,6 +468,37 @@ namespace samg {
                 }
         };
 
+        template<typename Type> std::pair<bool,std::vector<Type>> get_relative_sequence( std::vector<Type> sequence ) {
+            std::vector<Type> ans;
+            const bool  ASCENDING = true,
+                        DESCENDING = false;
+            bool    slope = ASCENDING,  // Assumed.
+                    is_slope_set = false;  
+            if( sequence.size() > 0 ) {
+                /* NOTE
+                    1 3 5 6 8 9 15 18
+                    1 2 2 1 2 1 6 3
+                    slope = ASCENDING | ASCENDING
+                    is_slope_set = false | true
+                */
+                ans.push_back(sequence[0]);
+                for (std::size_t i = 1; i < sequence.size(); ++i) {
+                    if( !is_slope_set ) {
+                        if( sequence[i-1] < sequence[i] ) {
+                            slope = ASCENDING;
+                            is_slope_set = true;
+                        } else if( sequence[i-1] > sequence[i] ) {
+                            slope = DESCENDING;
+                            is_slope_set = true;
+                        }
+                    }
+                    Type diff = (sequence[i-1] > sequence[i]) ? sequence[i-1] - sequence[i] : sequence[i] - sequence[i-1];
+                    ans.push_back(diff);
+                }
+            }
+            return std::pair<bool,std::vector<Type>>(slope,ans);
+        }
+
         /**
          * @brief This class represents a Rice-runs encoding of integers of type Type.
          * 
@@ -471,11 +511,70 @@ namespace samg {
                     std::is_same_v<Type, std::uint32_t> ||
                     std::is_same_v<Type, std::uint64_t>,
                     "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
+            
             private:
-                
-            public:
-                RiceRuns() {
+                sdsl::bit_vector encoded_sequence;
+                std::size_t k; // Golomb-Rice parameter m = 2^k.
+                static const std::size_t SPAN = 3;
 
+            public:
+                RiceRuns(const std::size_t k): 
+                    k(k) 
+                { }
+
+                void encode(std::vector<Type> sequence) {
+                    GRCodec<Type> codec(std::pow(2,this->k),GRCodecType::GOLOMB_RICE);
+    
+                    // Let c be a flag to restart search with a new found character:
+                    bool is_first = true; 
+    
+                    // Let r be a repetition counter initially in 0:
+                    std::size_t r = 0;
+    
+                    Type previous_n;
+    
+                    for (std::size_t i = 0; i < sequence.size(); ++i) {
+                        if( is_first ) {
+                            previous_n = sequence[i];
+                            std::cout << "c=1 --- sequence[" << i << "] = " << sequence[i] << std::endl;
+                            is_first = false;
+                            ++r;
+                        } else if( sequence[i] == previous_n ) {
+                            ++r;
+                        } else {
+                            if( r < SPAN ) {
+                                for (size_t j = 0; j < r; ++j) {
+                                    codec.append(previous_n);
+                                }
+                            } else {
+                                for (size_t j = 0; j < SPAN; ++j) {
+                                    codec.append(previous_n);
+                                }
+                                codec.append(r);
+                            }
+                            is_first = true; 
+                            r = 0ul;
+                            --i;
+                        }
+                    }
+                    this->encoded_sequence = codec.get_bit_vector();
+                }
+
+                std::vector<Type> decode() {
+                    std::vector<Type> decoded,ans;
+                    GRCodec<Type> codec(this->encoded_sequence, std::pow(2,this->k),GRCodecType::GOLOMB_RICE);
+                    codec.restart();
+                    while( codec.has_more() ) {
+                        decoded.push_back( codec.next() );
+                    }
+
+                    // TODO ...
+
+                    return ans;
+                }
+
+                sdsl::bit_vector get_encoded_sequence() const {
+                    return this->encoded_sequence;
                 }
         };
     }

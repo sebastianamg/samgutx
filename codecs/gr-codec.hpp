@@ -515,7 +515,7 @@ namespace samg {
             private:
                 sdsl::bit_vector encoded_sequence;
                 std::size_t k; // Golomb-Rice parameter m = 2^k.
-                static const std::size_t SPAN = 3;
+                static const std::size_t ESCAPE_SPAN = 3;
 
             public:
                 RiceRuns(const std::size_t k): 
@@ -526,51 +526,89 @@ namespace samg {
                     GRCodec<Type> codec(std::pow(2,this->k),GRCodecType::GOLOMB_RICE);
     
                     // Let c be a flag to restart search with a new found character:
-                    bool is_first = true; 
+                    bool is_first = true, n_used_up = false, stop = false; 
     
                     // Let r be a repetition counter initially in 0:
-                    std::size_t r = 0;
+                    std::size_t r = 0, i = 0;
+
+                    Type previous_n, n;
     
-                    Type previous_n;
-    
-                    for (std::size_t i = 0; i < sequence.size(); ++i) {
-                        if( is_first ) {
-                            previous_n = sequence[i];
-                            std::cout << "c=1 --- sequence[" << i << "] = " << sequence[i] << std::endl;
-                            is_first = false;
-                            ++r;
-                        } else if( sequence[i] == previous_n ) {
-                            ++r;
+                    while( !stop ) {
+
+                        if( i < sequence.size() && n_used_up ) {
+                            n = sequence[i++];
+                            n_used_up = false;
                         } else {
-                            if( r < SPAN ) {
+                            stop = ( ( i == sequence.size() ) && n_used_up );
+                        }
+                        
+                        if( !n_used_up ){
+                            if( is_first ) {
+                                previous_n = n;
+                                is_first = false;
+                                ++r;
+                                n_used_up = true;
+                            } else if( n == previous_n ) {
+                                ++r;
+                                n_used_up = true;
+                            }
+                        }
+
+                        if( !n_used_up || stop ){
+                            if( r < RiceRuns::ESCAPE_SPAN ) {
                                 for (size_t j = 0; j < r; ++j) {
                                     codec.append(previous_n);
                                 }
                             } else {
-                                for (size_t j = 0; j < SPAN; ++j) {
+                                for (size_t j = 0; j < RiceRuns::ESCAPE_SPAN; ++j) {
                                     codec.append(previous_n);
                                 }
                                 codec.append(r);
                             }
                             is_first = true; 
                             r = 0ul;
-                            --i;
                         }
+
                     }
                     this->encoded_sequence = codec.get_bit_vector();
                 }
+                /*
+                0000000000000000000000000000000001000000000000000000000000000000100000000000000000000000000000100000000000000000000000000100000000000000000000000000000000010000000000000000000000000000000001000000000000000000000000000000100000000000000000000000000000000000
+                */
 
                 std::vector<Type> decode() {
-                    std::vector<Type> decoded,ans;
+                    std::vector<Type> decoded;
                     GRCodec<Type> codec(this->encoded_sequence, std::pow(2,this->k),GRCodecType::GOLOMB_RICE);
                     codec.restart();
+                    bool is_first = true;
+                    std::size_t escape_span_counter = 0;
+                    Type previous_n, n;
                     while( codec.has_more() ) {
-                        decoded.push_back( codec.next() );
+                        n = codec.next();
+                        std::cout << "decode --- n = " << n << std::endl;
+                        if( escape_span_counter < RiceRuns::ESCAPE_SPAN ) {
+                            if( is_first ) {
+                                previous_n = n;
+                                ++escape_span_counter;
+                                is_first = false;
+                            } else if( n == previous_n ){
+                                    ++escape_span_counter;
+                            } else { // n != previous_n
+                                for (size_t i = 0; i < escape_span_counter; i++) {
+                                    decoded.push_back(previous_n);
+                                }
+                                previous_n = n;
+                                escape_span_counter = 1; // Replacement for is_first case.
+                            }
+                        } else {
+                            for (size_t i = 0; i < n; i++) {
+                                decoded.push_back(previous_n);
+                            }
+                            is_first = true;
+                            escape_span_counter = 0;
+                        }
                     }
-
-                    // TODO ...
-
-                    return ans;
+                    return decoded;
                 }
 
                 sdsl::bit_vector get_encoded_sequence() const {

@@ -42,6 +42,7 @@
 #include <stdexcept>
 #include <cassert>
 #include <utility>
+#include <unordered_map>
 #include <sdsl/bit_vectors.hpp>
 
 namespace samg {
@@ -79,7 +80,8 @@ namespace samg {
                  * @return std::double_t 
                  */
                 static const std::double_t log2(const double x) {
-                   return std::log(x) / std::log(2.0);
+                    return std::log(x) / std::log(2.0); // NOTE Much more efficient than std::log2! 34 nanoseconds avg.
+                    // return std::log2(x); // NOTE 180 nanoseconds avg.
                 }
 
                 /**
@@ -211,16 +213,58 @@ namespace samg {
                  * @return sdsl::bit_vector 
                  */
                 static sdsl::bit_vector _rice_encode_(const Type n, const Type q, const Type r, const std::size_t m) {
-                    std::size_t r_bits = (std::size_t)GRCodec::log2(m);
+                    static std::size_t r_bits, prev_m = 0; // Using simple memoization method for log2. 
+                    
+                    // auto start = std::chrono::high_resolution_clock::now();
+                    // std::size_t r_bits = (std::size_t)GRCodec::log2(m);
+                    if ( m != prev_m ) {
+                        r_bits = (std::size_t)log2(m);
+                        prev_m = m;
+                    }
+                    // auto end = std::chrono::high_resolution_clock::now();
+                    // double time_taken = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+                    // printf("*** Rice encoding - LOG2 time %.2f[ns]\n",time_taken);
+
+                    // start = std::chrono::high_resolution_clock::now();
                     sdsl::bit_vector v(r_bits + q + 1);
+                    // std::size_t len = r_bits + q + 1;
+                    // sdsl::bit_vector v(len, 1);
+                    // end = std::chrono::high_resolution_clock::now();
+                    // time_taken = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+                    // printf("*** Rice encoding - codeword bitmap declaration time %.2f[ns]\n",time_taken);
+
+                    // start = std::chrono::high_resolution_clock::now();
                     v.set_int(0,r,GRCodec::BITS_PER_BYTE);
 
                     for (std::size_t i = r_bits + 1; i < (r_bits + q + 1); ++i) {
                         v[i] = 1;
                     } // v[r_bits] = 0 as the sdsl::bit_vector initialization default value is 0. 
+                    // v[r_bits] = 0;
+                    // v = v & (std::pow(2,len) - 1);
+                    // end = std::chrono::high_resolution_clock::now();
+                    // time_taken = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+                    // printf("*** Rice encoding time %.2f[ns]\n",time_taken);
+
+                    // auto end = std::chrono::high_resolution_clock::now();
+                    // double time_taken = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+                    // printf("*** Rice encoding %.2f[ns]\n",time_taken);
+
+                    // std::cout << " bitmap = " << v << "; data[0] = " << v.data()[0] << std::endl;
                     
+
                     return v;
                 }
+                // static sdsl::bit_vector _rice_encode_(const Type n, const Type q, const Type r, const std::size_t m) {
+                //     std::size_t r_bits = (std::size_t)GRCodec::log2(m);
+                //     sdsl::bit_vector v(r_bits + q + 1);
+                //     v.set_int(0,r,GRCodec::BITS_PER_BYTE);
+
+                //     for (std::size_t i = r_bits + 1; i < (r_bits + q + 1); ++i) {
+                //         v[i] = 1;
+                //     } // v[r_bits] = 0 as the sdsl::bit_vector initialization default value is 0. 
+                    
+                //     return v;
+                // }
 
                 /**
                  * @brief This function allows encoding n using the Golomb algorithm. 
@@ -289,8 +333,15 @@ namespace samg {
                  * @return Type 
                  */
                 static Type _rice_decode_(sdsl::bit_vector &v, const std::size_t A, const std::size_t m) {
-                    Type R = v.get_int( 0, sizeof(Type) * BITS_PER_BYTE );
-                    return ( m * A ) + R;
+                    // auto start = std::chrono::high_resolution_clock::now();
+                    Type R = v.get_int( 0, sizeof(Type) * BITS_PER_BYTE ),
+                         ans = ( m * A ) + R;
+                    // auto end = std::chrono::high_resolution_clock::now();
+                    // double time_taken = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+                    // printf("*** Rice decoding time %.2f[ns]\n",time_taken);
+
+                    return ans;
+                    // return ( m * A ) + R;
                 }
 
                 /**
@@ -499,6 +550,28 @@ namespace samg {
             return std::pair<bool,std::vector<Type>>(slope,ans);
         }
 
+        template<typename Type> std::vector<Type> get_absolute_sequence( std::pair<bool,std::vector<Type>> relative_sequence ) {
+            std::vector<Type> ans;
+            const bool  ASCENDING = true;
+            bool    slope = relative_sequence.first;
+
+            if( relative_sequence.second.size() > 0 ) {
+                /* NOTE
+                    1 2 2 1 2 1 6 3
+                    1 3 5 6 8 9 15 18
+                    slope = ASCENDING | ASCENDING
+                    is_slope_set = false | true
+                */
+                ans.push_back(relative_sequence.second[0]);
+                for (std::size_t i = 1; i < relative_sequence.second.size(); ++i) {
+                    ans.push_back(
+                        (slope == ASCENDING) ? relative_sequence.second[i-1] + relative_sequence.second[i] : relative_sequence.second[i-1] - relative_sequence.second[i]
+                    );
+                }
+            }
+            return ans;
+        }
+
         /**
          * @brief This class represents a Rice-runs encoding of integers of type Type.
          * 
@@ -524,9 +597,15 @@ namespace samg {
 
                 void encode(std::vector<Type> sequence) {
                     GRCodec<Type> codec(std::pow(2,this->k),GRCodecType::GOLOMB_RICE);
-    
+
+                    std::pair<bool,std::vector<Type>> p = samg::grcodec::get_relative_sequence<Type>(sequence);
+                    sequence = p.second;
+
+                    // Appeding slope of relative sequence:
+                    codec.append((Type)p.first);
+
                     // Let c be a flag to restart search with a new found character:
-                    bool is_first = true, n_used_up = false, stop = false; 
+                    bool is_first = true, n_used_up = true, stop = false; 
     
                     // Let r be a repetition counter initially in 0:
                     std::size_t r = 0, i = 0;
@@ -580,35 +659,46 @@ namespace samg {
                     std::vector<Type> decoded;
                     GRCodec<Type> codec(this->encoded_sequence, std::pow(2,this->k),GRCodecType::GOLOMB_RICE);
                     codec.restart();
-                    bool is_first = true;
+                    bool is_first = true, stop = false, slope;
                     std::size_t escape_span_counter = 0;
                     Type previous_n, n;
-                    while( codec.has_more() ) {
-                        n = codec.next();
-                        std::cout << "decode --- n = " << n << std::endl;
-                        if( escape_span_counter < RiceRuns::ESCAPE_SPAN ) {
-                            if( is_first ) {
-                                previous_n = n;
-                                ++escape_span_counter;
-                                is_first = false;
-                            } else if( n == previous_n ){
+
+                    if( codec.has_more() ) {
+                        slope = ( codec.next() == 1 );
+                        while( !stop ) {
+                            if( codec.has_more() ) {
+                                n = codec.next();
+                            } else {
+                                stop = true;
+                            }
+
+                            // std::cout << "decode --- n = " << n << std::endl;
+                            if( escape_span_counter < RiceRuns::ESCAPE_SPAN ) {
+                                if( is_first ) {
+                                    previous_n = n;
                                     ++escape_span_counter;
-                            } else { // n != previous_n
-                                for (size_t i = 0; i < escape_span_counter; i++) {
+                                    is_first = false;
+                                } else if( n == previous_n && !stop ){
+                                    ++escape_span_counter;
+                                } else { // n != previous_n
+                                    for (size_t i = 0; i < escape_span_counter; i++) {
+                                        decoded.push_back(previous_n);
+                                    }
+                                    previous_n = n;
+                                    escape_span_counter = 1; // Replacement for is_first case.
+                                }
+                            } else {
+                                for (size_t i = 0; i < n; i++) {
                                     decoded.push_back(previous_n);
                                 }
-                                previous_n = n;
-                                escape_span_counter = 1; // Replacement for is_first case.
+                                is_first = true;
+                                escape_span_counter = 0;
                             }
-                        } else {
-                            for (size_t i = 0; i < n; i++) {
-                                decoded.push_back(previous_n);
-                            }
-                            is_first = true;
-                            escape_span_counter = 0;
                         }
                     }
-                    return decoded;
+
+
+                    return get_absolute_sequence( std::pair<bool,std::vector<Type>>( slope, decoded ) );
                 }
 
                 sdsl::bit_vector get_encoded_sequence() const {

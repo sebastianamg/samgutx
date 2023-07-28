@@ -44,7 +44,9 @@
 #include <utility>
 #include <unordered_map>
 #include <sdsl/bit_vectors.hpp>
-// #include <samg/commons.hpp>
+#include <samg/commons.hpp>
+#define transform_rval(v) ( v >= 0 ? v+1 : v ) // Transform relative value.
+#define recover_rval(v) ( v > 0 ? v-1 : v ) // Recover relative value.
 
 namespace samg {
     namespace grcodec {
@@ -520,59 +522,6 @@ namespace samg {
                 }
         };
 
-        template<typename Type> std::pair<bool,std::vector<Type>> get_relative_sequence( std::vector<Type> sequence ) {
-            std::vector<Type> ans;
-            const bool  ASCENDING = true,
-                        DESCENDING = false;
-            bool    slope = ASCENDING,  // Assumed.
-                    is_slope_set = false;  
-            if( sequence.size() > 0 ) {
-                /* NOTE
-                    1 3 5 6 8 9 15 18
-                    1 2 2 1 2 1 6 3
-                    slope = ASCENDING | ASCENDING
-                    is_slope_set = false | true
-                */
-                ans.push_back(sequence[0]);
-                for (std::size_t i = 1; i < sequence.size(); ++i) {
-                    if( !is_slope_set ) {
-                        if( sequence[i-1] < sequence[i] ) {
-                            slope = ASCENDING;
-                            is_slope_set = true;
-                        } else if( sequence[i-1] > sequence[i] ) {
-                            slope = DESCENDING;
-                            is_slope_set = true;
-                        }
-                    }
-                    Type diff = (sequence[i-1] > sequence[i]) ? sequence[i-1] - sequence[i] : sequence[i] - sequence[i-1];
-                    ans.push_back(diff);
-                }
-            }
-            return std::pair<bool,std::vector<Type>>(slope,ans);
-        }
-
-        template<typename Type> std::vector<Type> get_absolute_sequence( std::pair<bool,std::vector<Type>> relative_sequence ) {
-            std::vector<Type> ans;
-            const bool  ASCENDING = true;
-            bool    slope = relative_sequence.first;
-
-            if( relative_sequence.second.size() > 0 ) {
-                /* NOTE
-                    1 2 2 1 2 1 6 3
-                    1 3 5 6 8 9 15 18
-                    slope = ASCENDING | ASCENDING
-                    is_slope_set = false | true
-                */
-                ans.push_back(relative_sequence.second[0]);
-                for (std::size_t i = 1; i < relative_sequence.second.size(); ++i) {
-                    ans.push_back(
-                        (slope == ASCENDING) ? ans.back() + relative_sequence.second[i] : ans.back() - relative_sequence.second[i]
-                    );
-                }
-            }
-            return ans;
-        }
-
         /**
          * @brief This class represents a Rice-runs encoding of integers of type Type.
          * 
@@ -587,9 +536,64 @@ namespace samg {
                     "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
             
             private:
+                typedef std::int64_t rseq_t; // Data type internally used by the relative sequence. It can be changed here to reduce memory footprint in case numbers in a relative sequence are small enough to fit in fewer bits.  
+
+                static const std::size_t ESCAPE_SPAN = 3;
+                static const Type NEGATIVE_FLAG = 0;
+                
                 sdsl::bit_vector encoded_sequence;
                 std::size_t k; // Golomb-Rice parameter m = 2^k.
-                static const std::size_t ESCAPE_SPAN = 3;
+
+                /**
+                 * @brief This function allows converting a sequence of unsigned Type integers into a relative sequence of signed integers by computing their sequential differences. The resultant sequence is transformed in the process to prevent the number 0 that is used to represent negative integers when numbers are encoded with variable-length integers.  
+                 * 
+                 * @param sequence 
+                 * @return std::vector<RiceRuns::rseq_t> 
+                 */
+                static std::vector<RiceRuns::rseq_t> _get_transformed_relative_sequence_( std::vector<Type> sequence ) {
+                    std::vector<RiceRuns::rseq_t> ans;
+                    
+                    if( sequence.size() > 0 ) {
+                        /* NOTE
+                            1 3 3 6  5  0 0 5
+                            1 2 0 3 -1 -5 0 5 <--- Original relative values.
+                            2 3 1 4 -1 -5 1 6 <--- transformed relative values.
+                        */
+                        ans.push_back( transform_rval( sequence[0] ) );
+                        for (std::size_t i = 1; i < sequence.size(); ++i) {
+                            ans.push_back( transform_rval( sequence[i] - sequence[i-1] ) );
+                        }
+                    }
+                    return ans;
+                }
+
+                /**
+                 * @brief This function allows converting a relative sequence of sequential differences encoded as signed integers into an absolute sequence of unsigned Type integers. The resultant sequence is transformed in the process to revert previous transformation when relativization was applied by `_get_transformed_relative_sequence_` function.
+                 * 
+                 * @param relative_sequence 
+                 * @return std::vector<Type> static
+                 */
+                static std::vector<Type> _get_transformed_absolute_sequence_( std::vector<RiceRuns::rseq_t> relative_sequence ) {
+                    std::vector<Type> ans;
+
+                    if( relative_sequence.size() > 0 ) {
+                        /* NOTE
+                            1 3 3 6  5  0 0 5 <--- Original absolute values.
+                            1 2 0 3 -1 -5 0 5 <--- Original relative values.
+                            2 3 1 4 -1 -5 1 6 <--- Transformed relative values.
+                            1 2 0 3 -1 -5 0 5 <--- Recovered relative values.
+                            1 3 3 6  5  0 0 5 <--- Recovered absolute values.
+
+                        */
+                        ans.push_back( recover_rval( relative_sequence[0] ) );
+                        for (std::size_t i = 1; i < relative_sequence.size(); ++i) {
+                            ans.push_back(
+                                ans.back() + recover_rval( relative_sequence[i] )
+                            );
+                        }
+                    }
+                    return ans;
+                }
 
             public:
                 RiceRuns(const std::size_t k): 
@@ -607,33 +611,42 @@ namespace samg {
                  * @param sequence 
                  */
                 void encode(std::vector<Type> sequence) {
-                    GRCodec<Type> codec(std::pow(2,this->k),GRCodecType::GOLOMB_RICE);
+                    GRCodec<Type> codec( 
+                        std::pow(2,this->k), // By using a power of 2, `codec` acts as Rice encoder.
+                        GRCodecType::GOLOMB_RICE 
+                    );
 
-                    std::pair<bool,std::vector<Type>> p = samg::grcodec::get_relative_sequence<Type>(sequence);
-                    sequence = p.second;
+                    std::vector<RiceRuns::rseq_t> relative_sequence = RiceRuns::_get_transformed_relative_sequence_( sequence );
 
-                    // Appeding slope of relative sequence:
-                    std::cout << "p.first = " << ((Type)p.first) << std::endl;
-                    codec.append((Type)p.first);
+                    samg::utils::print_vector("Relative transformed sequence ("+ std::to_string(relative_sequence.size()) +"): ", relative_sequence);
 
-                    // Let c be a flag to restart search with a new found character:
-                    bool is_first = true, n_used_up = true, stop = false; 
+                    // Let the following be flags as follows:
+                    bool    is_first = true,  // It allows identifying a new value in the relative sequence. 
+                            n_used_up = true, // It allows identifying when a value has been used to retrieve a new one.
+                            stop = false;     // It allows stop the encoding process.   
+                            // negative_holded = false; // It allows encode a negative number by encoding `0` as flag in the variable-length integer sequence (e.g. Golomb-Rice codewords). 
     
-                    // Let r be a repetition counter initially in 0:
-                    std::size_t r = 0, i = 0;
+                    std::size_t r = 0, // Let r be a repetition counter initially in 0:
+                                i = 0;
 
-                    Type previous_n, n;
+                    RiceRuns::rseq_t    previous_n, 
+                                        n;
     
                     while( !stop ) {
 
-                        if( i < sequence.size() && n_used_up ) {
-                            n = sequence[i++];
+                        if( i < relative_sequence.size() && n_used_up ) {
+                            n = relative_sequence[i++];
                             n_used_up = false;
                         } else {
-                            stop = ( ( i == sequence.size() ) && n_used_up );
+                            stop = ( ( i == relative_sequence.size() ) && n_used_up );
                         }
                         
                         if( !n_used_up ){
+                            // if( n < 0 ) {
+                            //     negative_holded = true;
+                            //     n = n * -1; // Convert n for further handle. 
+                            // } 
+                            
                             if( is_first ) {
                                 previous_n = n;
                                 is_first = false;
@@ -646,17 +659,29 @@ namespace samg {
                         }
 
                         if( !n_used_up || stop ){
+                            if( previous_n < 0 ) {
+                                // std::cout << "encode --- RiceRuns::NEGATIVE_FLAG = " << RiceRuns::NEGATIVE_FLAG << std::endl;
+                                codec.append( RiceRuns::NEGATIVE_FLAG ); // Insert negative flag once only. 
+                                previous_n *= -1;
+                            }
                             if( r < RiceRuns::ESCAPE_SPAN ) {
-                                for (size_t j = 0; j < r; ++j) {
+                                // std::cout << "encode --- " << previous_n << " x r = " << r << std::endl;
+                                for (std::size_t j = 0; j < r; ++j) {
                                     codec.append(previous_n);
                                 }
                             } else {
-                                for (size_t j = 0; j < RiceRuns::ESCAPE_SPAN; ++j) {
+                                // std::cout << "encode --- " << previous_n << " x r = " << RiceRuns::ESCAPE_SPAN << " === " << r << " runs" << std::endl;
+                                for (std::size_t j = 0; j < RiceRuns::ESCAPE_SPAN; ++j) {
                                     codec.append(previous_n);
                                 }
                                 codec.append(r);
                             }
+                            // if( negative_holded ) {
+                            //     std::cout << "encode --- RiceRuns::NEGATIVE_FLAG = " << RiceRuns::NEGATIVE_FLAG << std::endl;
+                            //     codec.append( RiceRuns::NEGATIVE_FLAG ); // Insert negative flag once only. 
+                            // }
                             is_first = true; 
+                            // negative_holded = false;
                             r = 0ul;
                         }
 
@@ -670,52 +695,73 @@ namespace samg {
                  * @return std::vector<Type> 
                  */
                 std::vector<Type> decode() {
-                    std::vector<Type> decoded;
-                    GRCodec<Type> codec(this->encoded_sequence, std::pow(2,this->k),GRCodecType::GOLOMB_RICE);
-                    codec.restart();
-                    bool is_first = true, stop = false, slope;
+                    GRCodec<Type> codec(
+                        this->encoded_sequence, 
+                        std::pow(2,this->k),GRCodecType::GOLOMB_RICE // By using a power of 2, `codec` acts as Rice encoder.
+                    );
+                    // codec.restart();
+
+                    std::vector<RiceRuns::rseq_t> decoded;
+                    
+                    // Let the following be flags as follows:
+                    bool    is_first = true,  // It allows identifying a new value in the relative sequence. 
+                            n_used_up = true, // It allows identifying when a value has been used to retrieve a new one.
+                            stop = false,     // It allows stop the encoding process.   
+                            negative_holded = false; // It allows encode a negative number by encoding `0` as flag in the variable-length integer sequence (e.g. Golomb-Rice codewords). 
+
                     std::size_t escape_span_counter = 0;
-                    Type previous_n, n;
 
-                    if( codec.has_more() ) {
-                        Type slope_v = codec.next();
-                        // std::cout << "slope_v = " << slope_v << std::endl;
-                        slope = ( slope_v == 1 );
-                        while( !stop ) {
-                            if( codec.has_more() ) {
-                                n = codec.next();
-                                // std::cout << "next n = " << n << std::endl;
-                            } else {
-                                stop = true;
+                    Type    previous_n, 
+                            n;
+
+                    while( !stop ) {
+
+                        if( codec.has_more() && n_used_up ) {
+                            n = codec.next();
+                            n_used_up = false;
+                            std::cout << n << " ";
+                        } else {
+                            stop = !codec.has_more(); //( !codec.has_more() && n_used_up );
+                        }
+
+                        if( !n_used_up && n != RiceRuns::NEGATIVE_FLAG ) {
+                            
+                            if( is_first ) {
+                                previous_n = n;
+                                escape_span_counter = 1;
+                                is_first = false;
+                                n_used_up = true;
+                            } else if( n == previous_n ){
+                                ++escape_span_counter;
+                                n_used_up = true;
                             }
+                        }
 
-                            // std::cout << "decode --- n = " << n << std::endl;
+                        if( !n_used_up || stop ){
+                            
                             if( escape_span_counter < RiceRuns::ESCAPE_SPAN ) {
-                                if( is_first ) {
-                                    previous_n = n;
-                                    ++escape_span_counter;
-                                    is_first = false;
-                                } else if( n == previous_n && !stop ){
-                                    ++escape_span_counter;
-                                } else { // n != previous_n
-                                    for (size_t i = 0; i < escape_span_counter; i++) {
-                                        decoded.push_back(previous_n);
-                                    }
-                                    previous_n = n;
-                                    escape_span_counter = 1; // Replacement for is_first case.
+                                for (size_t i = 0; i < escape_span_counter; i++) {
+                                    decoded.push_back( ( negative_holded? -1 : 1 ) * previous_n );
                                 }
                             } else {
                                 for (size_t i = 0; i < n; i++) {
-                                    decoded.push_back(previous_n);
+                                    decoded.push_back( ( negative_holded? -1 : 1 ) * previous_n );
                                 }
-                                is_first = true;
-                                escape_span_counter = 0;
+                                n_used_up = true;
+                            }
+
+                            negative_holded = false;
+                            is_first = true;
+
+                            if( n == RiceRuns::NEGATIVE_FLAG ) {
+                                negative_holded = true;
+                                n_used_up = true;
                             }
                         }
                     }
 
-                    // samg::utils::print_vector<Type>("Decoded vector: ", decoded);
-                    return get_absolute_sequence( std::pair<bool,std::vector<Type>>( slope, decoded ) );
+                    samg::utils::print_vector("\nDecoded relative sequence ("+ std::to_string(decoded.size()) +"): ", decoded);
+                    return RiceRuns::_get_transformed_absolute_sequence_( decoded );
                 }
 
                 sdsl::bit_vector get_encoded_sequence() const {

@@ -44,6 +44,7 @@
 #include <utility>
 #include <unordered_map>
 #include <sdsl/bit_vectors.hpp>
+// #include <samg/commons.hpp>
 
 namespace samg {
     namespace grcodec {
@@ -565,7 +566,7 @@ namespace samg {
                 ans.push_back(relative_sequence.second[0]);
                 for (std::size_t i = 1; i < relative_sequence.second.size(); ++i) {
                     ans.push_back(
-                        (slope == ASCENDING) ? relative_sequence.second[i-1] + relative_sequence.second[i] : relative_sequence.second[i-1] - relative_sequence.second[i]
+                        (slope == ASCENDING) ? ans.back() + relative_sequence.second[i] : ans.back() - relative_sequence.second[i]
                     );
                 }
             }
@@ -595,6 +596,16 @@ namespace samg {
                     k(k) 
                 { }
 
+                RiceRuns(sdsl::bit_vector encoded_sequence, const std::size_t k): 
+                    k(k) ,
+                    encoded_sequence(encoded_sequence)
+                { }
+
+                /**
+                 * @brief This method encodes a sequence of Type integers using Rice-runs. 
+                 * 
+                 * @param sequence 
+                 */
                 void encode(std::vector<Type> sequence) {
                     GRCodec<Type> codec(std::pow(2,this->k),GRCodecType::GOLOMB_RICE);
 
@@ -602,6 +613,7 @@ namespace samg {
                     sequence = p.second;
 
                     // Appeding slope of relative sequence:
+                    std::cout << "p.first = " << ((Type)p.first) << std::endl;
                     codec.append((Type)p.first);
 
                     // Let c be a flag to restart search with a new found character:
@@ -651,10 +663,12 @@ namespace samg {
                     }
                     this->encoded_sequence = codec.get_bit_vector();
                 }
-                /*
-                0000000000000000000000000000000001000000000000000000000000000000100000000000000000000000000000100000000000000000000000000100000000000000000000000000000000010000000000000000000000000000000001000000000000000000000000000000100000000000000000000000000000000000
-                */
 
+                /**
+                 * @brief This method decodes an encoded sequence of Type integers using Rice-runs. 
+                 * 
+                 * @return std::vector<Type> 
+                 */
                 std::vector<Type> decode() {
                     std::vector<Type> decoded;
                     GRCodec<Type> codec(this->encoded_sequence, std::pow(2,this->k),GRCodecType::GOLOMB_RICE);
@@ -664,10 +678,13 @@ namespace samg {
                     Type previous_n, n;
 
                     if( codec.has_more() ) {
-                        slope = ( codec.next() == 1 );
+                        Type slope_v = codec.next();
+                        // std::cout << "slope_v = " << slope_v << std::endl;
+                        slope = ( slope_v == 1 );
                         while( !stop ) {
                             if( codec.has_more() ) {
                                 n = codec.next();
+                                // std::cout << "next n = " << n << std::endl;
                             } else {
                                 stop = true;
                             }
@@ -697,7 +714,7 @@ namespace samg {
                         }
                     }
 
-
+                    // samg::utils::print_vector<Type>("Decoded vector: ", decoded);
                     return get_absolute_sequence( std::pair<bool,std::vector<Type>>( slope, decoded ) );
                 }
 

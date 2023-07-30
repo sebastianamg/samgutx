@@ -39,6 +39,8 @@
 #include <cstdint>
 #include <type_traits>
 #include <vector>
+#include <array>
+#include <functional>
 #include <stdexcept>
 #include <cassert>
 #include <utility>
@@ -536,6 +538,27 @@ namespace samg {
                     "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
             
             private:
+                enum RiceRunsEncFSMState {
+                    ENC_FSM_Q0,  // First state.
+                    ENC_FSM_Q1,  // Second state.
+                    ENC_FSM_Q2,  // Third  state.
+                    ENC_FSM_Q3,  // Forth state.
+                    ENC_FSM_Q4,  // Fifth state.
+                    ENC_FSM_PSINK, // Sink for positive integer.
+                    ENC_FSM_NSINK,  // Sink for negative integer.
+                    ENC_FSM_ERROR
+                }
+                enum RiceRunsEncFSMCase {
+                    ENC_FSM_PI, // Positive ingeter.
+                    ENC_FSM_NI, // Negative ingeter.
+                    ENC_FSM_PIEQPRV, // Positive ingeter equals to previous.
+                    ENC_FSM_PINQPRV, // Positive ingeter not equals to previous.
+                    ENC_FSM_NIEQPRV, // Negative ingeter equals to previous.
+                    ENC_FSM_NINQPRV, // Negative ingeter not equals to previous.
+                    ENC_FSM_EOS  // End of sequence.
+                }
+                
+
                 typedef std::int64_t rseq_t; // Data type internally used by the relative sequence. It can be changed here to reduce memory footprint in case numbers in a relative sequence are small enough to fit in fewer bits.  
 
                 static const std::size_t ESCAPE_SPAN = 3;
@@ -595,6 +618,24 @@ namespace samg {
                     return ans;
                 }
 
+                static const RiceRunsEncFSMCase _get_endoding_fsm_case_( const RiceRuns::rseq_t previous_n, const RiceRuns::rseq_t n, const bool eos ) {
+                    if( n > 0 && previous_n < 0 ) {
+                        return RiceRunsEncFSMCase::ENC_FSM_PI;
+                    } else if( n < 0 && previous_n > 0 ) {
+                        return RiceRunsEncFSMCase::ENC_FSM_NI;
+                    } else if( n > 0 && n == previous_n ) {
+                        return RiceRunsEncFSMCase::ENC_FSM_PIEQPRV;
+                    } else if( n > 0 && n != previous_n ) {
+                        return RiceRunsEncFSMCase::ENC_FSM_PINQPRV;
+                    } else if( n < 0 && n == previous_n ) {
+                        return RiceRunsEncFSMCase::ENC_FSM_NIEQPRV;
+                    } else if( n > 0 && n != previous_n ) {
+                        return RiceRunsEncFSMCase::ENC_FSM_NINQPRV;
+                    } else if( eos ) {
+                        return RiceRunsEncFSMCase::ENC_FSM_EOS;
+                    } 
+                }
+
             public:
                 RiceRuns(const std::size_t k): 
                     k(k) 
@@ -620,72 +661,106 @@ namespace samg {
 
                     samg::utils::print_vector("Relative transformed sequence ("+ std::to_string(relative_sequence.size()) +"): ", relative_sequence);
 
-                    // Let the following be flags as follows:
-                    bool    is_first = true,  // It allows identifying a new value in the relative sequence. 
-                            n_used_up = true, // It allows identifying when a value has been used to retrieve a new one.
-                            stop = false;     // It allows stop the encoding process.   
-                            // negative_holded = false; // It allows encode a negative number by encoding `0` as flag in the variable-length integer sequence (e.g. Golomb-Rice codewords). 
-    
-                    std::size_t r = 0, // Let r be a repetition counter initially in 0:
+                    // ENC_FSM_PI, // Positive ingeter.
+                    // ENC_FSM_NI, // Negative ingeter.
+                    // ENC_FSM_PIEQPRV, // Positive ingeter equals to previous.
+                    // ENC_FSM_PINQPRV, // Positive ingeter not equals to previous.
+                    // ENC_FSM_NIEQPRV, // Negative ingeter equals to previous.
+                    // ENC_FSM_NINQPRV, // Negative ingeter not equals to previous.
+                    // ENC_FSM_EOS  // End of sequence.
+                    std::array<std::array<bool,5>,2> fsm = {
+                        //   n > 0                                n < 0                                 n > 0 & n == n'                         n > 0 & n != n'                         n < 0 & n == n'                         n < 0 & n != n'                         EOS
+                        {RiceRunsEncFSMState::ENC_FSM_ERROR,    RiceRunsEncFSMState::ENC_FSM_Q3,        RiceRunsEncFSMState::ENC_FSM_Q1,        RiceRunsEncFSMState::ENC_FSM_Q2,        RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_PSINK}, // ENC_FSM_Q0
+                        {RiceRunsEncFSMState::ENC_FSM_ERROR,    RiceRunsEncFSMState::ENC_FSM_Q3,        RiceRunsEncFSMState::ENC_FSM_Q1,        RiceRunsEncFSMState::ENC_FSM_Q2,        RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_PSINK}, // ENC_FSM_Q1
+                        {RiceRunsEncFSMState::ENC_FSM_ERROR,    RiceRunsEncFSMState::ENC_FSM_Q3,        RiceRunsEncFSMState::ENC_FSM_Q1,        RiceRunsEncFSMState::ENC_FSM_Q2,        RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_PSINK}, // ENC_FSM_Q2
+                        {RiceRunsEncFSMState::ENC_FSM_Q2,       RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_Q4,        RiceRunsEncFSMState::ENC_FSM_Q3,        RiceRunsEncFSMState::ENC_FSM_NSINK}, // ENC_FSM_Q3
+                        {RiceRunsEncFSMState::ENC_FSM_Q2,       RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_Q4,        RiceRunsEncFSMState::ENC_FSM_Q3,        RiceRunsEncFSMState::ENC_FSM_NSINK}, // ENC_FSM_Q4
+                        {RiceRunsEncFSMState::ENC_FSM_ERROR,    RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR}, // ENC_FSM_PSINK
+                        {RiceRunsEncFSMState::ENC_FSM_ERROR,    RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR},  // ENC_FSM_NSINK
+                        {RiceRunsEncFSMState::ENC_FSM_ERROR,    RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR},  // ENC_FSM_ERROR
+                    };
+
+                    RiceRunsEncFSMState s = RiceRunsEncFSMState::ENC_FSM_Q0; // Current state.
+                    RiceRunsEncFSMCase  c;                                    // Current case.
+                    RiceRuns::rseq_t    previous_n = relative_sequence[i++], // Previous sequence value.
+                                        n;                                   // Next sequence value.
+                    std::size_t r = 1, // Let r be a repetition counter initially in 1 on account of previous_n.
                                 i = 0;
 
-                    RiceRuns::rseq_t    previous_n, 
-                                        n;
-    
-                    while( !stop ) {
-
-                        if( i < relative_sequence.size() && n_used_up ) {
-                            n = relative_sequence[i++];
-                            n_used_up = false;
-                        } else {
-                            stop = ( ( i == relative_sequence.size() ) && n_used_up );
-                        }
+                    while( s!=RiceRunsEncFSMState::EOS ) {
+                        n = relative_sequence[i++];
+                        c = RiceRuns::_get_endoding_fsm_case_( previous_n,n );
+                        s = fsm[ c ];
                         
-                        if( !n_used_up ){
-                            // if( n < 0 ) {
-                            //     negative_holded = true;
-                            //     n = n * -1; // Convert n for further handle. 
-                            // } 
-                            
-                            if( is_first ) {
-                                previous_n = n;
-                                is_first = false;
-                                ++r;
-                                n_used_up = true;
-                            } else if( n == previous_n ) {
-                                ++r;
-                                n_used_up = true;
-                            }
-                        }
-
-                        if( !n_used_up || stop ){
-                            if( previous_n < 0 ) {
-                                // std::cout << "encode --- RiceRuns::NEGATIVE_FLAG = " << RiceRuns::NEGATIVE_FLAG << std::endl;
-                                codec.append( RiceRuns::NEGATIVE_FLAG ); // Insert negative flag once only. 
-                                previous_n *= -1;
-                            }
-                            if( r < RiceRuns::ESCAPE_SPAN ) {
-                                // std::cout << "encode --- " << previous_n << " x r = " << r << std::endl;
-                                for (std::size_t j = 0; j < r; ++j) {
-                                    codec.append(previous_n);
-                                }
-                            } else {
-                                // std::cout << "encode --- " << previous_n << " x r = " << RiceRuns::ESCAPE_SPAN << " === " << r << " runs" << std::endl;
-                                for (std::size_t j = 0; j < RiceRuns::ESCAPE_SPAN; ++j) {
-                                    codec.append(previous_n);
-                                }
-                                codec.append(r);
-                            }
-                            // if( negative_holded ) {
-                            //     std::cout << "encode --- RiceRuns::NEGATIVE_FLAG = " << RiceRuns::NEGATIVE_FLAG << std::endl;
-                            //     codec.append( RiceRuns::NEGATIVE_FLAG ); // Insert negative flag once only. 
-                            // }
-                            is_first = true; 
-                            // negative_holded = false;
-                            r = 0ul;
-                        }
-
                     }
+
+
+                    // // Let the following be flags as follows:
+                    // bool    is_first = true,  // It allows identifying a new value in the relative sequence. 
+                    //         n_used_up = true, // It allows identifying when a value has been used to retrieve a new one.
+                    //         stop = false;     // It allows stop the encoding process.   
+                    //         // negative_holded = false; // It allows encode a negative number by encoding `0` as flag in the variable-length integer sequence (e.g. Golomb-Rice codewords). 
+    
+                    // std::size_t r = 0, // Let r be a repetition counter initially in 0:
+                    //             i = 0;
+
+                    // RiceRuns::rseq_t    previous_n, 
+                    //                     n;
+    
+                    // while( !stop ) {
+
+                    //     if( i < relative_sequence.size() && n_used_up ) {
+                    //         n = relative_sequence[i++];
+                    //         n_used_up = false;
+                    //     } else {
+                    //         stop = ( ( i == relative_sequence.size() ) && n_used_up );
+                    //     }
+                        
+                    //     if( !n_used_up ){
+                    //         // if( n < 0 ) {
+                    //         //     negative_holded = true;
+                    //         //     n = n * -1; // Convert n for further handle. 
+                    //         // } 
+                            
+                    //         if( is_first ) {
+                    //             previous_n = n;
+                    //             is_first = false;
+                    //             ++r;
+                    //             n_used_up = true;
+                    //         } else if( n == previous_n ) {
+                    //             ++r;
+                    //             n_used_up = true;
+                    //         }
+                    //     }
+
+                    //     if( !n_used_up || stop ){
+                    //         if( previous_n < 0 ) {
+                    //             // std::cout << "encode --- RiceRuns::NEGATIVE_FLAG = " << RiceRuns::NEGATIVE_FLAG << std::endl;
+                    //             codec.append( RiceRuns::NEGATIVE_FLAG ); // Insert negative flag once only. 
+                    //             previous_n *= -1;
+                    //         }
+                    //         if( r < RiceRuns::ESCAPE_SPAN ) {
+                    //             // std::cout << "encode --- " << previous_n << " x r = " << r << std::endl;
+                    //             for (std::size_t j = 0; j < r; ++j) {
+                    //                 codec.append(previous_n);
+                    //             }
+                    //         } else {
+                    //             // std::cout << "encode --- " << previous_n << " x r = " << RiceRuns::ESCAPE_SPAN << " === " << r << " runs" << std::endl;
+                    //             for (std::size_t j = 0; j < RiceRuns::ESCAPE_SPAN; ++j) {
+                    //                 codec.append(previous_n);
+                    //             }
+                    //             codec.append(r);
+                    //         }
+                    //         // if( negative_holded ) {
+                    //         //     std::cout << "encode --- RiceRuns::NEGATIVE_FLAG = " << RiceRuns::NEGATIVE_FLAG << std::endl;
+                    //         //     codec.append( RiceRuns::NEGATIVE_FLAG ); // Insert negative flag once only. 
+                    //         // }
+                    //         is_first = true; 
+                    //         // negative_holded = false;
+                    //         r = 0ul;
+                    //     }
+
+                    // }
                     this->encoded_sequence = codec.get_bit_vector();
                 }
 

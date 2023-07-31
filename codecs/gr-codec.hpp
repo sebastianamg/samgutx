@@ -538,28 +538,8 @@ namespace samg {
                     "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
             
             private:
-                enum RiceRunsEncFSMState {
-                    ENC_FSM_Q0,  // First state.
-                    ENC_FSM_Q1,  // Second state.
-                    ENC_FSM_Q2,  // Third  state.
-                    ENC_FSM_Q3,  // Forth state.
-                    ENC_FSM_Q4,  // Fifth state.
-                    ENC_FSM_PSINK, // Sink for positive integer.
-                    ENC_FSM_NSINK,  // Sink for negative integer.
-                    ENC_FSM_ERROR
-                }
-                enum RiceRunsEncFSMCase {
-                    ENC_FSM_PI, // Positive ingeter.
-                    ENC_FSM_NI, // Negative ingeter.
-                    ENC_FSM_PIEQPRV, // Positive ingeter equals to previous.
-                    ENC_FSM_PINQPRV, // Positive ingeter not equals to previous.
-                    ENC_FSM_NIEQPRV, // Negative ingeter equals to previous.
-                    ENC_FSM_NINQPRV, // Negative ingeter not equals to previous.
-                    ENC_FSM_EOS  // End of sequence.
-                }
-                
-
                 typedef std::int64_t rseq_t; // Data type internally used by the relative sequence. It can be changed here to reduce memory footprint in case numbers in a relative sequence are small enough to fit in fewer bits.  
+                typedef std::vector<RiceRuns::rseq_t> RelativeSequence;
 
                 static const std::size_t ESCAPE_SPAN = 3;
                 static const Type NEGATIVE_FLAG = 0;
@@ -571,10 +551,10 @@ namespace samg {
                  * @brief This function allows converting a sequence of unsigned Type integers into a relative sequence of signed integers by computing their sequential differences. The resultant sequence is transformed in the process to prevent the number 0 that is used to represent negative integers when numbers are encoded with variable-length integers.  
                  * 
                  * @param sequence 
-                 * @return std::vector<RiceRuns::rseq_t> 
+                 * @return Sequence 
                  */
-                static std::vector<RiceRuns::rseq_t> _get_transformed_relative_sequence_( std::vector<Type> sequence ) {
-                    std::vector<RiceRuns::rseq_t> ans;
+                static RelativeSequence _get_transformed_relative_sequence_( std::vector<Type> sequence ) {
+                    RelativeSequence ans;
                     
                     if( sequence.size() > 0 ) {
                         /* NOTE
@@ -596,7 +576,7 @@ namespace samg {
                  * @param relative_sequence 
                  * @return std::vector<Type> static
                  */
-                static std::vector<Type> _get_transformed_absolute_sequence_( std::vector<RiceRuns::rseq_t> relative_sequence ) {
+                static std::vector<Type> _get_transformed_absolute_sequence_( RelativeSequence relative_sequence ) {
                     std::vector<Type> ans;
 
                     if( relative_sequence.size() > 0 ) {
@@ -618,23 +598,142 @@ namespace samg {
                     return ans;
                 }
 
-                static const RiceRunsEncFSMCase _get_endoding_fsm_case_( const RiceRuns::rseq_t previous_n, const RiceRuns::rseq_t n, const bool eos ) {
-                    if( n > 0 && previous_n < 0 ) {
-                        return RiceRunsEncFSMCase::ENC_FSM_PI;
-                    } else if( n < 0 && previous_n > 0 ) {
-                        return RiceRunsEncFSMCase::ENC_FSM_NI;
-                    } else if( n > 0 && n == previous_n ) {
-                        return RiceRunsEncFSMCase::ENC_FSM_PIEQPRV;
-                    } else if( n > 0 && n != previous_n ) {
-                        return RiceRunsEncFSMCase::ENC_FSM_PINQPRV;
-                    } else if( n < 0 && n == previous_n ) {
-                        return RiceRunsEncFSMCase::ENC_FSM_NIEQPRV;
-                    } else if( n > 0 && n != previous_n ) {
-                        return RiceRunsEncFSMCase::ENC_FSM_NINQPRV;
-                    } else if( eos ) {
-                        return RiceRunsEncFSMCase::ENC_FSM_EOS;
-                    } 
-                }
+                class FSMEncoder {
+                    private:
+
+                        enum EState {
+                            ES_Q0,  // First state.
+                            ES_Q1,  // Second state.
+                            ES_Q2,  // Third  state.
+                            ES_Q3,  // Forth state.
+                            ES_Q4,  // Fifth state.
+                            ES_PSINK, // Sink for positive integer.
+                            ES_NSINK,  // Sink for negative integer.
+                            ES_ERROR
+                        } current_state; // Current state.
+
+                        enum ECase {
+                            EC_PI, // Positive ingeter.
+                            EC_NI, // Negative ingeter.
+                            EC_PIEQPRV, // Positive ingeter equals to previous.
+                            EC_PINQPRV, // Positive ingeter not equals to previous.
+                            EC_NIEQPRV, // Negative ingeter equals to previous.
+                            EC_NINQPRV, // Negative ingeter not equals to previous.
+                            EC_EOS,  // End of sequence.
+                            EC_ERROR
+                        };
+
+                        const std::array<std::function<void(GRCodec<Type>&,RiceRuns::rseq_t&,RiceRuns::rseq_t&,std::size_t&)>,8> sfunction = {
+                            []( GRCodec<Type> &codec, RiceRuns::rseq_t &n, RiceRuns::rseq_t &previous_n, std::size_t &r ) { // ES_Q0
+                                previous_n = n;
+                                r = 1;
+                            },
+                            []( GRCodec<Type> &codec, RiceRuns::rseq_t &n, RiceRuns::rseq_t &previous_n, std::size_t &r ) { // ES_Q1
+                                ++r;
+                            },
+                            []( GRCodec<Type> &codec, RiceRuns::rseq_t &n, RiceRuns::rseq_t &previous_n, std::size_t &r ) { // ES_Q2
+                                write_integer( codec, previous_n, r );
+                                previous_n = n;
+                                r = 1;
+                            },
+                            []( GRCodec<Type> &codec, RiceRuns::rseq_t &n, RiceRuns::rseq_t &previous_n, std::size_t &r ) { // ES_Q3
+                                codec.append( RiceRuns::NEGATIVE_FLAG ); // Insert negative flag once only. 
+                                previous_n *= -1;
+                                write_integer( codec, previous_n, r );
+                                previous_n = n;
+                                r = 1;
+                            },
+                            []( GRCodec<Type> &codec, RiceRuns::rseq_t &n, RiceRuns::rseq_t &previous_n, std::size_t &r ) { // ES_Q4
+                                ++r;
+                            },
+                            []( GRCodec<Type> &codec, RiceRuns::rseq_t &n, RiceRuns::rseq_t &previous_n, std::size_t &r ) { // ES_PSINK
+                                write_integer( codec, previous_n, r );
+                            },
+                            []( GRCodec<Type> &codec, RiceRuns::rseq_t &n, RiceRuns::rseq_t &previous_n, std::size_t &r ) { // ES_NSINK
+                                codec.append( RiceRuns::NEGATIVE_FLAG ); // Insert negative flag once only. 
+                                previous_n *= -1;
+                                write_integer( codec, previous_n, r );
+                            },
+                            []( GRCodec<Type> &codec, RiceRuns::rseq_t &n, RiceRuns::rseq_t &previous_n, std::size_t &r ) { // ES_ERROR
+                                // void.
+                            }
+                        };
+
+                        const std::array<std::array<EState,8>,8> fsm = {
+                            //   n > 0            n < 0                 n > 0 & n == n'       n > 0 & n != n'       n < 0 & n == n'       n < 0 & n != n'       EOS                ERROR
+                            {EState::ES_ERROR,    EState::ES_Q3,        EState::ES_Q1,        EState::ES_Q2,        EState::ES_ERROR,     EState::ES_ERROR,     EState::ES_PSINK,  EState::ES_ERROR}, // ES_Q0
+                            {EState::ES_ERROR,    EState::ES_Q3,        EState::ES_Q1,        EState::ES_Q2,        EState::ES_ERROR,     EState::ES_ERROR,     EState::ES_PSINK,  EState::ES_ERROR}, // ES_Q1
+                            {EState::ES_ERROR,    EState::ES_Q3,        EState::ES_Q1,        EState::ES_Q2,        EState::ES_ERROR,     EState::ES_ERROR,     EState::ES_PSINK,  EState::ES_ERROR}, // ES_Q2
+                            {EState::ES_Q2,       EState::ES_ERROR,     EState::ES_ERROR,     EState::ES_ERROR,     EState::ES_Q4,        EState::ES_Q3,        EState::ES_NSINK,  EState::ES_ERROR}, // ES_Q3
+                            {EState::ES_Q2,       EState::ES_ERROR,     EState::ES_ERROR,     EState::ES_ERROR,     EState::ES_Q4,        EState::ES_Q3,        EState::ES_NSINK,  EState::ES_ERROR}, // ES_Q4
+                            {EState::ES_ERROR,    EState::ES_ERROR,     EState::ES_ERROR,     EState::ES_ERROR,     EState::ES_ERROR,     EState::ES_ERROR,     EState::ES_ERROR,  EState::ES_ERROR}, // ES_PSINK
+                            {EState::ES_ERROR,    EState::ES_ERROR,     EState::ES_ERROR,     EState::ES_ERROR,     EState::ES_ERROR,     EState::ES_ERROR,     EState::ES_ERROR,  EState::ES_ERROR},  // ES_NSINK
+                            {EState::ES_ERROR,    EState::ES_ERROR,     EState::ES_ERROR,     EState::ES_ERROR,     EState::ES_ERROR,     EState::ES_ERROR,     EState::ES_ERROR,  EState::ES_ERROR}  // ES_ERROR
+                        };
+
+                        static void write_integer( GRCodec<Type> &codec, const RiceRuns::rseq_t previous_n, const std::size_t r ) {
+                            if( r < RiceRuns::ESCAPE_SPAN ) {
+                                for (std::size_t j = 0; j < r; ++j) {
+                                    codec.append(previous_n);
+                                }
+                            } else {
+                                for (std::size_t j = 0; j < RiceRuns::ESCAPE_SPAN; ++j) {
+                                    codec.append(previous_n);
+                                }
+                                codec.append(r);
+                            }
+                        }
+
+                        static const ECase _get_case_( const RelativeSequence rs, std::size_t &i, const RiceRuns::rseq_t previous_n, RiceRuns::rseq_t &n ) {
+                            if( i == rs.size() ) {
+                                return ECase::EC_EOS;
+                            }else {
+                                n = rs[i++];
+                                if( n > 0 && previous_n < 0 ) {
+                                    return ECase::EC_PI;
+                                } else if( n < 0 && previous_n > 0 ) {
+                                    return ECase::EC_NI;
+                                } else if( n > 0 && n == previous_n ) {
+                                    return ECase::EC_PIEQPRV;
+                                } else if( n > 0 && n != previous_n ) {
+                                    return ECase::EC_PINQPRV;
+                                } else if( n < 0 && n == previous_n ) {
+                                    return ECase::EC_NIEQPRV;
+                                } else if( n > 0 && n != previous_n ) {
+                                    return ECase::EC_NINQPRV;
+                                } else {
+                                    return ECase::EC_ERROR;
+                                }
+                            }
+                        }
+
+                    public:
+
+                        void start( GRCodec<Type> &codec, const RelativeSequence rs, std::size_t &i, RiceRuns::rseq_t &n, RiceRuns::rseq_t &previous_n, std::size_t &r ) {
+                            i = 0;
+                            n = rs[i++];
+                            this->current_state = EState::ES_Q0;
+                            this->sfunction[this->current_state]( codec, n, previous_n, r );
+                        }
+
+                        EState next( const RelativeSequence rs, std::size_t &i, const RiceRuns::rseq_t previous_n, RiceRuns::rseq_t &n ) {
+                            this->current_state = fsm[this->current_state][ FSMEncoder::_get_case_( rs, i, previous_n, n ) ];
+                            return this->current_state;
+                        }
+
+                        bool is_end_state() {
+                            return  this->current_state == EState::ES_PSINK ||
+                                    this->current_state == EState::ES_NSINK;
+                        }
+
+                        bool is_error_state() {
+                            return this->current_state == EState::ES_ERROR;
+                        }
+
+                        void run_state_function( GRCodec<Type> &codec, RiceRuns::rseq_t &n, RiceRuns::rseq_t &previous_n, std::size_t &r ) {
+                            this->sfunction[this->current_state]( codec, n, previous_n, r );
+                        }
+                };
 
             public:
                 RiceRuns(const std::size_t k): 
@@ -657,43 +756,22 @@ namespace samg {
                         GRCodecType::GOLOMB_RICE 
                     );
 
-                    std::vector<RiceRuns::rseq_t> relative_sequence = RiceRuns::_get_transformed_relative_sequence_( sequence );
+                    FSMEncoder fsm;
+
+                    RelativeSequence relative_sequence = RiceRuns::_get_transformed_relative_sequence_( sequence );
 
                     samg::utils::print_vector("Relative transformed sequence ("+ std::to_string(relative_sequence.size()) +"): ", relative_sequence);
 
-                    // ENC_FSM_PI, // Positive ingeter.
-                    // ENC_FSM_NI, // Negative ingeter.
-                    // ENC_FSM_PIEQPRV, // Positive ingeter equals to previous.
-                    // ENC_FSM_PINQPRV, // Positive ingeter not equals to previous.
-                    // ENC_FSM_NIEQPRV, // Negative ingeter equals to previous.
-                    // ENC_FSM_NINQPRV, // Negative ingeter not equals to previous.
-                    // ENC_FSM_EOS  // End of sequence.
-                    std::array<std::array<bool,5>,2> fsm = {
-                        //   n > 0                                n < 0                                 n > 0 & n == n'                         n > 0 & n != n'                         n < 0 & n == n'                         n < 0 & n != n'                         EOS
-                        {RiceRunsEncFSMState::ENC_FSM_ERROR,    RiceRunsEncFSMState::ENC_FSM_Q3,        RiceRunsEncFSMState::ENC_FSM_Q1,        RiceRunsEncFSMState::ENC_FSM_Q2,        RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_PSINK}, // ENC_FSM_Q0
-                        {RiceRunsEncFSMState::ENC_FSM_ERROR,    RiceRunsEncFSMState::ENC_FSM_Q3,        RiceRunsEncFSMState::ENC_FSM_Q1,        RiceRunsEncFSMState::ENC_FSM_Q2,        RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_PSINK}, // ENC_FSM_Q1
-                        {RiceRunsEncFSMState::ENC_FSM_ERROR,    RiceRunsEncFSMState::ENC_FSM_Q3,        RiceRunsEncFSMState::ENC_FSM_Q1,        RiceRunsEncFSMState::ENC_FSM_Q2,        RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_PSINK}, // ENC_FSM_Q2
-                        {RiceRunsEncFSMState::ENC_FSM_Q2,       RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_Q4,        RiceRunsEncFSMState::ENC_FSM_Q3,        RiceRunsEncFSMState::ENC_FSM_NSINK}, // ENC_FSM_Q3
-                        {RiceRunsEncFSMState::ENC_FSM_Q2,       RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_Q4,        RiceRunsEncFSMState::ENC_FSM_Q3,        RiceRunsEncFSMState::ENC_FSM_NSINK}, // ENC_FSM_Q4
-                        {RiceRunsEncFSMState::ENC_FSM_ERROR,    RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR}, // ENC_FSM_PSINK
-                        {RiceRunsEncFSMState::ENC_FSM_ERROR,    RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR},  // ENC_FSM_NSINK
-                        {RiceRunsEncFSMState::ENC_FSM_ERROR,    RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR,     RiceRunsEncFSMState::ENC_FSM_ERROR},  // ENC_FSM_ERROR
-                    };
+                    std::size_t r, // Let r be a repetition counter initially in 1 on account of previous_n.
+                                i; // Let i be the index to traverse the relative sequence.
 
-                    RiceRunsEncFSMState s = RiceRunsEncFSMState::ENC_FSM_Q0; // Current state.
-                    RiceRunsEncFSMCase  c;                                    // Current case.
-                    RiceRuns::rseq_t    previous_n = relative_sequence[i++], // Previous sequence value.
-                                        n;                                   // Next sequence value.
-                    std::size_t r = 1, // Let r be a repetition counter initially in 1 on account of previous_n.
-                                i = 0;
+                    RiceRuns::rseq_t    previous_n, // Previous sequence value.
+                                        n;          // Next sequence value.
 
-                    while( s!=RiceRunsEncFSMState::EOS ) {
-                        n = relative_sequence[i++];
-                        c = RiceRuns::_get_endoding_fsm_case_( previous_n,n );
-                        s = fsm[ c ];
-                        
+                    fsm.start( codec, relative_sequence, i, n, previous_n, r );
+                    while( fsm.is_end_state() || fsm.is_error_state() ) {
+                        fsm.next( relative_sequence, i, previous_n, n);
                     }
-
 
                     // // Let the following be flags as follows:
                     // bool    is_first = true,  // It allows identifying a new value in the relative sequence. 
@@ -776,7 +854,7 @@ namespace samg {
                     );
                     // codec.restart();
 
-                    std::vector<RiceRuns::rseq_t> decoded;
+                    RelativeSequence decoded;
                     
                     // Let the following be flags as follows:
                     bool    is_first = true,  // It allows identifying a new value in the relative sequence. 

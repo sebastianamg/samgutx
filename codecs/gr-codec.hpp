@@ -509,7 +509,7 @@ namespace samg {
                     return this->iterator_index;
                 }
 
-                friend std::ostream & operator<<(std::ostream & strm, const RelativeSequence &rs) {
+                friend std::ostream & operator<<(std::ostream & strm, const GRCodec<Type> &codec) {
                     sdsl::bit_vector v = codec.get_bit_vector();
                     bool printer_prompt = false;
                     for (std::size_t i = v.size()-1; 0 <= i && i < v.size() ; --i) {
@@ -602,6 +602,8 @@ namespace samg {
 
                 class FSMEncoder {
                     private:
+
+                        bool is_init = false;
 
                         enum EState {
                             ES_Q0,      //0
@@ -722,18 +724,22 @@ namespace samg {
                             }
                         }
 
-
-                    public:
-
-                        void init( const RelativeSequence rs, std::size_t &i, RiceRuns::rseq_t &n ) {
+                        void _init_( const RelativeSequence rs, std::size_t &i, RiceRuns::rseq_t &n ) {
                             i = 0;
                             n = rs[i++];
                             this->current_state = EState::ES_Q0;
-                            // this->run( codec, previous_n, n, r );
                         }
 
-                        EState next( const RelativeSequence rs, std::size_t &i, RiceRuns::rseq_t &previous_n, RiceRuns::rseq_t &n, std::size_t &r ) {
-                            this->current_state = fsm[this->current_state][ FSMEncoder::_get_case_( rs, i, previous_n, n ) ];
+                    public:
+
+
+                        EState next( const RelativeSequence rs, std::size_t &i, RiceRuns::rseq_t &previous_n, RiceRuns::rseq_t &n ) {
+                            if( this->is_init ) {
+                                this->current_state = fsm[this->current_state][ FSMEncoder::_get_case_( rs, i, previous_n, n ) ];
+                            } else {
+                                this->_init_( rs, i, n );
+                                this->is_init = true;
+                            }
                             return this->current_state;
                         }
 
@@ -754,6 +760,7 @@ namespace samg {
 
                 class FSMDecoder {
                     private:
+                        bool is_init = false;
 
                         enum DState {
                             DS_Q0,      //0
@@ -764,12 +771,12 @@ namespace samg {
                             DS_Q5,      //5
                             DS_Q6,      //6
                             DS_Q7,      //7
-                            DS_08,      //8
-                            DS_09,      //9
-                            DS_10,      //10
-                            DS_11,      //11
-                            DS_12,      //12
-                            DS_13,      //13
+                            DS_Q8,      //8
+                            DS_Q9,      //9
+                            DS_Q10,      //10
+                            DS_Q11,      //11
+                            DS_Q12,      //12
+                            DS_Q13,      //13
                             DS_PSINK,   //14 Sink for positive integer.
                             DS_NSINK,   //15 Sink for negative integer.
                             DS_SINK,    //16 Sink after a run was written.
@@ -857,8 +864,8 @@ namespace samg {
                             std::array<DState,6>({DState::DS_Q7,       DState::DS_ERROR,     DState::DS_ERROR,     DState::DS_ERROR,     DState::DS_ERROR,     DState::DS_ERROR}), // DS_Q4
                             std::array<DState,6>({DState::DS_ERROR,    DState::DS_Q1,        DState::DS_Q5,        DState::DS_Q6,        DState::DS_PSINK,     DState::DS_ERROR}), // DS_Q5
                             std::array<DState,6>({DState::DS_Q7,       DState::DS_ERROR,     DState::DS_ERROR,     DState::DS_ERROR,     DState::DS_ERROR,     DState::DS_ERROR}), // DS_Q6
-                            std::array<DState,6>({DState::DS_ERROR,    DState::DS_08,        DState::DS_12,        DState::DS_13,        DState::DS_NSINK,     DState::DS_ERROR}), // DS_Q7
-                            std::array<DState,6>({DState::DS_ERROR,    DState::DS_09,        DState::DS_12,        DState::DS_13,        DState::DS_NSINK,     DState::DS_ERROR}), // DS_Q8
+                            std::array<DState,6>({DState::DS_ERROR,    DState::DS_Q8,        DState::DS_Q12,       DState::DS_Q13,       DState::DS_NSINK,     DState::DS_ERROR}), // DS_Q7
+                            std::array<DState,6>({DState::DS_ERROR,    DState::DS_Q9,        DState::DS_Q12,       DState::DS_Q13,       DState::DS_NSINK,     DState::DS_ERROR}), // DS_Q8
                             std::array<DState,6>({DState::DS_Q10,      DState::DS_ERROR,     DState::DS_ERROR,     DState::DS_ERROR,     DState::DS_ERROR,     DState::DS_ERROR}), // DS_Q9
                             std::array<DState,6>({DState::DS_Q0,       DState::DS_ERROR,     DState::DS_ERROR,     DState::DS_Q11,       DState::DS_SINK,      DState::DS_ERROR}), // DS_010
                             std::array<DState,6>({DState::DS_Q7,       DState::DS_ERROR,     DState::DS_ERROR,     DState::DS_ERROR,     DState::DS_ERROR,     DState::DS_ERROR}), // DS_Q11
@@ -876,8 +883,8 @@ namespace samg {
                             }
                         }
 
-                        static const ECase _get_case_( const GRCodec<Type> &codec, const RiceRuns::rseq_t previous_n, RiceRuns::rseq_t &n, DState s ) {
-                            if( codec.has_more() ) {
+                        static const DCase _get_case_( GRCodec<Type> &codec, const RiceRuns::rseq_t previous_n, RiceRuns::rseq_t &n, DState s ) {
+                            if( !codec.has_more() ) {
                                 return DCase::DC_EOS;
                             }else {
                                 n = codec.next();
@@ -896,27 +903,41 @@ namespace samg {
                             }
                         }
 
-                    public:
-
-                        void init( const GRCodec<Type> &codec, RiceRuns::rseq_t &n ) {
+                        void _init_( GRCodec<Type> &codec, RiceRuns::rseq_t &n ) {
+                            // std::cout << "FSMDecode/init> (1)" << std::endl;
                             n = codec.next();
+                            // std::cout << "FSMDecode/init> (2)" << std::endl;
                             this->current_state = DState::DS_Q0;
+                            // std::cout << "FSMDecode/init> (3)" << std::endl;
                         }
 
-                        // TODO!
-                        DState next( RelativeSequence &rs, const RelativeSequence rs, std::size_t &i, RiceRuns::rseq_t &previous_n, RiceRuns::rseq_t &n, std::size_t &r ) {
-                            this->current_state = fsm[this->current_state][ FSMEncoder::_get_case_( rs, i, previous_n, n ) ];
-                            // this->run( codec, previous_n, n, r );
+                    public:
+
+                        DState next( GRCodec<Type> &codec, RiceRuns::rseq_t &previous_n, RiceRuns::rseq_t &n ) {
+                            // std::cout << "FSMDecode/next> (1)" << std::endl;
+                            if( this->is_init ) {
+                                std::cout << "FSMDecode/next> (1) --- current_status = " << this->current_state << std::endl;
+                                this->current_state = fsm[this->current_state][ FSMDecoder::_get_case_( codec, previous_n, n, this->current_state ) ];
+                                std::cout << "FSMDecode/next> (2) --- prev = " << previous_n << "; n = " << n << std::endl;
+                            } else {
+                                // std::cout << "FSMDecode/next> (3)" << std::endl;
+                                this->_init_( codec, n );
+                                this->is_init = true;
+                                // std::cout << "FSMDecode/next> (4)" << std::endl;
+                                std::cout << "FSMDecode/next> (3) --- n = " << n  << std::endl;
+                            }
+                            std::cout << "FSMDecode/next> (4) --- current_status = " << this->current_state << std::endl;
                             return this->current_state;
                         }
 
                         void run( RelativeSequence &rs, RiceRuns::rseq_t &previous_n, const RiceRuns::rseq_t n, std::size_t &r ) {
-                            this->sfunction[this->current_state]( codec, previous_n, n, r );
+                            this->sfunction[this->current_state]( rs, previous_n, n, r );
                         }
                         
                         bool is_end_state() {
                             return  this->current_state == DState::DS_PSINK ||
-                                    this->current_state == DState::DS_NSINK;
+                                    this->current_state == DState::DS_NSINK ||
+                                    this->current_state == DState::DS_SINK;
                         }
 
                         bool is_error_state() {
@@ -950,96 +971,33 @@ namespace samg {
 
                     RelativeSequence relative_sequence = RiceRuns::_get_transformed_relative_sequence_( sequence );
 
-                    samg::utils::print_vector("Relative transformed sequence ("+ std::to_string(relative_sequence.size()) +"): ", relative_sequence);
+                    samg::utils::print_vector("encode> relative_sequence ("+ std::to_string(relative_sequence.size()) +"): ", relative_sequence);
 
-                    std::size_t r, // Let r be a repetition counter initially in 1 on account of previous_n.
+                    std::size_t r, // Let r be a repetition counter of n.
                                 i; // Let i be the index to traverse the relative sequence.
 
                     RiceRuns::rseq_t    previous_n, // Previous sequence value.
                                         n;          // Next sequence value.
 
-                    // std::cout << "(1)" << std::endl;
-                    fsm.init( relative_sequence, i, n );
-                    std::cout << "(1) [i<"<<i<<">/"<< relative_sequence.size() <<" @ rs<"<<relative_sequence[i-1]<<">] n = " << n << "; prev = " << previous_n << std::endl;
-                    // std::cout << "(2)" << std::endl;
-                    while( !fsm.is_end_state() && !fsm.is_error_state() ) {
+                    // std::cout << "encode> (1)" << std::endl;
+                    // fsm._init_( relative_sequence, i, n );
+                    // std::cout << "(1) [i<"<<i<<">/"<< relative_sequence.size() <<" @ rs<"<<relative_sequence[i-1]<<">] n = " << n << "; prev = " << previous_n << std::endl;
+                    do {
+                        // std::cout << "encode> (2)" << std::endl;
+                        std::uint8_t s = fsm.next( relative_sequence, i, previous_n, n);
+                        // std::cout << "encode> (3)" << std::endl;
+                        if( fsm.is_error_state() ) { break; }
+                        // std::cout << "encode> (4)" << std::endl;
                         fsm.run( codec, previous_n, n, r );
-                        std::uint8_t s = fsm.next( relative_sequence, i, previous_n, n, r);
-                        std::cout << "(2) s = " << ((std::uint16_t)s) << "; [i<"<<i<<">/"<< relative_sequence.size() <<" @ rs<"<<relative_sequence[i-1]<<">] n = " << n << "; prev = " << previous_n << std::endl;
-                    }
+                        // std::cout << "encode> (5) s = " << ((std::uint16_t)s) << "; [i<"<<i<<">/"<< relative_sequence.size() <<" @ rs<"<<relative_sequence[i-1]<<">] n = " << n << "; prev = " << previous_n << std::endl;
+                    } while( !fsm.is_end_state() );
 
-                    if( !fsm.is_error_state() ) {
-                        fsm.run( codec, previous_n, n, r );
-                    }
-
-                    std::cout << "(3)" << std::endl;
-
-                    // // Let the following be flags as follows:
-                    // bool    is_first = true,  // It allows identifying a new value in the relative sequence. 
-                    //         n_used_up = true, // It allows identifying when a value has been used to retrieve a new one.
-                    //         stop = false;     // It allows stop the encoding process.   
-                    //         // negative_holded = false; // It allows encode a negative number by encoding `0` as flag in the variable-length integer sequence (e.g. Golomb-Rice codewords). 
-    
-                    // std::size_t r = 0, // Let r be a repetition counter initially in 0:
-                    //             i = 0;
-
-                    // RiceRuns::rseq_t    previous_n, 
-                    //                     n;
-    
-                    // while( !stop ) {
-
-                    //     if( i < relative_sequence.size() && n_used_up ) {
-                    //         n = relative_sequence[i++];
-                    //         n_used_up = false;
-                    //     } else {
-                    //         stop = ( ( i == relative_sequence.size() ) && n_used_up );
-                    //     }
-                        
-                    //     if( !n_used_up ){
-                    //         // if( n < 0 ) {
-                    //         //     negative_holded = true;
-                    //         //     n = n * -1; // Convert n for further handle. 
-                    //         // } 
-                            
-                    //         if( is_first ) {
-                    //             previous_n = n;
-                    //             is_first = false;
-                    //             ++r;
-                    //             n_used_up = true;
-                    //         } else if( n == previous_n ) {
-                    //             ++r;
-                    //             n_used_up = true;
-                    //         }
-                    //     }
-
-                    //     if( !n_used_up || stop ){
-                    //         if( previous_n < 0 ) {
-                    //             // std::cout << "encode --- RiceRuns::NEGATIVE_FLAG = " << RiceRuns::NEGATIVE_FLAG << std::endl;
-                    //             codec.append( RiceRuns::NEGATIVE_FLAG ); // Insert negative flag once only. 
-                    //             previous_n *= -1;
-                    //         }
-                    //         if( r < RiceRuns::ESCAPE_SPAN ) {
-                    //             // std::cout << "encode --- " << previous_n << " x r = " << r << std::endl;
-                    //             for (std::size_t j = 0; j < r; ++j) {
-                    //                 codec.append(previous_n);
-                    //             }
-                    //         } else {
-                    //             // std::cout << "encode --- " << previous_n << " x r = " << RiceRuns::ESCAPE_SPAN << " === " << r << " runs" << std::endl;
-                    //             for (std::size_t j = 0; j < RiceRuns::ESCAPE_SPAN; ++j) {
-                    //                 codec.append(previous_n);
-                    //             }
-                    //             codec.append(r);
-                    //         }
-                    //         // if( negative_holded ) {
-                    //         //     std::cout << "encode --- RiceRuns::NEGATIVE_FLAG = " << RiceRuns::NEGATIVE_FLAG << std::endl;
-                    //         //     codec.append( RiceRuns::NEGATIVE_FLAG ); // Insert negative flag once only. 
-                    //         // }
-                    //         is_first = true; 
-                    //         // negative_holded = false;
-                    //         r = 0ul;
-                    //     }
-
+                    // if( !fsm.is_error_state() ) {
+                    //     fsm.run( codec, previous_n, n, r );
                     // }
+
+                    // std::cout << "encode> (6)" << std::endl;
+
                     this->encoded_sequence = codec.get_bit_vector();
                 }
 
@@ -1053,69 +1011,34 @@ namespace samg {
                         this->encoded_sequence, 
                         std::pow(2,this->k),GRCodecType::GOLOMB_RICE // By using a power of 2, `codec` acts as Rice encoder.
                     );
+
+                    std::cout << "decode> Encoded Sequence " << "--- || = " << this->encoded_sequence.size() << " ---> " << this->encoded_sequence << std::endl;
                     // codec.restart();
 
-                    RelativeSequence decoded;
+                    FSMDecoder fsm;
                     
-                    // Let the following be flags as follows:
-                    bool    is_first = true,  // It allows identifying a new value in the relative sequence. 
-                            n_used_up = true, // It allows identifying when a value has been used to retrieve a new one.
-                            stop = false,     // It allows stop the encoding process.   
-                            negative_holded = false; // It allows encode a negative number by encoding `0` as flag in the variable-length integer sequence (e.g. Golomb-Rice codewords). 
+                    std::size_t r; // Let r be a repetition counter of n.
 
-                    std::size_t escape_span_counter = 0;
+                    RiceRuns::rseq_t    previous_n, 
+                                        n;
 
-                    Type    previous_n, 
-                            n;
+                    RelativeSequence relative_sequence;
 
-                    while( !stop ) {
+                    // std::cout << "decode> (1)" << std::endl;
+                    do {
+                        // std::cout << "decode> (2)" << std::endl;
+                        std::uint8_t s = fsm.next( codec, previous_n, n);
+                        // std::cout << "decode> (3)" << std::endl;
+                        if( fsm.is_error_state() ) { break; }
+                        // std::cout << "decode> (4)" << std::endl;
+                        fsm.run( relative_sequence, previous_n, n, r );
+                        std::cout << "decode> (1) s = " << ((std::uint16_t)s) << "; [i<"<<codec.get_current_iterator_index()<<">/"<< codec.length() <<"]; n = " << n << "; prev = " << previous_n << std::endl;
+                    }while( !fsm.is_end_state() );
 
-                        if( codec.has_more() && n_used_up ) {
-                            n = codec.next();
-                            n_used_up = false;
-                            std::cout << n << " ";
-                        } else {
-                            stop = !codec.has_more(); //( !codec.has_more() && n_used_up );
-                        }
-
-                        if( !n_used_up && n != RiceRuns::NEGATIVE_FLAG ) {
-                            
-                            if( is_first ) {
-                                previous_n = n;
-                                escape_span_counter = 1;
-                                is_first = false;
-                                n_used_up = true;
-                            } else if( n == previous_n ){
-                                ++escape_span_counter;
-                                n_used_up = true;
-                            }
-                        }
-
-                        if( !n_used_up || stop ){
-                            
-                            if( escape_span_counter < RiceRuns::ESCAPE_SPAN ) {
-                                for (size_t i = 0; i < escape_span_counter; i++) {
-                                    decoded.push_back( ( negative_holded? -1 : 1 ) * previous_n );
-                                }
-                            } else {
-                                for (size_t i = 0; i < n; i++) {
-                                    decoded.push_back( ( negative_holded? -1 : 1 ) * previous_n );
-                                }
-                                n_used_up = true;
-                            }
-
-                            negative_holded = false;
-                            is_first = true;
-
-                            if( n == RiceRuns::NEGATIVE_FLAG ) {
-                                negative_holded = true;
-                                n_used_up = true;
-                            }
-                        }
-                    }
-
-                    samg::utils::print_vector("\nDecoded relative sequence ("+ std::to_string(decoded.size()) +"): ", decoded);
-                    return RiceRuns::_get_transformed_absolute_sequence_( decoded );
+                    std::cout << "decode> (2)" << std::endl;
+                    samg::utils::print_vector("decode> Decoded relative sequence ("+ std::to_string(relative_sequence.size()) +"): ", relative_sequence);
+                    std::cout << "decode> (3)" << std::endl;
+                    return RiceRuns::_get_transformed_absolute_sequence_( relative_sequence );
                 }
 
                 sdsl::bit_vector get_encoded_sequence() const {

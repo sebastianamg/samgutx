@@ -1025,7 +1025,7 @@ namespace samg {
                     RelativeSequence relative_sequence;
 
                     // std::cout << "decode> (1)" << std::endl;
-                    do {
+                    do { 
                         // std::cout << "decode> (2)" << std::endl;
                         std::uint8_t s = fsm.next( codec, previous_n, n);
                         // std::cout << "decode> (3)" << std::endl;

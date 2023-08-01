@@ -1,5 +1,5 @@
-[![License: BSD 2-Clause](https://img.shields.io/badge/License-BSD%202--Clause-red.svg)](https://opensource.org/licenses/BSD-2-Clause)
-
+[![License: BSD 2-Clause](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
+![contains bugs](https://img.shields.io/badge/codecs%20gr--codec-Bugs-red.svg)
 
 # Introduction
 

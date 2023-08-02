@@ -20,8 +20,32 @@ The following is the detail of one-header libraries available in this repository
       * `const std::size_t length()`: This function returns the number of stored bits.
       * `const std::uint64_t get_current_iterator_index()`: This function returns the current iterator index.
     * `template<typename Type> class RiceRuns`:
-      * `void encode(const std::vector<Type> sequence)`: This method encodes a sequence of Type integers using Rice-runs.
-      * `std::vector<Type> decode()`: This method decodes an encoded sequence of Type integers using Rice-runs.
+      * `void encode(const std::vector<Type> sequence)`: This method encodes a sequence of Type integers using Rice-runs. The following is the FSM used by this function:
+  
+		![FSM to encode](img/codecs-grcodec-riceruns-encode.png)
+
+		> `n` represents an input.
+		>
+		> `n'` represents a previous input.  
+		>
+		> `r` represents the repetitions of an input.
+		>
+		> `wp(a,b)` is a function to output `b` times the positive number `a`.
+		>
+		> `wn(a,b)` is a function to output `b` times the negative number `a`.
+
+      * `std::vector<Type> decode()`: This method decodes an encoded sequence of Type integers using Rice-runs. The following is the FSM used by this function:
+		
+		![FSM to decode](img/codecs-grcodec-riceruns-decode.png)
+
+		> `n` represents an input.
+		>
+		> `n'` represents a previous input. 
+		>
+		> `w(a)` is a function to output `a`.
+		>
+		> `w(a,b)` is a function to output `b` times `a`.
+
     * Additionally, the file [`gr-codec-test.cpp`](https://github.com/sebastianamg/samgutx/blob/main/codecs/gr-codec-test.cpp) contains test cases used to check the correctiveness of both ***Golomb-Rice*** and ***Rice-runs*** implementations. It uses [Google Test](http://google.github.io/googletest/) library. To compile this file, use the following command: `g++-11 -ggdb -g3 -I ~/include/ -L ~/lib/ gr-codec-test.cpp -o gr-codec-test -lsdsl -lgtest`.
 * `samg`:
   * `commons.hpp`: It contains methods for converting objects and vectors to string (the object requires implementing `operator<<`), printing a vector, copying data to a `std::stack` from a range defined by `begin` and `end` iterators, and converting time (`std::double_t`) to string.  

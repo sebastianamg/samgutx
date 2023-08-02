@@ -1086,30 +1086,30 @@ namespace samg {
                 };
 
                 // Attributes for relative-sequence traversal:
-                // GRCodec<Type> codec;
-                // FSMDecoder decoding_fsm;
-                // Type    previous_n, 
-                //         n;
+                GRCodec<Type> codec;
+                FSMDecoder decoding_fsm;
+                Type    previous_n, 
+                        n;
 
             public:
-                // RiceRuns(const std::size_t k): 
-                //     codec( 
-                //         GRCodec(
-                //             std::pow( 2, k ), // By using a power of 2, `codec` acts as Rice encoder.
-                //             GRCodecType::GOLOMB_RICE
-                //         )
-                //     ) 
-                // { }
+                RiceRuns(const std::size_t k): 
+                    codec( 
+                        GRCodec(
+                            std::pow( 2, k ), // By using a power of 2, `codec` acts as Rice encoder.
+                            GRCodecType::GOLOMB_RICE
+                        )
+                    ) 
+                { }
 
-                // RiceRuns(sdsl::bit_vector encoded_sequence, const std::size_t k): 
-                //     codec( 
-                //         GRCodec(
-                //             encoded_sequence,
-                //             std::pow( 2, k ), // By using a power of 2, `codec` acts as Rice encoder.
-                //             GRCodecType::GOLOMB_RICE
-                //         )
-                //     ) 
-                // { }
+                RiceRuns(sdsl::bit_vector encoded_sequence, const std::size_t k): 
+                    codec( 
+                        GRCodec(
+                            encoded_sequence,
+                            std::pow( 2, k ), // By using a power of 2, `codec` acts as Rice encoder.
+                            GRCodecType::GOLOMB_RICE
+                        )
+                    ) 
+                { }
 
                 /**
                  * @brief This function encodes a sequence of Type integers using Rice-runs. 
@@ -1181,49 +1181,49 @@ namespace samg {
                     return this->encoded_sequence;
                 }
 
-                // /**
-                //  * @brief This function sets the internal encoded sequence.
-                //  * 
-                //  * @param encoded_sequence 
-                //  * @param k 
-                //  */
-                // void set_encoded_sequence( sdsl::bit_vector encoded_sequence, const std::size_t k ) {
-                //     this->codec = GRCodec(
-                //         encoded_sequence,
-                //         std::pow( 2, k ), // By using a power of 2, `codec` acts as Rice encoder.
-                //         GRCodecType::GOLOMB_RICE
-                //     );
-                //     this->restart_encoded_sequence_iterator();
-                // }
+                /**
+                 * @brief This function sets the internal encoded sequence.
+                 * 
+                 * @param encoded_sequence 
+                 * @param k 
+                 */
+                void set_encoded_sequence( sdsl::bit_vector encoded_sequence, const std::size_t k ) {
+                    this->codec = GRCodec(
+                        encoded_sequence,
+                        std::pow( 2, k ), // By using a power of 2, `codec` acts as Rice encoder.
+                        GRCodecType::GOLOMB_RICE
+                    );
+                    this->restart_encoded_sequence_iterator();
+                }
 
-                // /**
-                //  * !TODO Pending implementation!!!
-                //  * 
-                //  * @brief 
-                //  * 
-                //  * @return const Type 
-                //  */
-                // const Type next() {
-                //     FSMDecoder::DState s;
-                //     RelativeSequence rseq;
-                //     do { 
-                //         s = this->decoding_fsm.next( this->codec, this->previous_n, this->n);
-                //         if( decoding_fsm.is_error_state() ) { break; }
-                //         decoding_fsm.run( rseq, this->previous_n, this->n );
-                //     }while( !decoding_fsm.is_output_state() );
+                /**
+                 * !TODO Pending implementation!!!
+                 * 
+                 * @brief 
+                 * 
+                 * @return const Type 
+                 */
+                const Type next() {
+                    FSMDecoder::DState s;
+                    RelativeSequence rseq;
+                    do { 
+                        s = this->decoding_fsm.next( this->codec, this->previous_n, this->n);
+                        if( decoding_fsm.is_error_state() ) { break; }
+                        decoding_fsm.run( rseq, this->previous_n, this->n );
+                    }while( !decoding_fsm.is_output_state() );
 
-                //     return RiceRuns::_get_transformed_absolute_sequence_( relative_sequence );
-                //     // return 0;// NOTE dummy code!!!
-                // }
+                    return RiceRuns::_get_transformed_absolute_sequence_( relative_sequence );
+                    // return 0;// NOTE dummy code!!!
+                }
 
-                // /**
-                //  * @brief This function restarts the traversal of the encoded sequence.
-                //  * 
-                //  */
-                // void restart_encoded_sequence_iterator() {
-                //     this->codec.restart();
-                //     this->decoding_fsm.restart();
-                // }
+                /**
+                 * @brief This function restarts the traversal of the encoded sequence.
+                 * 
+                 */
+                void restart_encoded_sequence_iterator() {
+                    this->codec.restart();
+                    this->decoding_fsm.restart();
+                }
 
         };
     }

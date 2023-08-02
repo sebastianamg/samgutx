@@ -368,6 +368,11 @@ namespace samg {
             public:
                 GRCodecType type;
 
+                GRCodec():
+                    m(8),
+                    type(GRCodecType::GOLOMB_RICE)
+                {}
+
                 GRCodec(const std::size_t m, const GRCodecType type=GRCodecType::GOLOMB_RICE): 
                     m(m), 
                     type(type)
@@ -555,9 +560,6 @@ namespace samg {
 
                 static const bool IS_NEGATIVE = true;
                 
-                sdsl::bit_vector encoded_sequence;
-                std::size_t k; // Golomb-Rice parameter m = 2^k.
-
                 /**
                  * @brief This function allows generating a gap centered in 0. The result is a value that belongs to either (-inf,-RiceRuns::ESCAPE_RANGE_SPAN+1] or [RiceRuns::ESCAPE_RANGE_SPAN,inf). This transformation of v allows to release values in [-RiceRuns::ESCAPE_RANGE_SPAN,RiceRuns::ESCAPE_RANGE_SPAN-1] to be used as scape symbols during encoding/decoding of, for instance, negative values.
                  * 
@@ -855,6 +857,14 @@ namespace samg {
                         bool is_error_state() {
                             return this->current_state == EState::ES_ERROR;
                         }
+
+                        /**
+                         * @brief This function restarts the FSM.
+                         * 
+                         */
+                        void restart() {
+                            this->is_init = false;
+                        }
                         
                 };
 
@@ -1059,23 +1069,53 @@ namespace samg {
                             return this->current_state == DState::DS_ERROR;
                         }
                         
+                        bool is_output_state() {
+                            return  this->current_state == DState::DS_Q1 ||
+                                    this->current_state == DState::DS_Q3 ||
+                                    this->current_state == DState::DS_Q6 ||
+                                    this->current_state == DState::DS_Q9;
+                        }
+
+                        /**
+                         * @brief This function restarts the FSM.
+                         * 
+                         */
+                        void restart() {
+                            this->is_init = false;
+                        }
                 };
 
-            public:
-                RiceRuns(const std::size_t k): 
-                    k(k) 
-                { }
+                // Attributes for relative-sequence traversal:
+                // GRCodec<Type> codec;
+                // FSMDecoder decoding_fsm;
+                // Type    previous_n, 
+                //         n;
 
-                RiceRuns(sdsl::bit_vector encoded_sequence, const std::size_t k): 
-                    k(k) ,
-                    encoded_sequence(encoded_sequence)
-                { }
+            public:
+                // RiceRuns(const std::size_t k): 
+                //     codec( 
+                //         GRCodec(
+                //             std::pow( 2, k ), // By using a power of 2, `codec` acts as Rice encoder.
+                //             GRCodecType::GOLOMB_RICE
+                //         )
+                //     ) 
+                // { }
+
+                // RiceRuns(sdsl::bit_vector encoded_sequence, const std::size_t k): 
+                //     codec( 
+                //         GRCodec(
+                //             encoded_sequence,
+                //             std::pow( 2, k ), // By using a power of 2, `codec` acts as Rice encoder.
+                //             GRCodecType::GOLOMB_RICE
+                //         )
+                //     ) 
+                // { }
 
                 /**
                  * @brief This function encodes a sequence of Type integers using Rice-runs. 
                  * 
                  * @param sequence 
-                 * @param k 
+                 * @param k Golomb-Rice parameter m = 2^k.
                  * @return sdsl::bit_vector 
                  */
                 static sdsl::bit_vector encode( const AbsoluteSequence sequence, const std::size_t k ) {
@@ -1107,7 +1147,7 @@ namespace samg {
                  * @brief This function decodes an encoded sequence of Type integers using Rice-runs. 
                  * 
                  * @param encoded_sequence 
-                 * @param k 
+                 * @param k Golomb-Rice parameter m = 2^k.
                  * @return AbsoluteSequence 
                  */
                 static AbsoluteSequence decode( sdsl::bit_vector encoded_sequence, const std::size_t k  ) {
@@ -1141,9 +1181,49 @@ namespace samg {
                     return this->encoded_sequence;
                 }
 
-                const Type next() {
+                // /**
+                //  * @brief This function sets the internal encoded sequence.
+                //  * 
+                //  * @param encoded_sequence 
+                //  * @param k 
+                //  */
+                // void set_encoded_sequence( sdsl::bit_vector encoded_sequence, const std::size_t k ) {
+                //     this->codec = GRCodec(
+                //         encoded_sequence,
+                //         std::pow( 2, k ), // By using a power of 2, `codec` acts as Rice encoder.
+                //         GRCodecType::GOLOMB_RICE
+                //     );
+                //     this->restart_encoded_sequence_iterator();
+                // }
 
-                }
+                // /**
+                //  * !TODO Pending implementation!!!
+                //  * 
+                //  * @brief 
+                //  * 
+                //  * @return const Type 
+                //  */
+                // const Type next() {
+                //     FSMDecoder::DState s;
+                //     RelativeSequence rseq;
+                //     do { 
+                //         s = this->decoding_fsm.next( this->codec, this->previous_n, this->n);
+                //         if( decoding_fsm.is_error_state() ) { break; }
+                //         decoding_fsm.run( rseq, this->previous_n, this->n );
+                //     }while( !decoding_fsm.is_output_state() );
+
+                //     return RiceRuns::_get_transformed_absolute_sequence_( relative_sequence );
+                //     // return 0;// NOTE dummy code!!!
+                // }
+
+                // /**
+                //  * @brief This function restarts the traversal of the encoded sequence.
+                //  * 
+                //  */
+                // void restart_encoded_sequence_iterator() {
+                //     this->codec.restart();
+                //     this->decoding_fsm.restart();
+                // }
 
         };
     }

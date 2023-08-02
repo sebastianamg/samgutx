@@ -153,14 +153,11 @@ int main(int argc, char const *argv[]) {
 	const std::size_t k = 3;
     for (std::size_t i = 0; i < sequences.size(); ++i) {
 
-		// Create Rice-runs encoder:
-        samg::grcodec::RiceRuns<Type> codec(k);
-        
 		// Encode sequences[i]:
-		sdsl::bit_vector bm = codec.encode( sequences[i], k );
+		sdsl::bit_vector bm = samg::grcodec::RiceRuns<Type>::encode( sequences[i], k );
 
 		// Decode sequence:
-		std::vector<Type> dv = codec.decode( bm, k );
+		std::vector<Type> dv = samg::grcodec::RiceRuns<Type>::decode( bm, k );
 
 		// Display results:
         samg::utils::print_vector<Type>("Original Sequence " + std::to_string(i+1) + " (||="+ std::to_string(sequences[i].size()) +"):",sequences[i]);

@@ -24,6 +24,8 @@ The following is the detail of one-header libraries available in this repository
   
 		![FSM to encode](img/codecs-grcodec-riceruns-encode.png)
 
+		> `eos` stands for ***end of sequence***. 
+		> 
 		> `n` represents an input.
 		>
 		> `n'` represents a previous input.  
@@ -38,6 +40,8 @@ The following is the detail of one-header libraries available in this repository
 		
 		![FSM to decode](img/codecs-grcodec-riceruns-decode.png)
 
+		> `eos` stands for ***end of sequence***. 
+		>
 		> `n` represents an input.
 		>
 		> `n'` represents a previous input. 

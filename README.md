@@ -20,7 +20,7 @@ The following is the detail of one-header libraries available in this repository
       * `const std::size_t length()`: This function returns the number of stored bits.
       * `const std::uint64_t get_current_iterator_index()`: This function returns the current iterator index.
     * `template<typename Type> class RiceRuns`:
-      * `void encode(const std::vector<Type> sequence)`: This method encodes a sequence of Type integers using Rice-runs. The following is the FSM used by this function:
+      * `static void encode(const std::vector<Type> sequence, const std::size_t k )`: This static function encodes a sequence of Type integers using Rice-runs. The following is the FSM used by this function:
   
 		![FSM to encode](img/codecs-grcodec-riceruns-encode.png)
 
@@ -36,7 +36,7 @@ The following is the detail of one-header libraries available in this repository
 		>
 		> `wn(a,b)` is a function to output `b` times the negative number `a`.
 
-      * `std::vector<Type> decode()`: This method decodes an encoded sequence of Type integers using Rice-runs. The following is the FSM used by this function:
+      * `static std::vector<Type> decode( sdsl::bit_vector encoded_sequence, const std::size_t k )`: This static function decodes an encoded sequence of Type integers using Rice-runs. The following is the FSM used by this function:
 		
 		![FSM to decode](img/codecs-grcodec-riceruns-decode.png)
 
@@ -49,8 +49,12 @@ The following is the detail of one-header libraries available in this repository
 		> `w(a)` is a function to output `a`.
 		>
 		> `w(a,b)` is a function to output `b` times `a`.
+    
+      * `sdsl::bit_vector get_encoded_sequence()`: This function returns the ***Golomb-Rice*** encoded bitmap.
 
     * Additionally, the file [`gr-codec-test.cpp`](https://github.com/sebastianamg/samgutx/blob/main/codecs/gr-codec-test.cpp) contains test cases used to check the correctiveness of both ***Golomb-Rice*** and ***Rice-runs*** implementations. It uses [Google Test](http://google.github.io/googletest/) library. To compile this file, use the following command: `g++-11 -ggdb -g3 -I ~/include/ -L ~/lib/ gr-codec-test.cpp -o gr-codec-test -lsdsl -lgtest`.
+
+
 * `samg`:
   * `commons.hpp`: It contains methods for converting objects and vectors to string (the object requires implementing `operator<<`), printing a vector, copying data to a `std::stack` from a range defined by `begin` and `end` iterators, and converting time (`std::double_t`) to string.  
   * `logger.hpp`: It contains a wrap class for [`c-logger`](https://github.com/adaxiik/c-logger) implemented by @adaxiik. The wrapper class, called `samg::Logger` provides with methods to output `debug`, `info`, `warn`, `error`, and `fatal` messages, along with a method to directly output a `stdout` message. Furthermore, it provides with a mechanism to "turn" on and off the logger. Since this is a one-header file, @adaxiik's `c-logger` has been replicated within the file. 
@@ -141,25 +145,22 @@ int main(int argc, char const *argv[]) {
     const std::size_t N_SEQS = 3;
     std::array<std::vector<Type>,N_SEQS> sequences;
 
-    for (size_t i = 0; i < sequence.size(); ++i) {
+    for (std::size_t i = 0; i < sequence.size(); ++i) {
         sequences[i % N_SEQS].push_back(sequence[i]);
     }
     
 	// Encode and decode each vector using k = 3.
 	const std::size_t k = 3;
-    for (size_t i = 0; i < sequences.size(); ++i) {
+    for (std::size_t i = 0; i < sequences.size(); ++i) {
 
 		// Create Rice-runs encoder:
         samg::grcodec::RiceRuns<Type> codec(k);
         
 		// Encode sequences[i]:
-		codec.encode(sequences[i]);
+		sdsl::bit_vector bm = codec.encode( sequences[i], k );
 
-		// Getting Rice-runs bitmap:
-        sdsl::bit_vector bm = codec.get_encoded_sequence();
-        
 		// Decode sequence:
-		std::vector<Type> dv = codec.decode();
+		std::vector<Type> dv = codec.decode( bm, k );
 
 		// Display results:
         samg::utils::print_vector<Type>("Original Sequence " + std::to_string(i+1) + " (||="+ std::to_string(sequences[i].size()) +"):",sequences[i]);

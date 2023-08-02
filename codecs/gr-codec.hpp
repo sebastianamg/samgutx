@@ -1072,13 +1072,15 @@ namespace samg {
                 { }
 
                 /**
-                 * @brief This method encodes a sequence of Type integers using Rice-runs. 
+                 * @brief This function encodes a sequence of Type integers using Rice-runs. 
                  * 
                  * @param sequence 
+                 * @param k 
+                 * @return sdsl::bit_vector 
                  */
-                void encode(const AbsoluteSequence sequence) {
+                static sdsl::bit_vector encode( const AbsoluteSequence sequence, const std::size_t k ) {
                     GRCodec<Type> codec( 
-                        std::pow(2,this->k), // By using a power of 2, `codec` acts as Rice encoder.
+                        std::pow( 2, k ), // By using a power of 2, `codec` acts as Rice encoder.
                         GRCodecType::GOLOMB_RICE 
                     );
 
@@ -1098,18 +1100,20 @@ namespace samg {
                         fsm.run( codec, previous_n, n, r );
                     } while( !fsm.is_end_state() );
 
-                    this->encoded_sequence = codec.get_bit_vector();
+                    return codec.get_bit_vector();
                 }
 
                 /**
-                 * @brief This method decodes an encoded sequence of Type integers using Rice-runs. 
+                 * @brief This function decodes an encoded sequence of Type integers using Rice-runs. 
                  * 
+                 * @param encoded_sequence 
+                 * @param k 
                  * @return AbsoluteSequence 
                  */
-                AbsoluteSequence decode() {
+                static AbsoluteSequence decode( sdsl::bit_vector encoded_sequence, const std::size_t k  ) {
                     GRCodec<Type> codec(
-                        this->encoded_sequence, 
-                        std::pow(2,this->k),GRCodecType::GOLOMB_RICE // By using a power of 2, `codec` acts as Rice encoder.
+                        encoded_sequence, 
+                        std::pow( 2, k ),GRCodecType::GOLOMB_RICE // By using a power of 2, `codec` acts as Rice encoder.
                     );
 
                     FSMDecoder fsm;
@@ -1128,9 +1132,19 @@ namespace samg {
                     return RiceRuns::_get_transformed_absolute_sequence_( relative_sequence );
                 }
 
+                /**
+                 * @brief This function returns the Golomb-Rice encoded bitmap.
+                 * 
+                 * @return sdsl::bit_vector 
+                 */
                 sdsl::bit_vector get_encoded_sequence() const {
                     return this->encoded_sequence;
                 }
+
+                const Type next() {
+
+                }
+
         };
     }
 }

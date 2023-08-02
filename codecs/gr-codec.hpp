@@ -401,7 +401,7 @@ namespace samg {
                 }
                 
                 /**
-                 * @brief This function allows decoding an integer from a bitmap v.
+                 * @brief This function allows decoding an integer encoded as a bitmap v.
                  * 
                  * @param v 
                  * @param m 
@@ -503,6 +503,11 @@ namespace samg {
                     return this->sequence.size();
                 }
 
+                /**
+                 * @brief This function returns the current iterator index.
+                 * 
+                 * @return const std::uint64_t 
+                 */
                 const std::uint64_t get_current_iterator_index() const {
                     return this->iterator_index;
                 }
@@ -1071,7 +1076,7 @@ namespace samg {
                  * 
                  * @param sequence 
                  */
-                void encode(AbsoluteSequence sequence) {
+                void encode(const AbsoluteSequence sequence) {
                     GRCodec<Type> codec( 
                         std::pow(2,this->k), // By using a power of 2, `codec` acts as Rice encoder.
                         GRCodecType::GOLOMB_RICE 

@@ -3,6 +3,8 @@
 #include <sstream>
 #include <cstdint>
 #include <iomanip>
+#include <vector>
+#include <queue>
 
 /**
  * ---------------------------------------------------------------
@@ -64,20 +66,32 @@ namespace samg {
          * @param obj is vector of objects of type T.
          * @return std::string 
          */
-        template<typename T=std::uint64_t> std::string to_string(std::vector<T> obj) {
+        template<typename T=std::uint64_t> std::string to_string(std::vector<T> obj, std::string separator = ", ") {
             std::ostringstream ss;
             for(std::size_t i=0;i<obj.size();i++) {
-                ss << obj[i] << ((i<obj.size()-1)?", ":"");
+                ss << obj[i] << ( (i<obj.size()-1)? separator : "" );
             }
             return ss.str();
         }
         /***************************************************************/
-        template<typename UINT_T = std::uint32_t> void print_vector(const std::string info, const std::vector<UINT_T> v) {
-            std::cout << info << std::endl;
+        template<typename UINT_T = std::uint32_t> void print_vector(const std::string info, const std::vector<UINT_T> v, bool new_line = true) {
+            std::cout << info;
             for (UINT_T x : v) {
                 std::cout << x << " "; 
             }
-            std::cout << std::endl;
+            if( new_line ){
+                std::cout << std::endl;
+            }
+        }
+        template<typename UINT_T = std::uint32_t> void print_queue(const std::string info, std::queue<UINT_T> q, bool new_line = true) {
+            std::cout << info;
+            while( !q.empty() ) {
+                std::cout << q.front() << " "; 
+                q.pop();
+            }
+            if( new_line ){
+                std::cout << std::endl;
+            }
         }
         /***************************************************************/
         template <typename InputIterator, typename Container>

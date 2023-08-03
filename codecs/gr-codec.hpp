@@ -41,6 +41,7 @@
 #include <type_traits>
 #include <vector>
 #include <array>
+#include <queue>
 #include <functional>
 #include <stdexcept>
 #include <cassert>
@@ -549,8 +550,9 @@ namespace samg {
             
             private:
                 typedef std::int64_t rseq_t; // Data type internally used by the relative sequence. It can be changed here to reduce memory footprint in case numbers in a relative sequence are small enough to fit in fewer bits.  
-                typedef std::vector<RiceRuns::rseq_t> RelativeSequence;
-                typedef std::vector<Type> AbsoluteSequence;
+                typedef std::queue<RiceRuns::rseq_t> RelativeSequence;
+                typedef std::queue<Type> AbsoluteSequence;
+                // typedef std::queue<Type> AbsoluteBuffer;
 
                 static const std::size_t    RLE_THRESHOLD = 3,     // Minimum number of repetitions to be compressed.
                                             ESCAPE_RANGE_SPAN = 2; // Range span to reserve integers as special symbols (e.g. negative flag, repetition mark).
@@ -584,21 +586,32 @@ namespace samg {
                  * @brief This function allows converting a sequence of unsigned Type integers into a relative sequence of signed integers by computing their sequential differences. The resultant sequence is transformed in the process to prevent the number 0 that is used to represent negative integers when numbers are encoded with variable-length integers.  
                  * 
                  * @param sequence 
-                 * @return Sequence 
+                 * @return RelativeSequence 
                  */
                 static RelativeSequence _get_transformed_relative_sequence_( AbsoluteSequence sequence ) {
                     RelativeSequence ans;
                     
-                    if( sequence.size() > 0 ) {
+                    // if( sequence.size() > 0 ) {
+                    if( !sequence.empty() ) {
                         /* NOTE
                             1 3 3 6  5  0 0 5
                             1 2 0 3 -1 -5 0 5 <--- Original relative values.
                             2 3 1 4 -1 -5 1 6 <--- transformed relative values.
                         */
-                        ans.push_back( transform_rval( sequence[0] ) );
-                        for (std::size_t i = 1; i < sequence.size(); ++i) {
-                            ans.push_back( transform_rval( ((RiceRuns::rseq_t)(sequence[i])) - ((RiceRuns::rseq_t)(sequence[i-1])) ) );
+                       Type current,
+                            previous = sequence.front();
+                        sequence.pop();
+
+                        ans.push( transform_rval( previous ));
+                        // ans.push_back( transform_rval( sequence[0] ) );
+                        while( !sequence.empty() ) {
+                            current = sequence.front(); sequence.pop();
+                            ans.push( transform_rval( ((RiceRuns::rseq_t)(current)) - ((RiceRuns::rseq_t)(previous)) ) );
+                            previous = current;
                         }
+                        // for (std::size_t i = 1; i < sequence.size(); ++i) {
+                        //     ans.push_back( transform_rval( ((RiceRuns::rseq_t)(sequence[i])) - ((RiceRuns::rseq_t)(sequence[i-1])) ) );
+                        // }
                     }
                     return ans;
                 }
@@ -607,12 +620,15 @@ namespace samg {
                  * @brief This function allows converting a relative sequence of sequential differences encoded as signed integers into an absolute sequence of unsigned Type integers. The resultant sequence is transformed in the process to revert previous transformation when relativization was applied by `_get_transformed_relative_sequence_` function.
                  * 
                  * @param relative_sequence 
-                 * @return AbsoluteSequence static
+                 * @return AbsoluteSequence
+                 * 
+                 * @warning Side effects on input!
                  */
-                static AbsoluteSequence _get_transformed_absolute_sequence_( RelativeSequence relative_sequence ) {
+                static AbsoluteSequence _get_transformed_absolute_sequence_( RelativeSequence &sequence ) {
                     AbsoluteSequence ans;
 
-                    if( relative_sequence.size() > 0 ) {
+                    // if( relative_sequence.size() > 0 ) {
+                    if( !sequence.empty() ) {
                         /* NOTE
                             1 3 3 6  5  0 0 5 <--- Original absolute values.
                             1 2 0 3 -1 -5 0 5 <--- Original relative values.
@@ -621,11 +637,13 @@ namespace samg {
                             1 3 3 6  5  0 0 5 <--- Recovered absolute values.
 
                         */
-                        ans.push_back( recover_rval( relative_sequence[0] ) );
-                        for (std::size_t i = 1; i < relative_sequence.size(); ++i) {
-                            ans.push_back(
-                                ((RiceRuns::rseq_t)ans.back()) + recover_rval( relative_sequence[i] )
-                            );
+                        ans.push( recover_rval( sequence.front() ));
+                        sequence.pop();
+                        // ans.push_back( recover_rval( relative_sequence[0] ) );
+                        // for (std::size_t i = 1; i < sequence.size(); ++i) {
+                        while( !sequence.empty() ){
+                            ans.push( ((RiceRuns::rseq_t)ans.back()) + recover_rval( sequence.front() ) );
+                            sequence.pop();
                         }
                     }
                     return ans;
@@ -768,11 +786,14 @@ namespace samg {
                          * @param n 
                          * @return const ECase 
                          */
-                        static const ECase _get_case_( const RelativeSequence rs, std::size_t &i, const RiceRuns::rseq_t previous_n, RiceRuns::rseq_t &n ) {
-                            if( i == rs.size() ) {
+                        // static const ECase _get_case_( const RelativeSequence rs, std::size_t &i, const RiceRuns::rseq_t previous_n, RiceRuns::rseq_t &n ) {
+                        static const ECase _get_case_( RelativeSequence &rs, const RiceRuns::rseq_t previous_n, RiceRuns::rseq_t &n ) {
+                            // if( i == rs.size() ) {
+                            if( rs.empty() ) {
                                 return ECase::EC_EOS;
                             }else {
-                                n = rs[i++];
+                                // n = rs[i++];
+                                n = rs.front(); rs.pop();
                                 if( n > 0 && previous_n < 0 ) {
                                     return ECase::EC_PINT;
                                 } else if( n < 0 && previous_n > 0 ) {
@@ -798,9 +819,10 @@ namespace samg {
                          * @param i 
                          * @param n 
                          */
-                        void _init_( const RelativeSequence rs, std::size_t &i, RiceRuns::rseq_t &n ) {
-                            i = 0;
-                            n = rs[i++];
+                        void _init_( RelativeSequence &rs, RiceRuns::rseq_t &n ) {
+                            // i = 0;
+                            // n = rs[i++];
+                            n = rs.front(); rs.pop();
                             this->current_state = EState::ES_Q0;
                         }
 
@@ -815,11 +837,14 @@ namespace samg {
                          * @param n 
                          * @return EState 
                          */
-                        EState next( const RelativeSequence rs, std::size_t &i, const RiceRuns::rseq_t previous_n, RiceRuns::rseq_t &n ) {
+                        // EState next( const RelativeSequence rs, std::size_t &i, const RiceRuns::rseq_t previous_n, RiceRuns::rseq_t &n ) {
+                        EState next( RelativeSequence &rs, const RiceRuns::rseq_t previous_n, RiceRuns::rseq_t &n ) {
                             if( this->is_init ) {
-                                this->current_state = fsm[this->current_state][ FSMEncoder::_get_case_( rs, i, previous_n, n ) ];
+                                // this->current_state = fsm[this->current_state][ FSMEncoder::_get_case_( rs, i, previous_n, n ) ];
+                                this->current_state = fsm[this->current_state][ FSMEncoder::_get_case_( rs, previous_n, n ) ];
                             } else {
-                                this->_init_( rs, i, n );
+                                // this->_init_( rs, i, n );
+                                this->_init_( rs, n );
                                 this->is_init = true;
                             }
                             return this->current_state;
@@ -981,7 +1006,8 @@ namespace samg {
                         static void _write_integer_( RelativeSequence &rs, const Type n, const std::size_t r, const bool is_negative = false ) {
                             RiceRuns::rseq_t x = is_negative ? ((RiceRuns::rseq_t)n) * -1 : n;
                             for (std::size_t j = 0; j < r; ++j) {
-                                rs.push_back(x);
+                                // rs.push_back(x);
+                                rs.push(x);
                             }
                         }
 
@@ -1089,7 +1115,10 @@ namespace samg {
                 GRCodec<Type> codec;
                 FSMDecoder decoding_fsm;
                 Type    previous_n, 
-                        n;
+                        n,
+                        previous_relative_value;
+                bool is_first;
+                AbsoluteSequence next_buffer;
 
             public:
                 RiceRuns(const std::size_t k): 
@@ -1098,17 +1127,19 @@ namespace samg {
                             std::pow( 2, k ), // By using a power of 2, `codec` acts as Rice encoder.
                             GRCodecType::GOLOMB_RICE
                         )
-                    ) 
+                    ),
+                    is_first(true)
                 { }
 
                 RiceRuns(sdsl::bit_vector encoded_sequence, const std::size_t k): 
                     codec( 
-                        GRCodec(
+                        GRCodec<Type>(
                             encoded_sequence,
                             std::pow( 2, k ), // By using a power of 2, `codec` acts as Rice encoder.
                             GRCodecType::GOLOMB_RICE
                         )
-                    ) 
+                    ),
+                    is_first(true)
                 { }
 
                 /**
@@ -1128,14 +1159,16 @@ namespace samg {
 
                     RelativeSequence relative_sequence = RiceRuns::_get_transformed_relative_sequence_( sequence );
 
-                    std::size_t r, // Let r be a repetition counter of n.
-                                i; // Let i be the index to traverse the relative sequence.
+                    // samg::utils::print_queue<RiceRuns::rseq_t>("encode> Transformed RelativeSequence (||="+ std::to_string(relative_sequence.size()) + "): ",relative_sequence);
+
+                    std::size_t r; // Let r be a repetition counter of n.
+                                // i; // Let i be the index to traverse the relative sequence.
 
                     RiceRuns::rseq_t    previous_n, // Previous sequence value.
                                         n;          // Next sequence value.
 
                     do {
-                        fsm.next( relative_sequence, i, previous_n, n);
+                        fsm.next( relative_sequence, previous_n, n);
                         if( fsm.is_error_state() ) { break; }
                         fsm.run( codec, previous_n, n, r );
                     } while( !fsm.is_end_state() );
@@ -1168,6 +1201,8 @@ namespace samg {
                         if( fsm.is_error_state() ) { break; }
                         fsm.run( relative_sequence, previous_n, n );
                     }while( !fsm.is_end_state() );
+
+                    // samg::utils::print_queue<RiceRuns::rseq_t>("decode> Decoded Relative Sequence (||="+ std::to_string(relative_sequence.size()) + "): ",relative_sequence);
 
                     return RiceRuns::_get_transformed_absolute_sequence_( relative_sequence );
                 }
@@ -1204,15 +1239,52 @@ namespace samg {
                  * @return const Type 
                  */
                 const Type next() {
-                    FSMDecoder::DState s;
-                    RelativeSequence rseq;
-                    do { 
-                        s = this->decoding_fsm.next( this->codec, this->previous_n, this->n);
-                        if( decoding_fsm.is_error_state() ) { break; }
-                        decoding_fsm.run( rseq, this->previous_n, this->n );
-                    }while( !decoding_fsm.is_output_state() );
+                    if( this->next_buffer.empty() ) {
+                        std::uint8_t s;
+                        RelativeSequence relative_sequence;
+                        do { 
+                            s = this->decoding_fsm.next( this->codec, this->previous_n, this->n);
+                            if( decoding_fsm.is_error_state() ) { break; }
+                            decoding_fsm.run( relative_sequence, this->previous_n, this->n );
+                        }while( !decoding_fsm.is_output_state() );
 
-                    return RiceRuns::_get_transformed_absolute_sequence_( relative_sequence );
+                        // If it is not the first time executing `next`, then insert the previous relativized absolute value to the beginning of the just retrieved relative sequence:
+                        if( !this->is_first ) {
+                            RelativeSequence tmp;
+                            tmp.push( this->previous_relative_value );
+                            while( !relative_sequence.empty() ) {
+                                tmp.push( relative_sequence.front() );
+                                relative_sequence.pop();
+                            }
+                            // relative_sequence.insert( relative_sequence.begin(), this->previous_relative_value );
+                            std::swap( tmp, relative_sequence );
+                        }
+
+                        // Retrieve a transformed sequence from the relative one:
+                        // AbsoluteSequence ans = RiceRuns::_get_transformed_absolute_sequence_( relative_sequence );
+                        this->next_buffer = RiceRuns::_get_transformed_absolute_sequence_( relative_sequence );
+                        
+                        // Back up the last relativized (transformed) absolute value:
+                        this->previous_relative_value = RiceRuns::transform_rval( this->next_buffer.back() );
+                        
+                        // It it is not the first time executing `next`, then remove the previously added last relativized absolute value:
+                        // (it was already used to compute the next absolute value(s))
+                        if( !this->is_first ){
+                            this->next_buffer.pop();
+                            // ans.erase(ans.begin());
+                        }
+                        
+                        // Move values from the sequence to the buffer (queue):
+                        // for (Type v : ans) {
+                        //     this->next_buffer.push(v);
+                        // }
+
+                        this->is_first = false;
+                    }
+
+                    Type v = this->next_buffer.front();
+                    this->next_buffer.pop();
+                    return v;
                     // return 0;// NOTE dummy code!!!
                 }
 
@@ -1223,6 +1295,18 @@ namespace samg {
                 void restart_encoded_sequence_iterator() {
                     this->codec.restart();
                     this->decoding_fsm.restart();
+                }
+
+                /**
+                 * @brief This function returns whether the internal encoded sequence has more codewords to decode or not.
+                 * 
+                 * @return true 
+                 * @return false 
+                 */
+                bool has_more() {
+                    // return this->codec.has_more();
+                    return  this->codec.has_more() || 
+                            !(this->next_buffer.empty());
                 }
 
         };

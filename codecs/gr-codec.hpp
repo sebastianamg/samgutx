@@ -38,6 +38,7 @@
 #include <cstddef>
 #include <cmath>
 #include <cstdint>
+#include <iostream>
 #include <type_traits>
 #include <vector>
 #include <array>
@@ -53,8 +54,43 @@
 
 namespace samg {
     namespace grcodec {
-        // TODO: Add `uint computeGolombRiceParameter_forList(uint *buff, uint n)` from [bc.hpp].
 
+        template<typename Word, typename Length = std::uint64_t> struct BinarySequence {
+            static_assert(
+                std::is_same_v<Word, std::uint8_t> ||
+                std::is_same_v<Word, std::uint16_t> ||
+                std::is_same_v<Word, std::uint32_t> ||
+                std::is_same_v<Word, std::uint64_t>,
+                "First typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
+            static_assert(
+                std::is_same_v<Length, std::uint8_t> ||
+                std::is_same_v<Length, std::uint16_t> ||
+                std::is_same_v<Length, std::uint32_t> ||
+                std::is_same_v<Length, std::uint64_t>,
+                "Second typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
+
+            Word    *sequence; // It is the bitmap.
+            Length  length, // Used as internal position reference within the bitmap 'sequence'.
+                    src_length, // It tells the total number of encoded integers.
+                    bitmap_length; // It tells the bitmap length in bytes. (maximum capacity of the bitmap)
+            std::size_t k;
+            BinarySequence( const Length sequence_length, const std::size_t k ):
+                bitmap_length( sequence_length * 2 * sizeof(Word) ),
+                sequence((Word*) malloc( bitmap_length )),
+                length(0),
+                src_length(sequence_length),
+                k(k)
+            {}
+            BinarySequence( Word *sequence, const Length sequence_length, const Length src_length, const std::size_t k ):
+                sequence( sequence ),
+                bitmap_length(sequence_length),
+                length(sequence_length),
+                src_length(src_length),
+                k(k)
+            {}
+        };
+
+        // TODO: Add `uint computeGolombRiceParameter_forList(uint *buff, uint n)` from [bc.hpp].
         /**
          * @brief This class represents a Golomb-Rice encoding of a sequence of integers based on the [https://github.com/migumar2/uiHRDC uiuiHRDC] library.
          * 
@@ -62,22 +98,27 @@ namespace samg {
          * 
          * @note It requires [https://github.com/simongog/sdsl-lite sdsl] library.
          */
-        template<typename Word> class RCodec {
+        template<typename Word, typename Length = std::uint64_t> class RCodec {
             static_assert(
                     std::is_same_v<Word, std::uint8_t> ||
                     std::is_same_v<Word, std::uint16_t> ||
                     std::is_same_v<Word, std::uint32_t> ||
                     std::is_same_v<Word, std::uint64_t>,
                     "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
+            static_assert(
+                std::is_same_v<Length, std::uint8_t> ||
+                std::is_same_v<Length, std::uint16_t> ||
+                std::is_same_v<Length, std::uint32_t> ||
+                std::is_same_v<Length, std::uint64_t>,
+                "Second typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
             private:
-                typedef std::uint64_t length_t;
                 typedef std::uint8_t bit_t;
 
                 static const std::size_t    BITS_PER_BYTE = sizeof(std::uint8_t) * 8,
                                             WORD = sizeof(Word) * BITS_PER_BYTE;
-                std::size_t k;
-                Word *sequence;
-                length_t iterator_index;
+                
+                BinarySequence<Word,Length> sequence;
+                Length iterator;
 
                 /**
                  * @brief This function allows computing the log2 of x.
@@ -90,35 +131,6 @@ namespace samg {
                     // return std::log2(x); // NOTE 180 nanoseconds avg.
                 }
 
-                /** 
-                 * TODO
-                 * @brief 
-                 * 
-                 * @param n 
-                 * @return void* 
-                 */
-                static void* _malloc_( length_t n ) {
-                    void *p;
-                    if (n == 0)
-                        return NULL;
-                    p = (void *)malloc(n);
-                    if (p == NULL) {
-                        throw std::runtime_error("Could not allocate "+ std::to_string(n) +" bytes\n");
-                    }
-                    return p;
-                }
-
-                /**
-                 * TODO
-                 * @brief 
-                 * 
-                 * @param p 
-                 */
-                void _free_( void *p ) {
-                    if (p)
-                        free(p);
-                }
-
                 /**
                  * @brief writes e[p..p+len-1] = s, len <= W
                  * 
@@ -127,24 +139,24 @@ namespace samg {
                  * @param len 
                  * @param s 
                  */
-                static inline void _bitwrite_(register Word *e, register length_t p, register std::size_t len, const register Word s) {
-                    e += p / WORD;
-                    p %= WORD;
-                    if (len == WORD) {
+                static inline void _bitwrite_(register Word *e, register Length p, register std::size_t len, const register Word s) {
+                    e += p / RCodec<Word,Length>::WORD;
+                    p %= RCodec<Word,Length>::WORD;
+                    if (len == RCodec<Word,Length>::WORD) {
                         *e |= (*e & ((1 << p) - 1)) | (s << p);
                         if (!p)
                             return;
                         e++;
-                        *e = (*e & ~((1 << p) - 1)) | (s >> (WORD - p));
+                        *e = (*e & ~((1 << p) - 1)) | (s >> (RCodec<Word,Length>::WORD - p));
                     } else {
-                        if (p + len <= WORD) {
+                        if (p + len <= RCodec<Word,Length>::WORD) {
                             *e = (*e & ~(((1 << len) - 1) << p)) | (s << p);
                             return;
                         }
                         *e = (*e & ((1 << p) - 1)) | (s << p);
                         e++;
-                        len -= WORD - p;
-                        *e = (*e & ~((1 << len) - 1)) | (s >> (WORD - p));
+                        len -= RCodec<Word,Length>::WORD - p;
+                        *e = (*e & ~((1 << len) - 1)) | (s >> (RCodec<Word,Length>::WORD - p));
                     }
                 }
 
@@ -156,47 +168,26 @@ namespace samg {
                  * @param len 
                  * @return Word 
                  */
-                static Word _bitread_(Word *e, length_t p, const std::size_t len) {
+                static Word _bitread_(Word *e, Length p, const std::size_t len) {
                     Word answ;
-                    e += p / W;
-                    p %= W;
+                    e += p / RCodec<Word,Length>::WORD;
+                    p %= RCodec<Word,Length>::WORD;
                     answ = *e >> p;
-                    if (len == W) {
+                    if (len == RCodec<Word,Length>::WORD) {
                         if (p)
-                            answ |= (*(e + 1)) << (W - p);
+                            answ |= (*(e + 1)) << (RCodec<Word,Length>::WORD - p);
                     } else {
-                        if (p + len > W)
-                            answ |= (*(e + 1)) << (W - p);
+                        if (p + len > RCodec<Word,Length>::WORD)
+                            answ |= (*(e + 1)) << (RCodec<Word,Length>::WORD - p);
                         answ &= (1 << len) - 1;
                     }
                     return answ;
                 }
 
-                static Word _bitget(Word* e, const length_t p) {
-                    return (((e)[(p) / GRCodec<Word>::WORD] >> ((p) % GRCodec<Word>::WORD)) & 1);
+                static Word _bitget_(Word* e, const Length p) {
+                    return (((e)[(p) / RCodec<Word,Length>::WORD] >> ((p) % RCodec<Word,Length>::WORD)) & 1);
                 }
 
-                /**
-                 * @brief This function allows encoding n using the Rice algorithm. 
-                 * 
-                 * @param buf 
-                 * @param pos 
-                 * @param nbits 
-                 * @return Word 
-                 */
-                static inline Word _rice_encode_(Word *buf, length_t pos, Word val, std::size_t nbits) {
-                    // val-=OFFSET_LOWEST_VALUE;  //0 is never encoded. So encoding 1 as 0, 2 as 1, ... v as v-1
-                    std::size_t w;
-                    RCodec::_bitwrite_ (buf, pos, nbits, val); 
-                    pos+=nbits;
-                    
-                    for (w = (val>>nbits); w > 0; w--) {
-                        RCodec::_bitwrite_ (buf, pos, 1, 1); pos++;
-                    }
-                    RCodec::_bitwrite_ (buf, pos, 1, 0); pos++;
-                    return pos;
-                }
-                
                 /**
                  * TODO
                  * @brief 
@@ -216,6 +207,27 @@ namespace samg {
                     size++;
                     return size;
                 }
+
+                /**
+                 * @brief This function allows encoding n using the Rice algorithm. 
+                 * 
+                 * @param buf 
+                 * @param pos 
+                 * @param nbits 
+                 * @return Word 
+                 */
+                static inline Word _rice_encode_(Word *buf, Length pos, Word val, std::size_t nbits) {
+                    // val-=OFFSET_LOWEST_VALUE;  //0 is never encoded. So encoding 1 as 0, 2 as 1, ... v as v-1
+                    std::size_t w;
+                    RCodec::_bitwrite_ (buf, pos, nbits, val); 
+                    pos+=nbits;
+                    
+                    for (w = (val>>nbits); w > 0; w--) {
+                        RCodec::_bitwrite_ (buf, pos, 1, 1); pos++;
+                    }
+                    RCodec::_bitwrite_ (buf, pos, 1, 0); pos++;
+                    return pos;
+                }
                 
                 /**
                  * @brief This function allows decoding n using the Rice algorithm. 
@@ -224,12 +236,12 @@ namespace samg {
                  * @param nbits 
                  * @return Word 
                  */
-                static Word _rice_decode_(Word *buf, length_t *pos, std::size_t nbits) {
+                static Word _rice_decode_(Word *buf, Length *pos, std::size_t nbits) {
                     Word v;
                     v = _bitread_(buf, *pos, nbits);
                     *pos+=nbits;
                     //printf("\n\t [decoding] v del bitread vale = %d",v);
-                    while (bitget(buf,*pos))
+                    while (RCodec::_bitget_(buf,*pos))
                     {
                         v += (1<<nbits);
                         (*pos)++;
@@ -239,41 +251,557 @@ namespace samg {
                     return(v /*+ OFFSET_LOWEST_VALUE*/);   //1 was encoded as 0 ... v as v-1 ... !!
                 }
 
-
             public:
                 
-                RCodec():
-                    RCodec(8)
-                {}
-
-                GRCodec( const std::size_t k ): 
-                    RCodec(std::nullptr, k )
-                {}
-
-                RCodec( Word *sequence, const std::size_t k ): 
-                    sequence(sequence),
-                    k(k)
+                RCodec( BinarySequence<Word,Length> bs ): 
+                    sequence( bs )
                 { this->restart(); }
+
+                RCodec( const Length sequence_length, const Length src_length, const std::size_t k ): 
+                    sequence( BinarySequence<Word,Length>( sequence_length, src_length, k ) )
+                { this->restart(); }
+
+                RCodec( Word *sequence, const Length sequence_length, const Length src_length, const std::size_t k ): 
+                    sequence( BinarySequence<Word,Length>( sequence, sequence_length, src_length, k ) )
+                { this->restart(); }
+
+                /** 
+                 * TODO
+                 * @brief 
+                 * 
+                 * @param n 
+                 * @return void* 
+                 */
+                static void* rmalloc( Length n ) {
+                    void *p;
+                    if (n == 0)
+                        return NULL;
+                    p = (void *)malloc(n);
+                    if (p == NULL) {
+                        throw std::runtime_error("Could not allocate "+ std::to_string(n) +" bytes\n");
+                    }
+                    return p;
+                }
+
+                static void* rrealloc( void *p, Length n ) {
+                    if( p == NULL )
+                        return RCodec::rmalloc(n);
+                    if( n == 0 ) {
+                        RCodec::rfree(p);
+                        return NULL;
+                    }
+                    p = (void *)realloc( p, n );
+                    if(p == NULL ) {
+                        throw std::runtime_error("Could not re-allocate "+ std::to_string(n) +" bytes\n");
+                    }
+                    return p;
+                }
+
+                /**
+                 * TODO
+                 * @brief 
+                 * 
+                 * @param p 
+                 */
+                void rfree( void *p ) {
+                    if (p)
+                        free(p);
+                }
+
+                /**
+                 * @brief This function encodes an integer n.
+                 * 
+                 * @param sequence 
+                 * @param k 
+                 * @return BinarySequence<Word,Length> 
+                 */
+                static BinarySequence<Word,Length> encode( std::vector<Word> sequence, const std::size_t k ) {
+                    BinarySequence<Word,Length> bs(sequence.size(), k);
+                    
+                    for ( Length i = 0; i < sequence.size(); ++i ) {
+                        bs.length = RCodec<Word>::_rice_encode_(bs.sequence, bs.length, sequence[i], k);
+                    }
+
+                    return bs;
+                }
+                
+                /**
+                 * @brief This function allows decoding an integer encoded as a bitmap.
+                 * 
+                 * @param bs 
+                 * @return std::vector<Word>
+                 */
+                static std::vector<Word> decode( BinarySequence<Word,Length> bs ) {
+                    Length    position = 0;
+                    std::vector<Word> sequence;
+
+                    while( position < bs.length ) {
+                        Word v = RCodec::_rice_decode_( bs.sequence, &position, bs.k );
+                        sequence.push_back(v);
+                    }
+                    return sequence;
+                }
+
+                /**
+                 * @brief This function allows appending the encoded representation of n to an internal bitmap.
+                 * 
+                 * @param n 
+                 * 
+                 * @warning This implementation is O(n), where n is the number of bits in the internal bitmap.
+                 */
+                void append(const Word n) {
+                    if( this->sequence.length == this->sequence.bitmap_length ) {
+                        this->sequence.bitmap_length *= 2;
+                        this->sequence.sequence = (Word*) rrealloc( this->sequence.sequence, this->sequence.bitmap_length );
+                    }
+                    this->sequence.length = RCodec<Word>::_rice_encode_( this->sequence.sequence, this->sequence.length, n, this->sequence.k );
+                    ++(this->sequence.src_length);
+                    // ++(this->iterator);
+                }
+
+                /**
+                 * @brief This function iterates on the internal bitmap as decodes and returns the next integer. 
+                 * 
+                 * @return const Word 
+                 */
+                const Word next() {
+                    return RCodec::_rice_decode_( this->sequence.sequence, &(this->iterator), this->sequence.k );
+                } 
+
+                /**
+                 * @brief This function verifies whether the internal bitmap has or doesn't have more codewords to iterate on.
+                 * 
+                 * @return true 
+                 * @return false 
+                 */
+                const bool has_more() const {
+                    return this->iterator < this->sequence.length;
+                }
+
+                /**
+                 * @brief This function restarts the iteration on the internal bitmap.
+                 * 
+                 */
+                void restart() {
+                    this->iterator = 0;
+                }
+
+                /**
+                 * @brief This function returns a copy of the internal bitmap.
+                 * 
+                 * @return BinarySequence 
+                 */
+                BinarySequence<Word, Length> get_binary_sequence() const {
+                    return this->sequence;
+                }
+
+                /**
+                 * @brief This function returns the number of stored bits.
+                 * 
+                 * @return const Length
+                 */
+                const Length length() const {
+                    return this->sequence.length;
+                }
+
+                /**
+                 * @brief This function returns the number of encoded integers.
+                 * 
+                 * @return const Length
+                 */
+                const Length size() const {
+                    return this->sequence.src_length;
+                }
+
+                /**
+                 * @brief This function returns the current iterator index.
+                 * 
+                 * @return Length
+                 */
+                const Length get_current_iterator_index() const {
+                    return this->iterator;
+                }
+
+                static void display_binary_sequence( BinarySequence<Word,Length> bs, char* msg ) {
+                    Word    *buff = bs.sequence,
+                            n = bs.length;
+                    std::cout << "Encoded integers: "<< bs.src_length <<"; k: "<< bs.k <<"; bitmap (|" << bs.length << "|) = ";
+                    for (Length i = 0;i<n;i++) {
+                        if ( RCodec::_bitget_( buff, i ) )
+                            std::cout << "1";
+                        else 
+                            std::cout << "0";
+                    }
+                    std::cout << std::endl;
+                }
+
+                friend std::ostream & operator<<(std::ostream & strm, const RCodec<Word,Length> &codec) {
+                    BinarySequence<Word, Length> bs = codec.get_binary_sequence();
+                    Word    *buff = bs.sequence,
+                            n = bs.length;
+                    bool printer_prompt = false;
+                    for ( Length i = 0; i < n ; i++ ) {
+                        if( i == codec.get_current_iterator_index() ) {
+                            strm << "|";
+                            printer_prompt = true;
+                        }
+                        if ( RCodec::_bitget_( buff, i ) )
+                            strm << "1";
+                        else 
+                            strm << "0";
+                    }
+                    return strm;
+                }
+        };
+
+        /**
+         * @brief This class represents a Golomb-Rice encoding of a sequence of integers.
+         * 
+         * @tparam Type 
+         * 
+         * @note It requires [https://github.com/simongog/sdsl-lite sdsl] library.
+         */
+        template<typename Type> class GRCodec {
+            static_assert(
+                    std::is_same_v<Type, std::uint8_t> ||
+                    std::is_same_v<Type, std::uint16_t> ||
+                    std::is_same_v<Type, std::uint32_t> ||
+                    std::is_same_v<Type, std::uint64_t>,
+                    "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
+            private:
+                static const std::size_t BITS_PER_BYTE = sizeof(std::uint8_t)*8;
+                std::size_t m;
+                sdsl::bit_vector sequence;
+                std::uint64_t iterator_index;
+
+                /**
+                 * @brief This function allows computing the log2 of x.
+                 * 
+                 * @param x 
+                 * @return std::double_t 
+                 */
+                static const std::double_t log2(const double x) {
+                    return std::log(x) / std::log(2.0); // NOTE Much more efficient than std::log2! 34 nanoseconds avg.
+                    // return std::log2(x); // NOTE 180 nanoseconds avg.
+                }
+
+                /**
+                 * @brief This function allows checking whether x is or not a power of 2.
+                 * 
+                 * @param x 
+                 * @param T
+                 * @return true 
+                 * @return false 
+                 */
+                static const bool _is_power_of_2_(const Type x) {
+                    /* Examples:
+                    x         = 0000 0111 = 7
+                    x - 1     = 0000 0110
+                    x & (x-1) = 0000 0110 --> false
+                    ---------------------
+                    x         = 0001 0000 = 16
+                    x - 1     = 0000 1111
+                    x & (x-1) = 0000 0000 --> true
+                    ---------------------
+                    x         = 0010 0101 = 37
+                    x - 1     = 0010 0100
+                    x & (x-1) = 0010 0100 --> false
+                    */
+                    return (x > 0) && ((x & (x - 1)) == 0);
+                }
+
+                /**
+                 * @brief This function allows getting a sub-vector from v.
+                 * 
+                 * @param v 
+                 * @param begin 
+                 * @param length 
+                 * @return sdsl::bit_vector 
+                 */
+                static sdsl::bit_vector _get_sub_vector_( const sdsl::bit_vector &v, const std::uint64_t begin, const std::size_t length ) {
+                    sdsl::bit_vector rv(length);
+                    for (std::size_t i = begin; i < (begin + length); i++) {
+                        rv[i-begin] = v[i];
+                    }
+                    return rv;
+                }
+
+                /**
+                 * @brief This function allows converting from unary into decimal.
+                 * 
+                 * @param v 
+                 * @return const std::size_t 
+                 * 
+                 * @warning It is assumed that v starts with unary code.
+                 */
+                static const std::size_t _decode_unary_( const sdsl::bit_vector &v, std::uint64_t begin ) {
+                    /* NOTE
+                        987654
+                        111110
+                        begin = 9
+                        i = 987654
+                                 ^
+                        Therefore 9 - 4 = 5 ones!
+                    */
+                    // Counting ones:
+                    std::size_t i = begin;
+                    for (; 0 <= i && i < v.size() ; --i) {
+                        if( v[i] == 0 ) {
+                            break;
+                        }
+                    }
+                    return (begin - i);
+                }
+
+                /**
+                 * @brief This method allows computing the next codeword length in a sequence in v.
+                 * 
+                 * @param v 
+                 * @param m 
+                 * @return const std::size_t 
+                 */
+                static const std::size_t _get_next_codeword_length_( const sdsl::bit_vector &v, const std::size_t m, const std::uint64_t begin ) {
+                    std::size_t A = GRCodec::_decode_unary_( v, begin ), 
+                                s = std::ceil(GRCodec::log2(m));
+                    if(  GRCodec::_is_power_of_2_(m) ) {// Acting as Rice.
+                        // Computing length:
+                        return A + 1 + s;
+                    } else { // Acting as Golomb.
+                        // Retrieving R:
+                        /* NOTE
+                            9876543210
+                            1111100101
+                            
+                            A = 5
+                            begin = 9
+                            s = 5
+                            get sub-vector --> [ begin-A-1-(s-2) , length = s-1 ] === [ 0 , 3 ]
+                        */
+                        sdsl::bit_vector rv = GRCodec::_get_sub_vector_(v,begin-A-1-(s-2),s-1);
+                        Type R = rv.get_int( 0, sizeof(Type) * BITS_PER_BYTE );
+                        // Computing length:
+                        std::size_t c = std::pow(2,std::ceil(GRCodec::log2(m))) - m;
+                        return A + 1 + ( R >= c ? s : s - 1 );
+                    }
+                }
+
+                /**
+                 * @brief This function allows referring encoding computation to either Rice or Golomb functions based on whether n is a power of 2 or not, respectively. 
+                 * 
+                 * @param n 
+                 * @param m 
+                 * @param T
+                 * @return std::vector<std::uint8_t> 
+                 */
+                static sdsl::bit_vector _encode_golomb_rice_(const Type n, const std::size_t m) {
+                    Type    q = std::floor( ((std::double_t) n) / ((std::double_t)m) ),
+                            r = n - ( m * q );
+
+                    if(  GRCodec::_is_power_of_2_(m) ) { // Acting as Rice encoder.
+                        return GRCodec::_rice_encode_( n, q, r, m );   
+                    } else { // Acting as Golomb encoder.
+                        return GRCodec::_golomb_encode_( n, q, r, m );
+                    }
+                }
+
+                /**
+                 * @brief This function allows encoding n using the Rice algorithm. 
+                 * 
+                 * @param n 
+                 * @param q 
+                 * @param r 
+                 * @param m
+                 * @return sdsl::bit_vector 
+                 */
+                static sdsl::bit_vector _rice_encode_(const Type n, const Type q, const Type r, const std::size_t m) {
+                    static std::size_t r_bits, prev_m = 0; // Using simple memoization method for log2. 
+                    
+                    // auto start = std::chrono::high_resolution_clock::now();
+                    // std::size_t r_bits = (std::size_t)GRCodec::log2(m);
+                    if ( m != prev_m ) {
+                        r_bits = (std::size_t)log2(m);
+                        prev_m = m;
+                    }
+                    // auto end = std::chrono::high_resolution_clock::now();
+                    // double time_taken = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+                    // printf("*** Rice encoding - LOG2 time %.2f[ns]\n",time_taken);
+
+                    // start = std::chrono::high_resolution_clock::now();
+                    sdsl::bit_vector v(r_bits + q + 1);
+                    // std::size_t len = r_bits + q + 1;
+                    // sdsl::bit_vector v(len, 1);
+                    // end = std::chrono::high_resolution_clock::now();
+                    // time_taken = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+                    // printf("*** Rice encoding - codeword bitmap declaration time %.2f[ns]\n",time_taken);
+
+                    // start = std::chrono::high_resolution_clock::now();
+                    v.set_int(0,r,GRCodec::BITS_PER_BYTE);
+
+                    for (std::size_t i = r_bits + 1; i < (r_bits + q + 1); ++i) {
+                        v[i] = 1;
+                    } // v[r_bits] = 0 as the sdsl::bit_vector initialization default value is 0. 
+                    // v[r_bits] = 0;
+                    // v = v & (std::pow(2,len) - 1);
+                    // end = std::chrono::high_resolution_clock::now();
+                    // time_taken = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+                    // printf("*** Rice encoding time %.2f[ns]\n",time_taken);
+
+                    // auto end = std::chrono::high_resolution_clock::now();
+                    // double time_taken = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+                    // printf("*** Rice encoding %.2f[ns]\n",time_taken);
+
+                    // std::cout << " bitmap = " << v << "; data[0] = " << v.data()[0] << std::endl;
+                    
+
+                    return v;
+                }
+                // static sdsl::bit_vector _rice_encode_(const Type n, const Type q, const Type r, const std::size_t m) {
+                //     std::size_t r_bits = (std::size_t)GRCodec::log2(m);
+                //     sdsl::bit_vector v(r_bits + q + 1);
+                //     v.set_int(0,r,GRCodec::BITS_PER_BYTE);
+
+                //     for (std::size_t i = r_bits + 1; i < (r_bits + q + 1); ++i) {
+                //         v[i] = 1;
+                //     } // v[r_bits] = 0 as the sdsl::bit_vector initialization default value is 0. 
+                    
+                //     return v;
+                // }
+
+                /**
+                 * @brief This function allows encoding n using the Golomb algorithm. 
+                 * 
+                 * @param n 
+                 * @param q 
+                 * @param r 
+                 * @param m
+                 * @return sdsl::bit_vector 
+                 */
+                static sdsl::bit_vector _golomb_encode_(const Type n, const Type q, const Type r, const std::size_t m) {
+                    std::size_t c = std::pow(2,std::ceil(GRCodec::log2(m))) - m;
+                    std::double_t x = GRCodec::log2(m);
+                    bool phase = r < c;
+                    std::size_t r_bits = (std::size_t) ( phase ? std::floor(x) : std::ceil(x) );
+                    sdsl::bit_vector v(r_bits + q + 1);
+                    
+                    if( phase ) {
+                        v.set_int(0,r,GRCodec::BITS_PER_BYTE);
+                    } else {
+                        v.set_int(0,r+c,GRCodec::BITS_PER_BYTE);
+                    }
+
+                    for (std::size_t i = r_bits + 1; i < (r_bits + q + 1); ++i) {
+                        v[i] = 1;
+                    } // v[r_bits] = 0 as the sdsl::bit_vector initialization default value is 0. 
+                    
+                    return v;
+                }
+
+                /**
+                 * @brief This function allows referring decoding computation to either Rice or Golomb functions based on whether n is a power of 2 or not, respectively. 
+                 * 
+                 * @param v 
+                 * @param m
+                 * @return Type
+                 */
+                static Type _decode_golomb_rice_(sdsl::bit_vector &v, const std::size_t m) {
+                    std::size_t A = 0ul, 
+                                s = std::ceil(GRCodec::log2(m)),
+                                i = v.size()-1;
+
+                    // Counting ones:
+                    for (; 0 <= i && i < v.size() ; --i) {
+                        if( v[i] == 1 ) {
+                            ++A;
+                            v[i] = 0;
+                        } else { 
+                            break;
+                        }
+                    }
+
+                    if( GRCodec::_is_power_of_2_(m) ) { // Acting as Rice decoder.
+                        return GRCodec::_rice_decode_( v, A, m );
+                    } else { // Acting as Golomb decoder.
+                        return GRCodec::_golomb_decode_( v, A, m );
+                    }
+                }
+
+                /**
+                 * @brief This function allows decoding n using the Rice algorithm. 
+                 * 
+                 * @param v 
+                 * @param A 
+                 * @param m
+                 * @return Type 
+                 */
+                static Type _rice_decode_(sdsl::bit_vector &v, const std::size_t A, const std::size_t m) {
+                    // auto start = std::chrono::high_resolution_clock::now();
+                    Type R = v.get_int( 0, sizeof(Type) * BITS_PER_BYTE ),
+                         ans = ( m * A ) + R;
+                    // auto end = std::chrono::high_resolution_clock::now();
+                    // double time_taken = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+                    // printf("*** Rice decoding time %.2f[ns]\n",time_taken);
+
+                    return ans;
+                    // return ( m * A ) + R;
+                }
+
+                /**
+                 * @brief This function allows decoding n using the Golomb algorithm. 
+                 * 
+                 * @param v 
+                 * @param A
+                 * @param m 
+                 * @return Type
+                 */
+                static Type _golomb_decode_(sdsl::bit_vector &v, const std::size_t A, const std::size_t m) {
+                    std::size_t c = std::pow(2,std::ceil(GRCodec::log2(m))) - m;
+                    Type    R = v.get_int( 0, sizeof(Type) * BITS_PER_BYTE ),
+                            n = GRCodec::_rice_decode_( v, A, m );
+
+                    return ( R >= c )? ( n - c ) : n;
+                }
+
+            public:
+                enum GRCodecType {
+                    GOLOMB_RICE,
+                    EXPONENTIAL_GOLOMB
+                } type;
+
+                GRCodec():
+                    m(8),
+                    type(GRCodecType::GOLOMB_RICE)
+                {}
+
+                GRCodec(const std::size_t m, const GRCodecType type=GRCodecType::GOLOMB_RICE): 
+                    m(m), 
+                    type(type)
+                {
+                    this->restart();
+                }
+
+                GRCodec(sdsl::bit_vector sequence, const std::size_t m, const GRCodecType type=GRCodecType::GOLOMB_RICE): 
+                    sequence(sequence),
+                    m(m), 
+                    type(type)
+                {
+                    this->restart();
+                }
 
                 /**
                  * @brief This function allows encoding an integer n.
                  * 
-                 * @param sequence 
-                 * @param sequence_length 
-                 * @param k 
-                 * @return Word* 
+                 * @param n 
+                 * @param m 
+                 * @param type 
+                 * @return sdsl::bit_vector 
                  */
-                static Word* encode(Word* sequence, const std::size_t sequence_length, const std::size_t k, std::size_t &encoded_sequence_length ) {
-                    
-                    Word *encoded_sequence = (Word*) RCodec::_malloc_( sequence_length * 2 * sizeof(Word));
-                    
-                    this->iterator_index = 0ul;
-                    // TODO
-                    for ( lengtg_t i = 0; i < sequence_length; ++i ) {
-                        this->iterator_index = RCodec<Word>::rice_encode(encoded_sequence, this->iterator_index, sequence[i], k);
+                static sdsl::bit_vector encode(const Type n, const std::size_t m, GRCodecType type = GRCodecType::GOLOMB_RICE ) {
+                    switch( type ) {
+                        case GRCodecType::GOLOMB_RICE:
+                            return GRCodec::_encode_golomb_rice_( n, m );
+                        default:
+                            throw std::runtime_error("Not valid or not implemented algorithm!");
                     }
-
-                    return encoded_sequence;
                 }
                 
                 /**
@@ -404,485 +932,6 @@ namespace samg {
                     return strm;
                 }
         };
-
-        // /**
-        //  * @brief This class represents a Golomb-Rice encoding of a sequence of integers.
-        //  * 
-        //  * @tparam Type 
-        //  * 
-        //  * @note It requires [https://github.com/simongog/sdsl-lite sdsl] library.
-        //  */
-        // template<typename Type> class GRCodec {
-        //     static_assert(
-        //             std::is_same_v<Type, std::uint8_t> ||
-        //             std::is_same_v<Type, std::uint16_t> ||
-        //             std::is_same_v<Type, std::uint32_t> ||
-        //             std::is_same_v<Type, std::uint64_t>,
-        //             "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
-        //     private:
-        //         static const std::size_t BITS_PER_BYTE = sizeof(std::uint8_t)*8;
-        //         std::size_t m;
-        //         sdsl::bit_vector sequence;
-        //         std::uint64_t iterator_index;
-
-        //         /**
-        //          * @brief This function allows computing the log2 of x.
-        //          * 
-        //          * @param x 
-        //          * @return std::double_t 
-        //          */
-        //         static const std::double_t log2(const double x) {
-        //             return std::log(x) / std::log(2.0); // NOTE Much more efficient than std::log2! 34 nanoseconds avg.
-        //             // return std::log2(x); // NOTE 180 nanoseconds avg.
-        //         }
-
-        //         /**
-        //          * @brief This function allows checking whether x is or not a power of 2.
-        //          * 
-        //          * @param x 
-        //          * @param T
-        //          * @return true 
-        //          * @return false 
-        //          */
-        //         static const bool _is_power_of_2_(const Type x) {
-        //             /* Examples:
-        //             x         = 0000 0111 = 7
-        //             x - 1     = 0000 0110
-        //             x & (x-1) = 0000 0110 --> false
-        //             ---------------------
-        //             x         = 0001 0000 = 16
-        //             x - 1     = 0000 1111
-        //             x & (x-1) = 0000 0000 --> true
-        //             ---------------------
-        //             x         = 0010 0101 = 37
-        //             x - 1     = 0010 0100
-        //             x & (x-1) = 0010 0100 --> false
-        //             */
-        //             return (x > 0) && ((x & (x - 1)) == 0);
-        //         }
-
-        //         /**
-        //          * @brief This function allows getting a sub-vector from v.
-        //          * 
-        //          * @param v 
-        //          * @param begin 
-        //          * @param length 
-        //          * @return sdsl::bit_vector 
-        //          */
-        //         static sdsl::bit_vector _get_sub_vector_( const sdsl::bit_vector &v, const std::uint64_t begin, const std::size_t length ) {
-        //             sdsl::bit_vector rv(length);
-        //             for (std::size_t i = begin; i < (begin + length); i++) {
-        //                 rv[i-begin] = v[i];
-        //             }
-        //             return rv;
-        //         }
-
-        //         /**
-        //          * @brief This function allows converting from unary into decimal.
-        //          * 
-        //          * @param v 
-        //          * @return const std::size_t 
-        //          * 
-        //          * @warning It is assumed that v starts with unary code.
-        //          */
-        //         static const std::size_t _decode_unary_( const sdsl::bit_vector &v, std::uint64_t begin ) {
-        //             /* NOTE
-        //                 987654
-        //                 111110
-        //                 begin = 9
-        //                 i = 987654
-        //                          ^
-        //                 Therefore 9 - 4 = 5 ones!
-        //             */
-        //             // Counting ones:
-        //             std::size_t i = begin;
-        //             for (; 0 <= i && i < v.size() ; --i) {
-        //                 if( v[i] == 0 ) {
-        //                     break;
-        //                 }
-        //             }
-        //             return (begin - i);
-        //         }
-
-        //         /**
-        //          * @brief This method allows computing the next codeword length in a sequence in v.
-        //          * 
-        //          * @param v 
-        //          * @param m 
-        //          * @return const std::size_t 
-        //          */
-        //         static const std::size_t _get_next_codeword_length_( const sdsl::bit_vector &v, const std::size_t m, const std::uint64_t begin ) {
-        //             std::size_t A = GRCodec::_decode_unary_( v, begin ), 
-        //                         s = std::ceil(GRCodec::log2(m));
-        //             if(  GRCodec::_is_power_of_2_(m) ) {// Acting as Rice.
-        //                 // Computing length:
-        //                 return A + 1 + s;
-        //             } else { // Acting as Golomb.
-        //                 // Retrieving R:
-        //                 /* NOTE
-        //                     9876543210
-        //                     1111100101
-                            
-        //                     A = 5
-        //                     begin = 9
-        //                     s = 5
-        //                     get sub-vector --> [ begin-A-1-(s-2) , length = s-1 ] === [ 0 , 3 ]
-        //                 */
-        //                 sdsl::bit_vector rv = GRCodec::_get_sub_vector_(v,begin-A-1-(s-2),s-1);
-        //                 Type R = rv.get_int( 0, sizeof(Type) * BITS_PER_BYTE );
-        //                 // Computing length:
-        //                 std::size_t c = std::pow(2,std::ceil(GRCodec::log2(m))) - m;
-        //                 return A + 1 + ( R >= c ? s : s - 1 );
-        //             }
-        //         }
-
-        //         /**
-        //          * @brief This function allows referring encoding computation to either Rice or Golomb functions based on whether n is a power of 2 or not, respectively. 
-        //          * 
-        //          * @param n 
-        //          * @param m 
-        //          * @param T
-        //          * @return std::vector<std::uint8_t> 
-        //          */
-        //         static sdsl::bit_vector _encode_golomb_rice_(const Type n, const std::size_t m) {
-        //             Type    q = std::floor( ((std::double_t) n) / ((std::double_t)m) ),
-        //                     r = n - ( m * q );
-
-        //             if(  GRCodec::_is_power_of_2_(m) ) { // Acting as Rice encoder.
-        //                 return GRCodec::_rice_encode_( n, q, r, m );   
-        //             } else { // Acting as Golomb encoder.
-        //                 return GRCodec::_golomb_encode_( n, q, r, m );
-        //             }
-        //         }
-
-        //         /**
-        //          * @brief This function allows encoding n using the Rice algorithm. 
-        //          * 
-        //          * @param n 
-        //          * @param q 
-        //          * @param r 
-        //          * @param m
-        //          * @return sdsl::bit_vector 
-        //          */
-        //         static sdsl::bit_vector _rice_encode_(const Type n, const Type q, const Type r, const std::size_t m) {
-        //             static std::size_t r_bits, prev_m = 0; // Using simple memoization method for log2. 
-                    
-        //             // auto start = std::chrono::high_resolution_clock::now();
-        //             // std::size_t r_bits = (std::size_t)GRCodec::log2(m);
-        //             if ( m != prev_m ) {
-        //                 r_bits = (std::size_t)log2(m);
-        //                 prev_m = m;
-        //             }
-        //             // auto end = std::chrono::high_resolution_clock::now();
-        //             // double time_taken = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
-        //             // printf("*** Rice encoding - LOG2 time %.2f[ns]\n",time_taken);
-
-        //             // start = std::chrono::high_resolution_clock::now();
-        //             sdsl::bit_vector v(r_bits + q + 1);
-        //             // std::size_t len = r_bits + q + 1;
-        //             // sdsl::bit_vector v(len, 1);
-        //             // end = std::chrono::high_resolution_clock::now();
-        //             // time_taken = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
-        //             // printf("*** Rice encoding - codeword bitmap declaration time %.2f[ns]\n",time_taken);
-
-        //             // start = std::chrono::high_resolution_clock::now();
-        //             v.set_int(0,r,GRCodec::BITS_PER_BYTE);
-
-        //             for (std::size_t i = r_bits + 1; i < (r_bits + q + 1); ++i) {
-        //                 v[i] = 1;
-        //             } // v[r_bits] = 0 as the sdsl::bit_vector initialization default value is 0. 
-        //             // v[r_bits] = 0;
-        //             // v = v & (std::pow(2,len) - 1);
-        //             // end = std::chrono::high_resolution_clock::now();
-        //             // time_taken = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
-        //             // printf("*** Rice encoding time %.2f[ns]\n",time_taken);
-
-        //             // auto end = std::chrono::high_resolution_clock::now();
-        //             // double time_taken = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
-        //             // printf("*** Rice encoding %.2f[ns]\n",time_taken);
-
-        //             // std::cout << " bitmap = " << v << "; data[0] = " << v.data()[0] << std::endl;
-                    
-
-        //             return v;
-        //         }
-        //         // static sdsl::bit_vector _rice_encode_(const Type n, const Type q, const Type r, const std::size_t m) {
-        //         //     std::size_t r_bits = (std::size_t)GRCodec::log2(m);
-        //         //     sdsl::bit_vector v(r_bits + q + 1);
-        //         //     v.set_int(0,r,GRCodec::BITS_PER_BYTE);
-
-        //         //     for (std::size_t i = r_bits + 1; i < (r_bits + q + 1); ++i) {
-        //         //         v[i] = 1;
-        //         //     } // v[r_bits] = 0 as the sdsl::bit_vector initialization default value is 0. 
-                    
-        //         //     return v;
-        //         // }
-
-        //         /**
-        //          * @brief This function allows encoding n using the Golomb algorithm. 
-        //          * 
-        //          * @param n 
-        //          * @param q 
-        //          * @param r 
-        //          * @param m
-        //          * @return sdsl::bit_vector 
-        //          */
-        //         static sdsl::bit_vector _golomb_encode_(const Type n, const Type q, const Type r, const std::size_t m) {
-        //             std::size_t c = std::pow(2,std::ceil(GRCodec::log2(m))) - m;
-        //             std::double_t x = GRCodec::log2(m);
-        //             bool phase = r < c;
-        //             std::size_t r_bits = (std::size_t) ( phase ? std::floor(x) : std::ceil(x) );
-        //             sdsl::bit_vector v(r_bits + q + 1);
-                    
-        //             if( phase ) {
-        //                 v.set_int(0,r,GRCodec::BITS_PER_BYTE);
-        //             } else {
-        //                 v.set_int(0,r+c,GRCodec::BITS_PER_BYTE);
-        //             }
-
-        //             for (std::size_t i = r_bits + 1; i < (r_bits + q + 1); ++i) {
-        //                 v[i] = 1;
-        //             } // v[r_bits] = 0 as the sdsl::bit_vector initialization default value is 0. 
-                    
-        //             return v;
-        //         }
-
-        //         /**
-        //          * @brief This function allows referring decoding computation to either Rice or Golomb functions based on whether n is a power of 2 or not, respectively. 
-        //          * 
-        //          * @param v 
-        //          * @param m
-        //          * @return Type
-        //          */
-        //         static Type _decode_golomb_rice_(sdsl::bit_vector &v, const std::size_t m) {
-        //             std::size_t A = 0ul, 
-        //                         s = std::ceil(GRCodec::log2(m)),
-        //                         i = v.size()-1;
-
-        //             // Counting ones:
-        //             for (; 0 <= i && i < v.size() ; --i) {
-        //                 if( v[i] == 1 ) {
-        //                     ++A;
-        //                     v[i] = 0;
-        //                 } else { 
-        //                     break;
-        //                 }
-        //             }
-
-        //             if( GRCodec::_is_power_of_2_(m) ) { // Acting as Rice decoder.
-        //                 return GRCodec::_rice_decode_( v, A, m );
-        //             } else { // Acting as Golomb decoder.
-        //                 return GRCodec::_golomb_decode_( v, A, m );
-        //             }
-        //         }
-
-        //         /**
-        //          * @brief This function allows decoding n using the Rice algorithm. 
-        //          * 
-        //          * @param v 
-        //          * @param A 
-        //          * @param m
-        //          * @return Type 
-        //          */
-        //         static Type _rice_decode_(sdsl::bit_vector &v, const std::size_t A, const std::size_t m) {
-        //             // auto start = std::chrono::high_resolution_clock::now();
-        //             Type R = v.get_int( 0, sizeof(Type) * BITS_PER_BYTE ),
-        //                  ans = ( m * A ) + R;
-        //             // auto end = std::chrono::high_resolution_clock::now();
-        //             // double time_taken = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
-        //             // printf("*** Rice decoding time %.2f[ns]\n",time_taken);
-
-        //             return ans;
-        //             // return ( m * A ) + R;
-        //         }
-
-        //         /**
-        //          * @brief This function allows decoding n using the Golomb algorithm. 
-        //          * 
-        //          * @param v 
-        //          * @param A
-        //          * @param m 
-        //          * @return Type
-        //          */
-        //         static Type _golomb_decode_(sdsl::bit_vector &v, const std::size_t A, const std::size_t m) {
-        //             std::size_t c = std::pow(2,std::ceil(GRCodec::log2(m))) - m;
-        //             Type    R = v.get_int( 0, sizeof(Type) * BITS_PER_BYTE ),
-        //                     n = GRCodec::_rice_decode_( v, A, m );
-
-        //             return ( R >= c )? ( n - c ) : n;
-        //         }
-
-        //     public:
-        //         enum GRCodecType {
-        //             GOLOMB_RICE,
-        //             EXPONENTIAL_GOLOMB
-        //         } type;
-
-        //         GRCodec():
-        //             m(8),
-        //             type(GRCodecType::GOLOMB_RICE)
-        //         {}
-
-        //         GRCodec(const std::size_t m, const GRCodecType type=GRCodecType::GOLOMB_RICE): 
-        //             m(m), 
-        //             type(type)
-        //         {
-        //             this->restart();
-        //         }
-
-        //         GRCodec(sdsl::bit_vector sequence, const std::size_t m, const GRCodecType type=GRCodecType::GOLOMB_RICE): 
-        //             sequence(sequence),
-        //             m(m), 
-        //             type(type)
-        //         {
-        //             this->restart();
-        //         }
-
-        //         /**
-        //          * @brief This function allows encoding an integer n.
-        //          * 
-        //          * @param n 
-        //          * @param m 
-        //          * @param type 
-        //          * @return sdsl::bit_vector 
-        //          */
-        //         static sdsl::bit_vector encode(const Type n, const std::size_t m, GRCodecType type = GRCodecType::GOLOMB_RICE ) {
-        //             switch( type ) {
-        //                 case GRCodecType::GOLOMB_RICE:
-        //                     return GRCodec::_encode_golomb_rice_( n, m );
-        //                 default:
-        //                     throw std::runtime_error("Not valid or not implemented algorithm!");
-        //             }
-        //         }
-                
-        //         /**
-        //          * @brief This function allows decoding an integer encoded as a bitmap v.
-        //          * 
-        //          * @param v 
-        //          * @param m 
-        //          * @param type 
-        //          * @return Type 
-        //          */
-        //         static Type decode(sdsl::bit_vector v, const std::size_t m, GRCodecType type = GRCodecType::GOLOMB_RICE ) {
-        //             switch( type ) {
-        //                 case GRCodecType::GOLOMB_RICE:
-        //                     return GRCodec::_decode_golomb_rice_( v, m );
-        //                 default:
-        //                     throw std::runtime_error("Not valid or not implemented algorithm!");
-        //             }
-        //         }
-
-        //         /**
-        //          * @brief This function allows appending the encoded representation of n to an internal bitmap.
-        //          * 
-        //          * @param n 
-        //          * 
-        //          * @warning This implementation is O(n), where n is the number of bits in the internal bitmap.
-        //          */
-        //         void append(const Type n) {
-        //             /* NOTE
-        //             ( 1 )
-        //             10111
-        //             ( 1 ) ( 2 ) 
-        //             10111 11001
-        //             ( 1 ) ( 2 ) ( 3 )
-        //             10111 11001 11100101
-        //             ( 1 ) ( 2 ) ( 3 )    ( 4 )
-        //             10111 11001 11100101 xxxxxx
-        //             */
-        //             // Encode n:
-        //             sdsl::bit_vector v = GRCodec::encode(n,this->m,this->type);
-
-        //             // Fuse both the new codeword and the previous codewords:
-        //             std::size_t s = v.size();
-        //             v.resize(s + this->sequence.size());
-                    
-        //             for (std::size_t i = s; i < v.size(); ++i) {
-        //                 v[i] = this->sequence[i-s];
-        //             }
-        //             this->sequence = v; // Store fused internal bitmap.
-
-        //             // Update iterator index:
-        //             this->iterator_index += s;
-        //         }
-
-        //         /**
-        //          * @brief This function iterates on the internal bitmap as decodes and returns the next integer. 
-        //          * 
-        //          * @return const Type 
-        //          */
-        //         const Type next() {
-        //             // Retrieve codeword length:
-        //             std::size_t codeword_length = GRCodec::_get_next_codeword_length_( this->sequence , this->m , this->iterator_index );
-        //             // Copy sub-vetor defined from `0` to `codeword_length`:
-        //             sdsl::bit_vector v = GRCodec::_get_sub_vector_(this->sequence,this->iterator_index - ( codeword_length - 1 ) , codeword_length ); 
-        //             // Moving interal pointer `codeword_length` bits backward:
-        //             this->iterator_index -= codeword_length;
-        //             // Returning decoded codeword:
-        //             return  GRCodec::decode(v,this->m,this->type);
-        //         } 
-
-        //         /**
-        //          * @brief This function verifies whether the internal bitmap has or doesn't have more codewords to iterate on.
-        //          * 
-        //          * @return true 
-        //          * @return false 
-        //          */
-        //         const bool has_more() const {
-        //             return this->sequence.size() > this->iterator_index && this->iterator_index >= 0ull;
-        //         }
-
-        //         /**
-        //          * @brief This function restarts the iteration on the internal bitmap.
-        //          * 
-        //          */
-        //         void restart() {
-        //             this->iterator_index = this->sequence.size()-1;
-        //         }
-
-        //         /**
-        //          * @brief This function returns a copy of the internal bitmap.
-        //          * 
-        //          * @return const sdsl::bit_vector 
-        //          */
-        //         const sdsl::bit_vector get_bit_vector() const {
-        //             return this->sequence;
-        //         }
-
-        //         /**
-        //          * @brief This function returns the number of stored bits.
-        //          * 
-        //          * @return const std::size_t 
-        //          */
-        //         const std::size_t length() const {
-        //             return this->sequence.size();
-        //         }
-
-        //         /**
-        //          * @brief This function returns the current iterator index.
-        //          * 
-        //          * @return const std::uint64_t 
-        //          */
-        //         const std::uint64_t get_current_iterator_index() const {
-        //             return this->iterator_index;
-        //         }
-
-        //         friend std::ostream & operator<<(std::ostream & strm, const GRCodec<Type> &codec) {
-        //             sdsl::bit_vector v = codec.get_bit_vector();
-        //             bool printer_prompt = false;
-        //             for (std::size_t i = v.size()-1; 0 <= i && i < v.size() ; --i) {
-        //                 if( i == codec.get_current_iterator_index() ) {
-        //                     strm << "|";
-        //                     printer_prompt = true;
-        //                 }
-        //                 strm << v[i];
-        //             }
-        //             if( !printer_prompt ) {
-        //                 strm << "|";
-        //             }
-        //             return strm;
-        //         }
-        // };
 
         /**
          * @brief This class represents a Rice-runs encoding of integers of type Type.

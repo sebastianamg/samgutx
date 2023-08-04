@@ -93,6 +93,15 @@ namespace samg {
                 std::cout << std::endl;
             }
         }
+        template<typename UINT_T = std::uint32_t> void print_array( const std::string info, UINT_T *buff, std::size_t length, bool new_line = true ) {
+            std::cout << info;
+            for (std::size_t i = 0; i < length; ++i) {
+                std::cout << buff[i] << " "; 
+            }
+            if( new_line ){
+                std::cout << std::endl;
+            }
+        }
         /***************************************************************/
         template <typename InputIterator, typename Container>
         void copy_to_stack(InputIterator begin, InputIterator end, Container& stack) {

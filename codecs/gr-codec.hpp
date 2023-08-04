@@ -268,7 +268,7 @@ namespace samg {
                     Word *encoded_sequence = (Word*) RCodec::_malloc_( sequence_length * 2 * sizeof(Word));
                     
                     this->iterator_index = 0ul;
-
+                    // TODO
                     for ( lengtg_t i = 0; i < sequence_length; ++i ) {
                         this->iterator_index = RCodec<Word>::rice_encode(encoded_sequence, this->iterator_index, sequence[i], k);
                     }

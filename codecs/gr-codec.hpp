@@ -74,13 +74,16 @@ namespace samg {
                     src_length, // It tells the total number of encoded integers.
                     bitmap_length; // It tells the bitmap length in bytes. (maximum capacity of the bitmap)
             std::size_t k;
-            BinarySequence( const Length sequence_length, const std::size_t k ):
-                bitmap_length( sequence_length * 2 * sizeof(Word) ),
-                sequence((Word*) malloc( bitmap_length )),
+            BinarySequence( const Length src_length, const std::size_t k ):
+                bitmap_length( src_length * 2 * sizeof(Word) ),
+                // sequence((Word*) malloc( sequence_length * 2 * sizeof(Word) )),
+                // sequence((Word*) malloc( bitmap_length )),
                 length(0),
-                src_length(sequence_length),
+                src_length(src_length),
                 k(k)
-            {}
+            {
+                this->sequence = (Word*) malloc( this->bitmap_length );
+            }
             BinarySequence( Word *sequence, const Length sequence_length, const Length src_length, const std::size_t k ):
                 sequence( sequence ),
                 bitmap_length(sequence_length),
@@ -219,13 +222,13 @@ namespace samg {
                 static inline Word _rice_encode_(Word *buf, Length pos, Word val, std::size_t nbits) {
                     // val-=OFFSET_LOWEST_VALUE;  //0 is never encoded. So encoding 1 as 0, 2 as 1, ... v as v-1
                     std::size_t w;
-                    RCodec::_bitwrite_ (buf, pos, nbits, val); 
+                    RCodec<Word, Length>::_bitwrite_ (buf, pos, nbits, val); 
                     pos+=nbits;
                     
                     for (w = (val>>nbits); w > 0; w--) {
-                        RCodec::_bitwrite_ (buf, pos, 1, 1); pos++;
+                        RCodec<Word, Length>::_bitwrite_ (buf, pos, 1, 1); pos++;
                     }
-                    RCodec::_bitwrite_ (buf, pos, 1, 0); pos++;
+                    RCodec<Word, Length>::_bitwrite_ (buf, pos, 1, 0); pos++;
                     return pos;
                 }
                 
@@ -241,7 +244,7 @@ namespace samg {
                     v = _bitread_(buf, *pos, nbits);
                     *pos+=nbits;
                     //printf("\n\t [decoding] v del bitread vale = %d",v);
-                    while (RCodec::_bitget_(buf,*pos))
+                    while (RCodec<Word, Length>::_bitget_(buf,*pos))
                     {
                         v += (1<<nbits);
                         (*pos)++;
@@ -257,13 +260,24 @@ namespace samg {
                     sequence( bs )
                 { this->restart(); }
 
-                RCodec( const Length sequence_length, const Length src_length, const std::size_t k ): 
-                    sequence( BinarySequence<Word,Length>( sequence_length, src_length, k ) )
+                RCodec( const Length src_length, const std::size_t k ): 
+                    sequence( BinarySequence<Word,Length>( src_length, k ) )
                 { this->restart(); }
 
                 RCodec( Word *sequence, const Length sequence_length, const Length src_length, const std::size_t k ): 
                     sequence( BinarySequence<Word,Length>( sequence, sequence_length, src_length, k ) )
                 { this->restart(); }
+
+                /**
+                 * TODO
+                 * @brief 
+                 * 
+                 * @param p 
+                 */
+                static void rfree( void *p ) {
+                    if (p)
+                        free(p);
+                }
 
                 /** 
                  * TODO
@@ -285,9 +299,9 @@ namespace samg {
 
                 static void* rrealloc( void *p, Length n ) {
                     if( p == NULL )
-                        return RCodec::rmalloc(n);
+                        return RCodec<Word, Length>::rmalloc(n);
                     if( n == 0 ) {
-                        RCodec::rfree(p);
+                        RCodec<Word, Length>::rfree(p);
                         return NULL;
                     }
                     p = (void *)realloc( p, n );
@@ -298,17 +312,6 @@ namespace samg {
                 }
 
                 /**
-                 * TODO
-                 * @brief 
-                 * 
-                 * @param p 
-                 */
-                void rfree( void *p ) {
-                    if (p)
-                        free(p);
-                }
-
-                /**
                  * @brief This function encodes an integer n.
                  * 
                  * @param sequence 
@@ -316,11 +319,14 @@ namespace samg {
                  * @return BinarySequence<Word,Length> 
                  */
                 static BinarySequence<Word,Length> encode( std::vector<Word> sequence, const std::size_t k ) {
+                    // std::cout << "encode (1)" << std::endl;
                     BinarySequence<Word,Length> bs(sequence.size(), k);
-                    
+                    // std::cout << "encode (2) --- bitmap_length = " << bs.bitmap_length << std::endl;
+
                     for ( Length i = 0; i < sequence.size(); ++i ) {
-                        bs.length = RCodec<Word>::_rice_encode_(bs.sequence, bs.length, sequence[i], k);
+                        bs.length = RCodec<Word, Length>::_rice_encode_(bs.sequence, bs.length, sequence[i], k);
                     }
+                    // std::cout << "encode (3)" << std::endl;
 
                     return bs;
                 }
@@ -336,7 +342,7 @@ namespace samg {
                     std::vector<Word> sequence;
 
                     while( position < bs.length ) {
-                        Word v = RCodec::_rice_decode_( bs.sequence, &position, bs.k );
+                        Word v = RCodec<Word, Length>::_rice_decode_( bs.sequence, &position, bs.k );
                         sequence.push_back(v);
                     }
                     return sequence;
@@ -354,7 +360,7 @@ namespace samg {
                         this->sequence.bitmap_length *= 2;
                         this->sequence.sequence = (Word*) rrealloc( this->sequence.sequence, this->sequence.bitmap_length );
                     }
-                    this->sequence.length = RCodec<Word>::_rice_encode_( this->sequence.sequence, this->sequence.length, n, this->sequence.k );
+                    this->sequence.length = RCodec<Word, Length>::_rice_encode_( this->sequence.sequence, this->sequence.length, n, this->sequence.k );
                     ++(this->sequence.src_length);
                     // ++(this->iterator);
                 }
@@ -365,7 +371,7 @@ namespace samg {
                  * @return const Word 
                  */
                 const Word next() {
-                    return RCodec::_rice_decode_( this->sequence.sequence, &(this->iterator), this->sequence.k );
+                    return RCodec<Word, Length>::_rice_decode_( this->sequence.sequence, &(this->iterator), this->sequence.k );
                 } 
 
                 /**
@@ -427,7 +433,7 @@ namespace samg {
                             n = bs.length;
                     std::cout << "Encoded integers: "<< bs.src_length <<"; k: "<< bs.k <<"; bitmap (|" << bs.length << "|) = ";
                     for (Length i = 0;i<n;i++) {
-                        if ( RCodec::_bitget_( buff, i ) )
+                        if ( RCodec<Word, Length>::_bitget_( buff, i ) )
                             std::cout << "1";
                         else 
                             std::cout << "0";
@@ -445,10 +451,13 @@ namespace samg {
                             strm << "|";
                             printer_prompt = true;
                         }
-                        if ( RCodec::_bitget_( buff, i ) )
+                        if ( RCodec<Word, Length>::_bitget_( buff, i ) )
                             strm << "1";
                         else 
                             strm << "0";
+                    }
+                    if( !printer_prompt ) {
+                        strm << "|";
                     }
                     return strm;
                 }

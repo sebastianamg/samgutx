@@ -50,11 +50,18 @@
 #include <unordered_map>
 #include <sdsl/bit_vectors.hpp>
 #include <samg/commons.hpp>
+#include <samg/matutx.hpp>
 #include <stdexcept>
 
 namespace samg {
     namespace grcodec {
 
+        /**
+         * @brief This struct represents a binary sequence.
+         * 
+         * @tparam Word used to encode bits.
+         * @tparam Length used to represents lengths of the binary sequence (i.e. actual length and indexes to traverse the sequence).
+         */
         template<typename Word, typename Length = std::uint64_t> struct BinarySequence {
             static_assert(
                 std::is_same_v<Word, std::uint8_t> ||
@@ -69,28 +76,75 @@ namespace samg {
                 std::is_same_v<Length, std::uint64_t>,
                 "Second typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
 
+            static const Length GROWING_SPAN = 4096 * sizeof(Word);
             Word    *sequence; // It is the bitmap.
+            std::size_t k;
             Length  length, // Used as internal position reference within the bitmap 'sequence'.
                     src_length, // It tells the total number of encoded integers.
                     bitmap_length; // It tells the bitmap length in bytes. (maximum capacity of the bitmap)
-            std::size_t k;
-            BinarySequence( const Length src_length, const std::size_t k ):
-                bitmap_length( src_length * 2 * sizeof(Word) ),
-                // sequence((Word*) malloc( sequence_length * 2 * sizeof(Word) )),
-                // sequence((Word*) malloc( bitmap_length )),
+            
+            /**
+             * @brief Construct a new Binary Sequence object
+             * 
+             * @param file_name 
+             */
+            BinarySequence( const std::string file_name ) {
+                // TODO Test it!
+                samg::matutx::WordSequenceSerializer<Word> serializer = samg::matutx::WordSequenceSerializer<Word>( file_name );
+                this->k = serializer.get_value<std::size_t>();
+                this->length = serializer.get_value<Length>();
+                this->src_length = serializer.get_value<Length>();
+                this->bitmap_length = serializer.get_value<Length>();
+                std::vector<Word> seq = serializer.get_next_values(this->bitmap_length);
+                this->sequence = seq.data();
+            }
+            
+            /**
+             * @brief Construct a new Binary Sequence object
+             * 
+             * @param k 
+             */
+            BinarySequence( const std::size_t k ):
+                // bitmap_length( src_length * 2 * sizeof(Word) ),
+                k(k),
                 length(0),
-                src_length(src_length),
-                k(k)
+                src_length(0),
+                bitmap_length( GROWING_SPAN )
             {
                 this->sequence = (Word*) malloc( this->bitmap_length );
             }
+
+            /**
+             * @brief Construct a new Binary Sequence object
+             * 
+             * @param sequence 
+             * @param sequence_length 
+             * @param src_length 
+             * @param k 
+             */
             BinarySequence( Word *sequence, const Length sequence_length, const Length src_length, const std::size_t k ):
+                k(k),
                 sequence( sequence ),
-                bitmap_length(sequence_length),
                 length(sequence_length),
                 src_length(src_length),
-                k(k)
+                bitmap_length(sequence_length)
             {}
+
+            /**
+             * @brief This function serializes this binary sequence.
+             * 
+             * @param file_name 
+             */
+            void save( std::string file_name ) {
+                // TODO Test it!
+                samg::matutx::WordSequenceSerializer<Word> serializer = samg::matutx::WordSequenceSerializer<Word>();
+                serializer.add_value<std::size_t>( this->k );
+                serializer.add_value<Length>( this->length );
+                serializer.add_value<Length>( this->src_length );
+                serializer.add_value<Length>( this->bitmap_length );
+                serializer.add_values( this->sequence, this->bitmap_length );
+                serializer.save( file_name );
+            }
         };
 
         // TODO: Add `uint computeGolombRiceParameter_forList(uint *buff, uint n)` from [bc.hpp].
@@ -260,13 +314,17 @@ namespace samg {
                     sequence( bs )
                 { this->restart(); }
 
-                RCodec( const Length src_length, const std::size_t k ): 
-                    sequence( BinarySequence<Word,Length>( src_length, k ) )
+                RCodec( const std::size_t k ): 
+                    sequence( BinarySequence<Word,Length>( k ) )
                 { this->restart(); }
 
                 RCodec( Word *sequence, const Length sequence_length, const Length src_length, const std::size_t k ): 
                     sequence( BinarySequence<Word,Length>( sequence, sequence_length, src_length, k ) )
                 { this->restart(); }
+
+                // ~RCodec() {
+                //     delete this->sequence;
+                // }
 
                 /**
                  * TODO
@@ -320,7 +378,7 @@ namespace samg {
                  */
                 static BinarySequence<Word,Length> encode( std::vector<Word> sequence, const std::size_t k ) {
                     // std::cout << "encode (1)" << std::endl;
-                    BinarySequence<Word,Length> bs(sequence.size(), k);
+                    BinarySequence<Word,Length> &bs = new BinarySequence<Word,Length>(sequence.size(), k);
                     // std::cout << "encode (2) --- bitmap_length = " << bs.bitmap_length << std::endl;
 
                     for ( Length i = 0; i < sequence.size(); ++i ) {
@@ -337,7 +395,7 @@ namespace samg {
                  * @param bs 
                  * @return std::vector<Word>
                  */
-                static std::vector<Word> decode( BinarySequence<Word,Length> bs ) {
+                static std::vector<Word> decode( BinarySequence<Word,Length> &bs ) {
                     Length    position = 0;
                     std::vector<Word> sequence;
 
@@ -356,12 +414,16 @@ namespace samg {
                  * @warning This implementation is O(n), where n is the number of bits in the internal bitmap.
                  */
                 void append(const Word n) {
-                    if( this->sequence.length == this->sequence.bitmap_length ) {
-                        this->sequence.bitmap_length *= 2;
+                    // std::cout << "RiceRuns/append --- n = " << n << std::endl;
+                    if( this->sequence.length >= this->sequence.bitmap_length ) {
+                        // this->sequence.bitmap_length *= 2;
+                        this->sequence.bitmap_length += BinarySequence<Word,Length>::GROWING_SPAN;
                         this->sequence.sequence = (Word*) rrealloc( this->sequence.sequence, this->sequence.bitmap_length );
+                        // std::cout << "RiceRuns/append --- n = " << n << "\tgrowing BinarySequence bitmap!" << std::endl;
                     }
                     this->sequence.length = RCodec<Word, Length>::_rice_encode_( this->sequence.sequence, this->sequence.length, n, this->sequence.k );
                     ++(this->sequence.src_length);
+                    // RCodec<Word,Length>::display_binary_sequence(this->sequence);
                     // ++(this->iterator);
                 }
 
@@ -428,12 +490,26 @@ namespace samg {
                     return this->iterator;
                 }
 
-                static void display_binary_sequence( BinarySequence<Word,Length> bs, char* msg ) {
-                    Word    *buff = bs.sequence,
-                            n = bs.length;
-                    std::cout << "Encoded integers: "<< bs.src_length <<"; k: "<< bs.k <<"; bitmap (|" << bs.length << "|) = ";
-                    for (Length i = 0;i<n;i++) {
-                        if ( RCodec<Word, Length>::_bitget_( buff, i ) )
+                static void save( std::string file_name, BinarySequence<Word,Length> &bs ) {
+                    // TODO
+                    samg::matutx::WordSequenceSerializer<Word> serializer;
+
+                    serializer.add_value();
+                }
+
+                static BinarySequence<Word,Length> load( std::string file_name ) {
+                    // TODO
+                }
+
+                /**
+                 * @brief @brief This function displays the bitmap and the metadata of a BinarySequence
+                 * 
+                 * @param bs 
+                 */
+                static void display_binary_sequence( BinarySequence<Word,Length> bs ) {
+                    std::cout << "Encoded integers: "<< bs.src_length <<"; k: "<< bs.k <<"; bitmap (|" << bs.length << " / " << bs.bitmap_length << "|[B]) = ";
+                    for (Length i = 0; i < bs.length; i++) {
+                        if ( RCodec<Word, Length>::_bitget_( bs.sequence, i ) )
                             std::cout << "1";
                         else 
                             std::cout << "0";
@@ -625,56 +701,21 @@ namespace samg {
                 static sdsl::bit_vector _rice_encode_(const Type n, const Type q, const Type r, const std::size_t m) {
                     static std::size_t r_bits, prev_m = 0; // Using simple memoization method for log2. 
                     
-                    // auto start = std::chrono::high_resolution_clock::now();
-                    // std::size_t r_bits = (std::size_t)GRCodec::log2(m);
                     if ( m != prev_m ) {
                         r_bits = (std::size_t)log2(m);
                         prev_m = m;
                     }
-                    // auto end = std::chrono::high_resolution_clock::now();
-                    // double time_taken = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
-                    // printf("*** Rice encoding - LOG2 time %.2f[ns]\n",time_taken);
-
-                    // start = std::chrono::high_resolution_clock::now();
+                    
                     sdsl::bit_vector v(r_bits + q + 1);
-                    // std::size_t len = r_bits + q + 1;
-                    // sdsl::bit_vector v(len, 1);
-                    // end = std::chrono::high_resolution_clock::now();
-                    // time_taken = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
-                    // printf("*** Rice encoding - codeword bitmap declaration time %.2f[ns]\n",time_taken);
-
-                    // start = std::chrono::high_resolution_clock::now();
+                    
                     v.set_int(0,r,GRCodec::BITS_PER_BYTE);
 
                     for (std::size_t i = r_bits + 1; i < (r_bits + q + 1); ++i) {
                         v[i] = 1;
                     } // v[r_bits] = 0 as the sdsl::bit_vector initialization default value is 0. 
-                    // v[r_bits] = 0;
-                    // v = v & (std::pow(2,len) - 1);
-                    // end = std::chrono::high_resolution_clock::now();
-                    // time_taken = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
-                    // printf("*** Rice encoding time %.2f[ns]\n",time_taken);
-
-                    // auto end = std::chrono::high_resolution_clock::now();
-                    // double time_taken = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
-                    // printf("*** Rice encoding %.2f[ns]\n",time_taken);
-
-                    // std::cout << " bitmap = " << v << "; data[0] = " << v.data()[0] << std::endl;
                     
-
                     return v;
                 }
-                // static sdsl::bit_vector _rice_encode_(const Type n, const Type q, const Type r, const std::size_t m) {
-                //     std::size_t r_bits = (std::size_t)GRCodec::log2(m);
-                //     sdsl::bit_vector v(r_bits + q + 1);
-                //     v.set_int(0,r,GRCodec::BITS_PER_BYTE);
-
-                //     for (std::size_t i = r_bits + 1; i < (r_bits + q + 1); ++i) {
-                //         v[i] = 1;
-                //     } // v[r_bits] = 0 as the sdsl::bit_vector initialization default value is 0. 
-                    
-                //     return v;
-                // }
 
                 /**
                  * @brief This function allows encoding n using the Golomb algorithm. 
@@ -943,31 +984,38 @@ namespace samg {
         };
 
         /**
-         * @brief This class represents a Rice-runs encoding of integers of type Type.
+         * @brief This class represents a Rice-runs encoding of integers of type Word. This codec uses RCodec class to encode codewords. 
          * 
-         * @tparam Type 
+         * @tparam Word 
+         * @tparam Length 
          */
-        template<typename Type> class RiceRuns {
+        template<typename Word, typename Length = std::uint64_t> class RiceRuns {
             static_assert(
-                    std::is_same_v<Type, std::uint8_t> ||
-                    std::is_same_v<Type, std::uint16_t> ||
-                    std::is_same_v<Type, std::uint32_t> ||
-                    std::is_same_v<Type, std::uint64_t>,
+                    std::is_same_v<Word, std::uint8_t> ||
+                    std::is_same_v<Word, std::uint16_t> ||
+                    std::is_same_v<Word, std::uint32_t> ||
+                    std::is_same_v<Word, std::uint64_t>,
                     "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
+            static_assert(
+                std::is_same_v<Length, std::uint8_t> ||
+                std::is_same_v<Length, std::uint16_t> ||
+                std::is_same_v<Length, std::uint32_t> ||
+                std::is_same_v<Length, std::uint64_t>,
+                "Second typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
             
             private:
                 typedef std::int64_t rseq_t; // Data type internally used by the relative sequence. It can be changed here to reduce memory footprint in case numbers in a relative sequence are small enough to fit in fewer bits.  
                 typedef std::queue<RiceRuns::rseq_t> RelativeSequence;
-                typedef std::queue<Type> AbsoluteSequence;
-                // typedef std::queue<Type> AbsoluteBuffer;
+                typedef std::queue<Word> AbsoluteSequence;
+                // typedef std::queue<Word> AbsoluteBuffer;
 
-                static const std::size_t    RLE_THRESHOLD = 3,     // Minimum number of repetitions to be compressed.
-                                            ESCAPE_RANGE_SPAN = 2; // Range span to reserve integers as special symbols (e.g. negative flag, repetition mark).
+                static const Length RLE_THRESHOLD = 3,     // Minimum number of repetitions to be compressed.
+                                    ESCAPE_RANGE_SPAN = 2; // Range span to reserve integers as special symbols (e.g. negative flag, repetition mark).
                 
-                static const Type   NEGATIVE_FLAG = 0,
+                static const Word   NEGATIVE_FLAG = 0,
                                     REPETITION_FLAG = 1;
 
-                static const bool IS_NEGATIVE = true;
+                static const bool   IS_NEGATIVE = true;
                 
                 /**
                  * @brief This function allows generating a gap centered in 0. The result is a value that belongs to either (-inf,-RiceRuns::ESCAPE_RANGE_SPAN+1] or [RiceRuns::ESCAPE_RANGE_SPAN,inf). This transformation of v allows to release values in [-RiceRuns::ESCAPE_RANGE_SPAN,RiceRuns::ESCAPE_RANGE_SPAN-1] to be used as scape symbols during encoding/decoding of, for instance, negative values.
@@ -990,7 +1038,7 @@ namespace samg {
                 }
 
                 /**
-                 * @brief This function allows converting a sequence of unsigned Type integers into a relative sequence of signed integers by computing their sequential differences. The resultant sequence is transformed in the process to prevent the number 0 that is used to represent negative integers when numbers are encoded with variable-length integers.  
+                 * @brief This function allows converting a sequence of unsigned Word integers into a relative sequence of signed integers by computing their sequential differences. The resultant sequence is transformed in the process to prevent the number 0 that is used to represent negative integers when numbers are encoded with variable-length integers.  
                  * 
                  * @param sequence 
                  * @return RelativeSequence 
@@ -1005,7 +1053,7 @@ namespace samg {
                             1 2 0 3 -1 -5 0 5 <--- Original relative values.
                             2 3 1 4 -1 -5 1 6 <--- transformed relative values.
                         */
-                       Type current,
+                       Word current,
                             previous = sequence.front();
                         sequence.pop();
 
@@ -1024,7 +1072,7 @@ namespace samg {
                 }
 
                 /**
-                 * @brief This function allows converting a relative sequence of sequential differences encoded as signed integers into an absolute sequence of unsigned Type integers. The resultant sequence is transformed in the process to revert previous transformation when relativization was applied by `_get_transformed_relative_sequence_` function.
+                 * @brief This function allows converting a relative sequence of sequential differences encoded as signed integers into an absolute sequence of unsigned Word integers. The resultant sequence is transformed in the process to revert previous transformation when relativization was applied by `_get_transformed_relative_sequence_` function.
                  * 
                  * @param relative_sequence 
                  * @return AbsoluteSequence
@@ -1101,44 +1149,44 @@ namespace samg {
                          * @brief Functions to be executed by each state.
                          * 
                          */
-                        const std::array<std::function<void( GRCodec<Type>&, RiceRuns::rseq_t&, const RiceRuns::rseq_t, std::size_t& )>,10> sfunction = {
-                            []( GRCodec<Type> &codec, RiceRuns::rseq_t &previous_n,const RiceRuns::rseq_t n, std::size_t &r ) { // ES_Q0
+                        const std::array<std::function<void( RCodec<Word,Length>&, RiceRuns::rseq_t&, const RiceRuns::rseq_t, Length& )>,10> sfunction = {
+                            []( RCodec<Word,Length> &codec, RiceRuns::rseq_t &previous_n,const RiceRuns::rseq_t n, Length &r ) { // ES_Q0
                                 previous_n = n;
                                 r = 1;
                             },
-                            []( GRCodec<Type> &codec, RiceRuns::rseq_t &previous_n,const RiceRuns::rseq_t n, std::size_t &r ) { // ES_Q1
+                            []( RCodec<Word,Length> &codec, RiceRuns::rseq_t &previous_n,const RiceRuns::rseq_t n, Length &r ) { // ES_Q1
                                 ++r;
                             },
-                            []( GRCodec<Type> &codec, RiceRuns::rseq_t &previous_n,const RiceRuns::rseq_t n, std::size_t &r ) { // ES_Q2
+                            []( RCodec<Word,Length> &codec, RiceRuns::rseq_t &previous_n,const RiceRuns::rseq_t n, Length &r ) { // ES_Q2
                                 _write_integer_( codec, previous_n, r );
                                 previous_n = n;
                                 r = 1;
                             },
-                            []( GRCodec<Type> &codec, RiceRuns::rseq_t &previous_n,const RiceRuns::rseq_t n, std::size_t &r ) { // ES_Q3
+                            []( RCodec<Word,Length> &codec, RiceRuns::rseq_t &previous_n,const RiceRuns::rseq_t n, Length &r ) { // ES_Q3
                                 _write_integer_( codec, previous_n, r );
                                 previous_n = n;
                                 r = 1;
                             },
-                            []( GRCodec<Type> &codec, RiceRuns::rseq_t &previous_n,const RiceRuns::rseq_t n, std::size_t &r ) { // ES_Q4
+                            []( RCodec<Word,Length> &codec, RiceRuns::rseq_t &previous_n,const RiceRuns::rseq_t n, Length &r ) { // ES_Q4
                                 _write_integer_( codec, previous_n, r, RiceRuns::IS_NEGATIVE );
                                 previous_n = n;
                                 r = 1;
                             },
-                            []( GRCodec<Type> &codec, RiceRuns::rseq_t &previous_n,const RiceRuns::rseq_t n, std::size_t &r ) { // ES_Q5
+                            []( RCodec<Word,Length> &codec, RiceRuns::rseq_t &previous_n,const RiceRuns::rseq_t n, Length &r ) { // ES_Q5
                                 ++r;
                             },
-                            []( GRCodec<Type> &codec, RiceRuns::rseq_t &previous_n,const RiceRuns::rseq_t n, std::size_t &r ) { // ES_Q6
+                            []( RCodec<Word,Length> &codec, RiceRuns::rseq_t &previous_n,const RiceRuns::rseq_t n, Length &r ) { // ES_Q6
                                 _write_integer_( codec, previous_n, r, RiceRuns::IS_NEGATIVE );
                                 previous_n = n;
                                 r = 1;
                             },
-                            []( GRCodec<Type> &codec, RiceRuns::rseq_t &previous_n,const RiceRuns::rseq_t n, std::size_t &r ) { // ES_PSINK
+                            []( RCodec<Word,Length> &codec, RiceRuns::rseq_t &previous_n,const RiceRuns::rseq_t n, Length &r ) { // ES_PSINK
                                 _write_integer_( codec, previous_n, r );
                             },
-                            []( GRCodec<Type> &codec, RiceRuns::rseq_t &previous_n,const RiceRuns::rseq_t n, std::size_t &r ) { // ES_NSINK
+                            []( RCodec<Word,Length> &codec, RiceRuns::rseq_t &previous_n,const RiceRuns::rseq_t n, Length &r ) { // ES_NSINK
                                 _write_integer_( codec, previous_n, r, RiceRuns::IS_NEGATIVE );
                             },
-                            []( GRCodec<Type> &codec, RiceRuns::rseq_t &previous_n,const RiceRuns::rseq_t n, std::size_t &r ) { // ES_ERROR
+                            []( RCodec<Word,Length> &codec, RiceRuns::rseq_t &previous_n,const RiceRuns::rseq_t n, Length &r ) { // ES_ERROR
                                 throw std::runtime_error("Encoding error state!");
                             }
                         };
@@ -1169,18 +1217,21 @@ namespace samg {
                          * @param r 
                          * @param is_negative 
                          */
-                        static void _write_integer_( GRCodec<Type> &codec, RiceRuns::rseq_t n, const std::size_t r, const bool is_negative = false ) {
+                        static void _write_integer_( RCodec<Word,Length> &codec, RiceRuns::rseq_t n, const Length r, const bool is_negative = false ) {
                             n = ( is_negative ) ? n * -1 : n;
                             if( r < RiceRuns::RLE_THRESHOLD ) {
-                                for (std::size_t j = 0; j < r; ++j) {
+                                for (Length j = 0; j < r; ++j) {
                                     if( is_negative ) { codec.append(RiceRuns::NEGATIVE_FLAG); }
                                     codec.append(n);
                                 }
+                                // std::cout << " Write ---> r<" << r << "> x (" << (is_negative ? " NEG<00>":"") << " n<" << n << "> )" << std::endl;
                             } else {
                                 codec.append(RiceRuns::REPETITION_FLAG);
                                 if( is_negative ) { codec.append(RiceRuns::NEGATIVE_FLAG); }
                                 codec.append(n);
                                 codec.append(r);
+
+                                // std::cout << " Write ---> REP<01>" << (is_negative ? " NEG<00>":"") << " n<" << n << "> r<" << r << ">" << std::endl;
                             }
                         }
 
@@ -1246,14 +1297,21 @@ namespace samg {
                          */
                         // EState next( const RelativeSequence rs, std::size_t &i, const RiceRuns::rseq_t previous_n, RiceRuns::rseq_t &n ) {
                         EState next( RelativeSequence &rs, const RiceRuns::rseq_t previous_n, RiceRuns::rseq_t &n ) {
+                            // std::cout << "FSMEncoder/next> (1)" << std::endl;
                             if( this->is_init ) {
+                                // std::cout << "FSMEncoder/next> (1.1.1) --- previous_n = " << previous_n << "; n = " << n << std::endl;
                                 // this->current_state = fsm[this->current_state][ FSMEncoder::_get_case_( rs, i, previous_n, n ) ];
                                 this->current_state = fsm[this->current_state][ FSMEncoder::_get_case_( rs, previous_n, n ) ];
+                                // std::cout << "FSMEncoder/next> (1.1.2)" << std::endl;
                             } else {
+                                // std::cout << "FSMEncoder/next> (1.2.1)" << std::endl;
                                 // this->_init_( rs, i, n );
                                 this->_init_( rs, n );
+                                // std::cout << "FSMEncoder/next> (1.2.2)" << std::endl;
                                 this->is_init = true;
+                                // std::cout << "FSMEncoder/next> (1.2.3)" << std::endl;
                             }
+                            // std::cout << "FSMEncoder/next> current_state = " << this->current_state << std::endl;
                             return this->current_state;
                         }
 
@@ -1265,7 +1323,7 @@ namespace samg {
                          * @param n 
                          * @param r 
                          */
-                        void run( GRCodec<Type> &codec, RiceRuns::rseq_t &previous_n, const RiceRuns::rseq_t n, std::size_t &r ) {
+                        void run( RCodec<Word,Length> &codec, RiceRuns::rseq_t &previous_n, const RiceRuns::rseq_t n, Length &r ) {
                             this->sfunction[this->current_state]( codec, previous_n, n, r );
                         }
                         
@@ -1343,41 +1401,41 @@ namespace samg {
                          * @brief Functions to be executed by each state.
                          * 
                          */
-                        const std::array<std::function<void( RelativeSequence&, Type&, const Type )>,12> sfunction = {
-                            []( RelativeSequence &rs, Type &previous_n,const Type n ) { // DS_Q0
+                        const std::array<std::function<void( RelativeSequence&, Word&, const Word )>,12> sfunction = {
+                            []( RelativeSequence &rs, Word &previous_n,const Word n ) { // DS_Q0
                                 // Empty
                             },
-                            []( RelativeSequence &rs, Type &previous_n,const Type n ) { // DS_Q1
+                            []( RelativeSequence &rs, Word &previous_n,const Word n ) { // DS_Q1
                                 _write_integer_( rs, n, 1 );
                             },
-                            []( RelativeSequence &rs, Type &previous_n,const Type n ) { // DS_Q2
+                            []( RelativeSequence &rs, Word &previous_n,const Word n ) { // DS_Q2
                                 // Empty
                             },
-                            []( RelativeSequence &rs, Type &previous_n,const Type n ) { // DS_Q3
+                            []( RelativeSequence &rs, Word &previous_n,const Word n ) { // DS_Q3
                                 _write_integer_( rs, n, 1, RiceRuns::IS_NEGATIVE );
                             },
-                            []( RelativeSequence &rs, Type &previous_n,const Type n ) { // DS_04
+                            []( RelativeSequence &rs, Word &previous_n,const Word n ) { // DS_04
                                 // Empty
                             },
-                            []( RelativeSequence &rs, Type &previous_n,const Type n ) { // DS_Q5
+                            []( RelativeSequence &rs, Word &previous_n,const Word n ) { // DS_Q5
                                 previous_n = n;
                             },
-                            []( RelativeSequence &rs, Type &previous_n,const Type n ) { // DS_Q6
+                            []( RelativeSequence &rs, Word &previous_n,const Word n ) { // DS_Q6
                                 _write_integer_( rs, previous_n, n );
                             },
-                            []( RelativeSequence &rs, Type &previous_n,const Type n ) { // DS_Q7
+                            []( RelativeSequence &rs, Word &previous_n,const Word n ) { // DS_Q7
                                 // Empty
                             },
-                            []( RelativeSequence &rs, Type &previous_n,const Type n ) { // DS_Q8
+                            []( RelativeSequence &rs, Word &previous_n,const Word n ) { // DS_Q8
                                 previous_n = n;
                             },
-                            []( RelativeSequence &rs, Type &previous_n,const Type n ) { // DS_Q9
+                            []( RelativeSequence &rs, Word &previous_n,const Word n ) { // DS_Q9
                                 _write_integer_( rs, previous_n, n, RiceRuns::IS_NEGATIVE );
                             },
-                            []( RelativeSequence &rs, Type &previous_n,const Type n ) { // DS_SINK
+                            []( RelativeSequence &rs, Word &previous_n,const Word n ) { // DS_SINK
                                 // Empty
                             },
-                            []( RelativeSequence &rs, Type &previous_n,const Type n ) { // DS_ERROR
+                            []( RelativeSequence &rs, Word &previous_n,const Word n ) { // DS_ERROR
                                 throw std::runtime_error("Decoding error state!");
                             }
                         };
@@ -1410,9 +1468,9 @@ namespace samg {
                          * @param r 
                          * @param is_negative 
                          */
-                        static void _write_integer_( RelativeSequence &rs, const Type n, const std::size_t r, const bool is_negative = false ) {
+                        static void _write_integer_( RelativeSequence &rs, const Word n, const Length r, const bool is_negative = false ) {
                             RiceRuns::rseq_t x = is_negative ? ((RiceRuns::rseq_t)n) * -1 : n;
-                            for (std::size_t j = 0; j < r; ++j) {
+                            for (Length j = 0; j < r; ++j) {
                                 // rs.push_back(x);
                                 rs.push(x);
                             }
@@ -1425,7 +1483,7 @@ namespace samg {
                          * @param n 
                          * @return const DCase 
                          */
-                        static const DCase _get_case_( GRCodec<Type> &codec, Type &n ) {
+                        static const DCase _get_case_( RCodec<Word,Length> &codec, Word &n ) {
                             if( !codec.has_more() ) {
                                 return DCase::DC_EOS;
                             }else {
@@ -1448,7 +1506,7 @@ namespace samg {
                          * @param codec 
                          * @param n 
                          */
-                        void _init_( GRCodec<Type> &codec, Type &n ) {
+                        void _init_( Word &n ) {
                             this->current_state = DState::DS_Q0;
                         }
 
@@ -1462,9 +1520,9 @@ namespace samg {
                          * @param n 
                          * @return DState 
                          */
-                        DState next( GRCodec<Type> &codec, Type &previous_n, Type &n ) {
+                        DState next( RCodec<Word,Length> &codec, Word &previous_n, Word &n ) {
                             if( !this->is_init ) {
-                                this->_init_( codec, n );
+                                this->_init_( n );
                                 this->is_init = true;
                             }
                             this->current_state = fsm[this->current_state][ FSMDecoder::_get_case_( codec, n ) ];
@@ -1478,7 +1536,7 @@ namespace samg {
                          * @param previous_n 
                          * @param n 
                          */
-                        void run( RelativeSequence &rs, Type &previous_n, const Type n ) {
+                        void run( RelativeSequence &rs, Word &previous_n, const Word n ) {
                             this->sfunction[this->current_state]( rs, previous_n, n );
                         }
                         
@@ -1519,84 +1577,123 @@ namespace samg {
                 };
 
                 // Attributes for relative-sequence traversal:
-                GRCodec<Type> codec;
+                RCodec<Word,Length> codec;
                 FSMDecoder decoding_fsm;
-                Type    previous_n, 
+                Word    previous_n, 
                         n,
                         previous_relative_value;
                 bool is_first;
                 AbsoluteSequence next_buffer;
 
             public:
-                RiceRuns(const std::size_t k): 
+                RiceRuns( BinarySequence<Word,Length> bs ): 
                     codec( 
-                        GRCodec(
-                            std::pow( 2, k ), // By using a power of 2, `codec` acts as Rice encoder.
-                            GRCodec<Type>::GRCodecType::GOLOMB_RICE
+                        RCodec<Word,Length>(
+                            bs
                         )
                     ),
                     is_first(true)
-                { }
+                { this->restart_encoded_sequence_iterator(); }
 
-                RiceRuns(sdsl::bit_vector encoded_sequence, const std::size_t k): 
+                RiceRuns( const std::size_t k ): 
                     codec( 
-                        GRCodec<Type>(
-                            encoded_sequence,
-                            std::pow( 2, k ), // By using a power of 2, `codec` acts as Rice encoder.
-                            GRCodec<Type>::GRCodecType::GOLOMB_RICE
+                        RCodec<Word,Length>(
+                            k
                         )
                     ),
                     is_first(true)
-                { }
+                { this->restart_encoded_sequence_iterator(); }
+
+                RiceRuns( Word *sequence, const Length sequence_length, const Length src_length, const std::size_t k ): 
+                    codec( 
+                        RCodec<Word,Length>(
+                             sequence,
+                             sequence_length,
+                             src_length,
+                             k 
+                        )
+                    ),
+                    is_first(true)
+                { this->restart_encoded_sequence_iterator(); }
+
+                // ~RiceRuns() {
+                //     delete this->codec;
+                // }
 
                 /**
-                 * @brief This function encodes a sequence of Type integers using Rice-runs. 
+                 * @brief This function encodes a sequence of Word integers using Rice-runs. 
                  * 
                  * @param sequence 
-                 * @param k Golomb-Rice parameter m = 2^k.
-                 * @return sdsl::bit_vector 
+                 * @param k 
+                 * @return BinarySequence<Word, Length> 
                  */
-                static sdsl::bit_vector encode( const AbsoluteSequence sequence, const std::size_t k ) {
-                    GRCodec<Type> codec( 
-                        std::pow( 2, k ), // By using a power of 2, `codec` acts as Rice encoder.
-                        GRCodec<Type>::GRCodecType::GOLOMB_RICE 
+                static BinarySequence<Word, Length> encode( const AbsoluteSequence sequence, const std::size_t k ) {
+                    // std::cout << "RiceRuns/encode (1)" << std::endl;
+                    RCodec<Word,Length> codec( 
+                        // sequence.size(),
+                        k
                     );
+
+
+                    // std::cout << "RiceRuns/encode (2)" << std::endl;
 
                     FSMEncoder fsm;
 
                     RelativeSequence relative_sequence = RiceRuns::_get_transformed_relative_sequence_( sequence );
 
-                    std::size_t r; // Let r be a repetition counter of n.
+                    // samg::utils::print_queue<RiceRuns::rseq_t>("Relative transformed queue |"+ std::to_string(relative_sequence.size()) +"|: ", relative_sequence);
+
+                    // std::cout << "RiceRuns/encode (3)" << std::endl;
+
+                    Length r; // Let r be a repetition counter of n.
 
                     RiceRuns::rseq_t    previous_n, // Previous sequence value.
                                         n;          // Next sequence value.
 
                     do {
+                        // std::cout << "\tRiceRuns/encode/do-while (4)" << std::endl;
                         fsm.next( relative_sequence, previous_n, n);
+                        // std::cout << "\tRiceRuns/encode/do-while (5)" << std::endl;
                         if( fsm.is_error_state() ) { break; }
                         fsm.run( codec, previous_n, n, r );
+                        // std::cout << "\tRiceRuns/encode/do-while (6)" << std::endl;
                     } while( !fsm.is_end_state() );
 
-                    return codec.get_bit_vector();
+                    // std::cout << "RiceRuns/encode (7)" << std::endl;
+
+                    return codec.get_binary_sequence();
                 }
 
                 /**
-                 * @brief This function decodes an encoded sequence of Type integers using Rice-runs. 
+                 * @brief This function decodes an encoded sequence of Word integers using Rice-runs. 
                  * 
-                 * @param encoded_sequence 
-                 * @param k Golomb-Rice parameter m = 2^k.
+                 * @param bs 
                  * @return AbsoluteSequence 
                  */
-                static AbsoluteSequence decode( sdsl::bit_vector encoded_sequence, const std::size_t k  ) {
-                    GRCodec<Type> codec(
-                        encoded_sequence, 
-                        std::pow( 2, k ),
-                        GRCodec<Type>::GRCodecType::GOLOMB_RICE // By using a power of 2, `codec` acts as Rice encoder.
+                static AbsoluteSequence decode( BinarySequence<Word,Length> bs  ) {
+                    return RiceRuns<Word,Length>::decode( bs.sequence, bs.length, bs.src_length, bs.k );
+                }
+
+                /**
+                 * @brief This function decodes an encoded sequence of Word integers using Rice-runs. 
+                 * 
+                 * @param sequence 
+                 * @param sequence_length 
+                 * @param src_length 
+                 * @param k 
+                 * @return AbsoluteSequence 
+                 */
+                static AbsoluteSequence decode( Word *sequence, const Length sequence_length, const Length src_length, const std::size_t k  ) {
+                    RCodec<Word,Length> codec(
+                        sequence,
+                        sequence_length, 
+                        src_length,
+                        k
                     );
 
                     FSMDecoder fsm;
 
-                    Type    previous_n, 
+                    Word    previous_n, 
                             n;
 
                     RelativeSequence relative_sequence;
@@ -1613,23 +1710,35 @@ namespace samg {
                 /**
                  * @brief This function returns the Golomb-Rice encoded bitmap.
                  * 
-                 * @return sdsl::bit_vector 
+                 * @return BinarySequence<Word,Length>
                  */
-                sdsl::bit_vector get_encoded_sequence() const {
-                    return this->encoded_sequence;
+                BinarySequence<Word,Length> get_encoded_sequence() const {
+                    return this->codec.get_binary_sequence();
                 }
 
                 /**
                  * @brief This function sets the internal encoded sequence.
                  * 
-                 * @param encoded_sequence 
+                 * @param bs 
+                 */
+                void set_encoded_sequence( BinarySequence<Word,Length> bs ) {
+                    this->set_encoded_sequence( bs.sequence, bs.length, bs.src_length, bs.k );
+                }
+
+                /**
+                 * @brief This function sets the internal encoded sequence.
+                 * 
+                 * @param sequence 
+                 * @param sequence_length 
+                 * @param src_length 
                  * @param k 
                  */
-                void set_encoded_sequence( sdsl::bit_vector encoded_sequence, const std::size_t k ) {
-                    this->codec = GRCodec(
-                        encoded_sequence,
-                        std::pow( 2, k ), // By using a power of 2, `codec` acts as Rice encoder.
-                        GRCodec<Type>::GRCodecType::GOLOMB_RICE
+                void set_encoded_sequence( Word *sequence, const Length sequence_length, const Length src_length, const std::size_t k ) {
+                    this->codec = RCodec<Word,Length>(
+                        sequence, 
+                        sequence_length, 
+                        src_length, 
+                        k
                     );
                     this->restart_encoded_sequence_iterator();
                 }
@@ -1637,9 +1746,9 @@ namespace samg {
                 /**
                  * @brief This function allows retrieving one by one positive integers from the Rice-runs encoded internal bitmap. 
                  * 
-                 * @return const Type 
+                 * @return const Word 
                  */
-                const Type next() {
+                const Word next() {
                     if( this->next_buffer.empty() ) {
                         std::uint8_t s;
                         RelativeSequence relative_sequence;
@@ -1675,7 +1784,7 @@ namespace samg {
                         this->is_first = false;
                     }
 
-                    Type v = this->next_buffer.front();
+                    Word v = this->next_buffer.front();
                     this->next_buffer.pop();
                     return v;
                 }

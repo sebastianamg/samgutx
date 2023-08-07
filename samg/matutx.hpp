@@ -257,28 +257,28 @@ namespace samg {
                  */
                 template<typename TypeSrc, typename TypeTrg = Type> std::vector<TypeTrg> parse_values(std::vector<TypeSrc> V) {
                     std::vector<TypeTrg> T;
-                    if( sizeof(TypeSrc) == sizeof(TypeTrg) ) {
+                    if( sizeof(TypeTrg) == sizeof(TypeSrc) ) {
                         T.insert(T.end(),V.begin(),V.end());
                     } else { // sizeof(TypeSrc) != sizeof(Type)
                         const TypeTrg* x = reinterpret_cast<const TypeTrg*>(V.data());
-                        std::size_t l = (std::size_t)std::ceil((double)(V.size()*sizeof(TypeSrc))/ (double)sizeof(TypeTrg));
+                        std::size_t l = (std::size_t)std::ceil((double)(V.size()*sizeof(TypeSrc)) / (double)sizeof(TypeTrg));
                         T.insert(T.end(),x,x+l);
                     }
                     return T;
                 }
 
-                /**
-                 * @brief This function allows parsing an integer value of type TypeSrc into type TypeTrg.
-                 * 
-                 * @tparam TypeSrc 
-                 * @tparam TypeTrg 
-                 * @param v 
-                 * @return TypeTrg 
-                 */
-                template<typename TypeSrc, typename TypeTrg=Type> TypeTrg parse_value(TypeSrc v) {
-                    std::vector<TypeSrc> V = {v};
-                    return this->parse_values<TypeSrc>(V)[0];
-                }
+                // /**
+                //  * @brief This function allows parsing an integer value of type TypeSrc into type TypeTrg.
+                //  * 
+                //  * @tparam TypeSrc 
+                //  * @tparam TypeTrg 
+                //  * @param v 
+                //  * @return TypeTrg 
+                //  */
+                // template<typename TypeSrc, typename TypeTrg=Type> TypeTrg parse_value(TypeSrc v) {
+                //     std::vector<TypeSrc> V = {v};
+                //     return this->parse_values<TypeSrc>(V)[0];
+                // }
                 // template<typename TypeSrc, typename TypeTrg=Type> std::vector<TypeTrg> parse_value(TypeSrc v) {
                 //     std::vector<TypeSrc> V = {v};
                 //     return this->parse_values<TypeSrc>(V);
@@ -298,7 +298,11 @@ namespace samg {
                         std::is_same_v<TypeSrc, std::uint32_t> ||
                         std::is_same_v<TypeSrc, std::uint64_t>,
                         "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
-                    this->sequence.push_back(this->parse_value<TypeSrc>(v));
+
+                    std::vector<TypeSrc> V = {v};
+                    std::vector<Type> X = this->parse_values<TypeSrc>(V);
+                    this->sequence.insert(this->sequence.end(),X.begin(),X.end());
+                    // this->sequence.push_back(this->parse_values<TypeSrc>(v));
                 }
 
                 // /**
@@ -352,10 +356,10 @@ namespace samg {
                  * @param v 
                  * @param l 
                  */
-                template<typename TypeSrc = Type> void add_values(const TypeSrc *v, const std::size_t l) {
+                template<typename TypeSrc = Type, typename TypeLength = std::size_t> void add_values(const TypeSrc *v, const TypeLength l) {
                     std::vector<TypeSrc> V;
                     V.insert(V.end(),v,v+l);
-                    this->add_values(V);
+                    this->add_values<TypeSrc>(V);
                 }
 
                 /**
@@ -423,71 +427,89 @@ namespace samg {
                 /**
                  * @brief This function allows getting remaining values from the serialization starting from where an internal index is. 
                  * 
-                 * @tparam TypeTgr 
-                 * @return const std::vector<TypeTgr> 
+                 * @tparam TypeTrg 
+                 * @return const std::vector<TypeTrg> 
                  */
-                template<typename TypeTgr = Type> const std::vector<TypeTgr> get_remaining_values() {
-                    std::vector<Type> V;
+                template<typename TypeTrg = Type> const std::vector<TypeTrg> get_remaining_values() {
+                    std::vector<TypeTrg> V;
                     while(this->has_more()) {
-                        V.push_back(this->get_value<TypeTgr>());
+                        V.push_back(this->get_value<TypeTrg>());
                     }
                     return V;
                 }
 
                 /**
-                 * @brief This function allows retrieving the next `length` values. 
+                 * @brief This function allows retrieving the next `length` values of type TypeTrg.
                  * 
-                 * @tparam TypeTgr 
+                 * @tparam TypeTrg 
                  * @param length 
-                 * @return const std::vector<TypeTgr> 
+                 * @return const std::vector<TypeTrg> 
                  */
-                template<typename TypeTgr = Type> const std::vector<TypeTgr> get_next_values(std::uint64_t length) {
-                    std::vector<Type> V ;
-                    for (std::uint64_t i = 0 ; i < length; i++) {
-                        V.push_back(this->get_value<TypeTgr>());
+                template<typename TypeTrg = Type> const std::vector<TypeTrg> get_next_values(std::uint64_t length) {
+                    std::vector<TypeTrg> V;
+                    // std::size_t n = std::ceil( (length * sizeof(TypeTrg)) / sizeof(Type) ); // Compute number of Type-words that contain the TypeTrg-words.
+                    for (std::uint64_t i = 0 ; i < length /*&& this->has_more()*/; i++) {
+                        V.push_back(this->get_value<TypeTrg>());
                     }
                     return V;
                 }
 
                 /**
-                 * @brief This function allows retrieving the next `length` values starting at `beginning_index`.
+                 * @brief This function allows retrieving the next `length` values of type TypeTrg starting at `beginning_index`.
                  * 
+                 * @tparam TypeTrg 
                  * @param beginning_index 
                  * @param length 
-                 * @return std::vector<Type> 
+                 * @return const std::vector<TypeTrg> 
                  */
-                std::vector<Type> get_values(std::uint64_t beginning_index, std::uint64_t length) const {
-                    std::vector<Type> V;
-                    for (std::uint64_t i = beginning_index ; i < (beginning_index+length); i++) {
-                        V.push_back(this->get_value_at(i));
+                template<typename TypeTrg = Type> const std::vector<TypeTrg> get_values(std::uint64_t beginning_index, std::uint64_t length) const {
+                    std::vector<TypeTrg> V;
+                    // std::size_t n = std::ceil( (length * sizeof(TypeTrg)) / sizeof(Type) ); // Compute number of Type-words that contain the TypeTrg-words.
+                    std::size_t step = ( sizeof(TypeTrg) <= sizeof(Type) ) ? 1 : ( sizeof(TypeTrg) / sizeof(Type) );
+                    std::uint64_t limit = beginning_index + ( length * step );
+                    for ( std::uint64_t i = beginning_index ; i < limit; i+=step ) {
+                        V.push_back(this->get_value_at<TypeTrg>(i));
                     }
                     return V;
                 }
 
                 /**
-                 * @brief This function allows getting the `i`-th value from the serialization. 
+                 * @brief This function allows getting the `i`-th TypeTrg type value from the serialization. 
                  * 
+                 * @tparam TypeTrg 
                  * @param i 
                  * @return const Type 
                  */
-                const Type get_value_at(const std::uint64_t i) const {
-                    return this->sequence[i];
+                template<typename TypeTrg = Type> const Type get_value_at( std::uint64_t i ) const {
+                    if( sizeof(TypeTrg) <= sizeof(Type) ) {
+                        return (TypeTrg) this->sequence[i];
+                    } else {
+                        std::vector<Type> V;
+                        std::uint64_t limit = sizeof(TypeTrg) / sizeof(Type);
+                        for ( ; i < limit; ++i ) {
+                            V.push_back( this->sequence[i] );
+                        }
+                        std::vector<TypeTrg> T = this->parse_values<Type,TypeTrg>(V);
+                        return T[0]; // Assuming T contains only one value.
+                    }
                 }
 
                 /**
                  * @brief This function allows retrieving the next value, based on an internal index. 
                  * 
-                 * @return const Type 
+                 * @tparam TypeTrg 
+                 * @return const TypeTrg 
                  */
-                template<typename TypeTgr = Type> const TypeTgr get_value() {
-                    if( sizeof(TypeTgr) <= sizeof(Type) ) {
-                        return this->sequence[this->current_index++];
+                template<typename TypeTrg = Type> const TypeTrg get_value() {
+                    if( sizeof(TypeTrg) <= sizeof(Type) ) {
+                        return (TypeTrg) this->sequence[this->current_index++];
                     } else {
                         std::vector<Type> V;
-                        for (std::size_t i = 0; i < ( sizeof(TypeTgr) / sizeof(Type) ); ++i ) {
+                        std::uint64_t limit = sizeof(TypeTrg) / sizeof(Type);
+                        for (std::size_t i = 0; i < limit; ++i ) {
                             V.push_back( this->sequence[this->current_index++] );
                         }
-                        std::vector<TypeTgr> T = this->parse_values<Type,TypeTgr>(V);
+                        std::vector<TypeTrg> T = this->parse_values<Type,TypeTrg>(V);
                         return T[0]; // Assuming T contains only one value.
                     }
                 }

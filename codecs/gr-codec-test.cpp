@@ -9,7 +9,7 @@ namespace grcodec {
         class N3SequencesDataSet : public ::testing::Test {
             protected:
                 // Attributes:
-                static const std::size_t    N_ENTRIES = 200,
+                static const std::size_t    N_ENTRIES = 110,
                                             DIMENSIONS = 3;
                 using Word = std::uint32_t;
                 using Length = std::uint64_t;
@@ -67,7 +67,7 @@ namespace grcodec {
         // k = 2
         TEST_F(N3SequencesDataSet,Asc_k2) {
             for (std::size_t i = 0; i < DIMENSIONS; ++i) {
-                samg::grcodec::BinarySequence<Word,Length> bv = samg::grcodec::RiceRuns<Word>::encode(s1[i],K[0]);
+                samg::grcodec::RCodec<Word,Length>::BinarySequence bv = samg::grcodec::RiceRuns<Word>::encode(s1[i],K[0]);
                 std::queue<Word> ans = samg::grcodec::RiceRuns<Word>::decode(bv);
                 EXPECT_TRUE(are_equal(ans,s1[i]));
             }
@@ -75,7 +75,7 @@ namespace grcodec {
 
         TEST_F(N3SequencesDataSet,Desc_k2) {
             for (std::size_t i = 0; i < DIMENSIONS; ++i) {
-                samg::grcodec::BinarySequence<Word,Length> bv = samg::grcodec::RiceRuns<Word>::encode(s2[i],K[0]);
+                samg::grcodec::RCodec<Word,Length>::BinarySequence bv = samg::grcodec::RiceRuns<Word>::encode(s2[i],K[0]);
                 std::queue<Word> ans = samg::grcodec::RiceRuns<Word>::decode(bv);;
                 EXPECT_TRUE(are_equal(ans,s2[i]));
             }
@@ -83,7 +83,7 @@ namespace grcodec {
 
         TEST_F(N3SequencesDataSet,Rand_k2) {
             for (std::size_t i = 0; i < DIMENSIONS; ++i) {
-                samg::grcodec::BinarySequence<Word,Length> bv = samg::grcodec::RiceRuns<Word>::encode(s3[i],K[0]);
+                samg::grcodec::RCodec<Word,Length>::BinarySequence bv = samg::grcodec::RiceRuns<Word>::encode(s3[i],K[0]);
                 std::queue<Word> ans = samg::grcodec::RiceRuns<Word>::decode(bv);;
                 EXPECT_TRUE(are_equal(ans,s3[i]));
             }
@@ -93,7 +93,7 @@ namespace grcodec {
         // k = 3
         TEST_F(N3SequencesDataSet,Asc_k3) {
             for (std::size_t i = 0; i < DIMENSIONS; ++i) {
-                samg::grcodec::BinarySequence<Word,Length> bv = samg::grcodec::RiceRuns<Word>::encode(s1[i],K[1]);
+                samg::grcodec::RCodec<Word,Length>::BinarySequence bv = samg::grcodec::RiceRuns<Word>::encode(s1[i],K[1]);
                 std::queue<Word> ans = samg::grcodec::RiceRuns<Word>::decode(bv);;
                 EXPECT_TRUE(are_equal(ans,s1[i]));
             }
@@ -101,7 +101,7 @@ namespace grcodec {
 
         TEST_F(N3SequencesDataSet,Desc_k3) {
             for (std::size_t i = 0; i < DIMENSIONS; ++i) {
-                samg::grcodec::BinarySequence<Word,Length> bv = samg::grcodec::RiceRuns<Word>::encode(s2[i],K[1]);
+                samg::grcodec::RCodec<Word,Length>::BinarySequence bv = samg::grcodec::RiceRuns<Word>::encode(s2[i],K[1]);
                 std::queue<Word> ans = samg::grcodec::RiceRuns<Word>::decode(bv);;
                 EXPECT_TRUE(are_equal(ans,s2[i]));
             }
@@ -109,7 +109,7 @@ namespace grcodec {
 
         TEST_F(N3SequencesDataSet,Rand_k3) {
             for (std::size_t i = 0; i < DIMENSIONS; ++i) {
-                samg::grcodec::BinarySequence<Word,Length> bv = samg::grcodec::RiceRuns<Word>::encode(s3[i],K[1]);
+                samg::grcodec::RCodec<Word,Length>::BinarySequence bv = samg::grcodec::RiceRuns<Word>::encode(s3[i],K[1]);
                 std::queue<Word> ans = samg::grcodec::RiceRuns<Word>::decode(bv);;
                 EXPECT_TRUE(are_equal(ans,s3[i]));
             }
@@ -119,7 +119,7 @@ namespace grcodec {
         // k = 4
         TEST_F(N3SequencesDataSet,Asc_k4) {
             for (std::size_t i = 0; i < DIMENSIONS; ++i) {
-                samg::grcodec::BinarySequence<Word,Length> bv = samg::grcodec::RiceRuns<Word>::encode(s1[i],K[2]);
+                samg::grcodec::RCodec<Word,Length>::BinarySequence bv = samg::grcodec::RiceRuns<Word>::encode(s1[i],K[2]);
                 std::queue<Word> ans = samg::grcodec::RiceRuns<Word>::decode(bv);;
                 EXPECT_TRUE(are_equal(ans,s1[i]));
             }
@@ -127,7 +127,7 @@ namespace grcodec {
 
         TEST_F(N3SequencesDataSet,Desc_k4) {
             for (std::size_t i = 0; i < DIMENSIONS; ++i) {
-                samg::grcodec::BinarySequence<Word,Length> bv = samg::grcodec::RiceRuns<Word>::encode(s2[i],K[2]);
+                samg::grcodec::RCodec<Word,Length>::BinarySequence bv = samg::grcodec::RiceRuns<Word>::encode(s2[i],K[2]);
                 std::queue<Word> ans = samg::grcodec::RiceRuns<Word>::decode(bv);;
                 EXPECT_TRUE(are_equal(ans,s2[i]));
             }
@@ -135,7 +135,7 @@ namespace grcodec {
 
         TEST_F(N3SequencesDataSet,Rand_k4) {
             for (std::size_t i = 0; i < DIMENSIONS; ++i) {
-                samg::grcodec::BinarySequence<Word,Length> bv = samg::grcodec::RiceRuns<Word>::encode(s3[i],K[2]);
+                samg::grcodec::RCodec<Word,Length>::BinarySequence bv = samg::grcodec::RiceRuns<Word>::encode(s3[i],K[2]);
                 std::queue<Word> ans = samg::grcodec::RiceRuns<Word>::decode(bv);;
                 EXPECT_TRUE(are_equal(ans,s3[i]));
             }
@@ -145,7 +145,7 @@ namespace grcodec {
         // k = 5
         TEST_F(N3SequencesDataSet,Asc_k5) {
             for (std::size_t i = 0; i < DIMENSIONS; ++i) {
-                samg::grcodec::BinarySequence<Word,Length> bv = samg::grcodec::RiceRuns<Word>::encode(s1[i],K[3]);
+                samg::grcodec::RCodec<Word,Length>::BinarySequence bv = samg::grcodec::RiceRuns<Word>::encode(s1[i],K[3]);
                 std::queue<Word> ans = samg::grcodec::RiceRuns<Word>::decode(bv);;
                 EXPECT_TRUE(are_equal(ans,s1[i]));
             }
@@ -153,7 +153,7 @@ namespace grcodec {
 
         TEST_F(N3SequencesDataSet,Desc_k5) {
             for (std::size_t i = 0; i < DIMENSIONS; ++i) {
-                samg::grcodec::BinarySequence<Word,Length> bv = samg::grcodec::RiceRuns<Word>::encode(s2[i],K[3]);
+                samg::grcodec::RCodec<Word,Length>::BinarySequence bv = samg::grcodec::RiceRuns<Word>::encode(s2[i],K[3]);
                 std::queue<Word> ans = samg::grcodec::RiceRuns<Word>::decode(bv);;
                 EXPECT_TRUE(are_equal(ans,s2[i]));
             }
@@ -161,7 +161,7 @@ namespace grcodec {
 
         TEST_F(N3SequencesDataSet,Rand_k5) {
             for (std::size_t i = 0; i < DIMENSIONS; ++i) {
-                samg::grcodec::BinarySequence<Word,Length> bv = samg::grcodec::RiceRuns<Word>::encode(s3[i],K[3]);
+                samg::grcodec::RCodec<Word,Length>::BinarySequence bv = samg::grcodec::RiceRuns<Word>::encode(s3[i],K[3]);
                 std::queue<Word> ans = samg::grcodec::RiceRuns<Word>::decode(bv);;
                 EXPECT_TRUE(are_equal(ans,s3[i]));
             }

@@ -55,214 +55,15 @@
 
 #define BITS_PER_BYTE 8
 
+#define FLOORLOG_2(x,v)                     \
+{                                           \
+    register unsigned _B_x = (x);           \
+    (v) = 0;                                \
+    for (; _B_x>1 ; _B_x>>=1, (v)++);       \
+}   
+
 namespace samg {
     namespace grcodec {
-
-        /**
-         * @brief This struct represents a binary sequence.
-         * 
-         * @tparam Word used to encode bits.
-         * @tparam Length used to represents lengths of the binary sequence (i.e. actual length and indexes to traverse the sequence).
-         */
-        template<typename Word, typename Length = std::uint64_t> struct BinarySequence {
-            static_assert(
-                std::is_same_v<Word, std::uint8_t> ||
-                std::is_same_v<Word, std::uint16_t> ||
-                std::is_same_v<Word, std::uint32_t> ||
-                std::is_same_v<Word, std::uint64_t>,
-                "First typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
-            static_assert(
-                std::is_same_v<Length, std::uint8_t> ||
-                std::is_same_v<Length, std::uint16_t> ||
-                std::is_same_v<Length, std::uint32_t> ||
-                std::is_same_v<Length, std::uint64_t>,
-                "Second typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
-
-            static const Length WORD_GROWING_SPAN = 100; // Space in number of Word-type that the bitmap must grow. 
-            Word    *sequence; // It is the bitmap.
-            std::size_t k;
-            Length  length, // Index of current bit within the bitmap 'sequence'.
-                    src_length, // Number of encoded integers.
-                    max_length; // Maximum capacity of the bitmap in Word(s).
-            
-            /**
-             * @brief Construct a new Binary Sequence object
-             * 
-             * @param file_name 
-             */
-            BinarySequence( const std::string file_name ) {
-                // TODO Test it!
-                std::cout << "BinarySequence --- (1)" << std::endl;
-                samg::matutx::WordSequenceSerializer<Word> serializer = samg::matutx::WordSequenceSerializer<Word>( file_name );
-                std::cout << "BinarySequence --- (2)" << std::endl;
-                this->k = serializer.template get_value<std::size_t>();
-                std::cout << "BinarySequence --- (3): k = " << this->k << std::endl;
-                this->length = serializer.template get_value<Length>();
-                std::cout << "BinarySequence --- (4): length = " << this->length << std::endl;
-                this->src_length = serializer.template get_value<Length>();
-                std::cout << "BinarySequence --- (5): src_length = " << this->src_length << std::endl;
-                this->max_length = serializer.template get_value<Length>();
-                std::cout << "BinarySequence --- (6): max_length = " << this->max_length << std::endl;
-                // std::vector<Word> seq = serializer.get_next_values( this->src_length );
-                std::vector<Word> seq = serializer.get_next_values( this->max_length );
-                std::cout << "BinarySequence --- (7)" << std::endl;
-                this->sequence = seq.data();
-                // this->sequence = BinarySequence<Word,Length>::rrealloc( this->sequence, this->max_length );
-                std::cout << "BinarySequence --- (8) --- end!" << std::endl;
-            }
-            
-            /**
-             * @brief Construct a new Binary Sequence object
-             * 
-             * @param k 
-             */
-            BinarySequence( const std::size_t k ):
-                // bitmap_length( src_length * 2 * sizeof(Word) ),
-                k(k),
-                length(0),
-                src_length(0),
-                max_length( WORD_GROWING_SPAN )
-            {
-                this->sequence = BinarySequence<Word,Length>::rmalloc( this->max_length );
-            }
-
-            /**
-             * @brief Construct a new Binary Sequence object
-             * 
-             * @param sequence 
-             * @param sequence_length is the bit-index of sequence.
-             * @param src_length is the number of Word-type integers stored in sequence.
-             * @param k 
-             */
-            BinarySequence( Word *sequence, const Length sequence_length, const Length src_length, const std::size_t k ):
-                k(k),
-                sequence( sequence ),
-                length( sequence_length ),
-                src_length( src_length ),
-                max_length( src_length )
-                // max_length( sequence_length )
-            {}
-
-            /**
-             * @brief This function adds a new integer n with length n_bits[b] in the bitmap.
-             * 
-             * @param n 
-             * @param n_bits 
-             */
-            void add( Word n, std::size_t n_bits ) {
-                // std::cout << "RiceRuns/append --- n = " << n << "; |n| = " << n_length << "[b]" << std::endl;
-                if( std::ceil( (double)(this->length + n_bits) / (double) BITS_PER_BYTE ) >= ( this->max_length * sizeof(Word) ) ) {
-                    this->max_length += BinarySequence<Word,Length>::WORD_GROWING_SPAN;
-                    this->sequence = BinarySequence<Word,Length>::rrealloc( this->sequence, this->max_length );
-                }
-
-                this->length = RCodec<Word, Length>::_rice_encode_(this->sequence, this->length, n, this->k);
-                ++(this->src_length);
-            }
-
-            /**
-             * @brief This function frees pointer p.
-             * 
-             * @param p 
-             */
-            static void rfree( Word *p ) {
-            // static void rfree( void *p ) {
-                if (p)
-                    free(p);
-            }
-
-            /**
-             * @brief This function reserves space for n Word-type integers. 
-             * 
-             * @param n 
-             * @return Word* 
-             */
-            static Word* rmalloc( Length n ) {
-                Word *p;
-                if (n == 0)
-                    return NULL;
-                p = ( Word* ) malloc( n * sizeof(Word) );
-                if (p == NULL) {
-                    throw std::runtime_error("Could not allocate "+ std::to_string(n) +" bytes\n");
-                }
-                return p;
-            }
-            // static void* rmalloc( Length n ) {
-            //     void *p;
-            //     if (n == 0)
-            //         return NULL;
-            //     p = (void *)malloc(n);
-            //     if (p == NULL) {
-            //         throw std::runtime_error("Could not allocate "+ std::to_string(n) +" bytes\n");
-            //     }
-            //     return p;
-            // }
-
-            /**
-             * @brief This function reallocate space for n Word-type integers in pointer p. 
-             * 
-             * @param p 
-             * @param n 
-             * @return Word* 
-             */
-            static Word* rrealloc( Word *p, Length n ) {
-                if( p == NULL )
-                    std::cout << "BinarySequence/rrealloc --- (1)" << std::endl;
-                    return BinarySequence<Word, Length>::rmalloc( n );
-                if( n == 0 ) {
-                    std::cout << "BinarySequence/rrealloc --- (2)" << std::endl;
-                    BinarySequence<Word, Length>::rfree( p );
-                    return NULL;
-                }
-                std::cout << "BinarySequence/rrealloc --- (3)" << std::endl;
-                p = ( Word* ) realloc( p, n * sizeof(Word) );
-                if(p == NULL ) {
-                    std::cout << "BinarySequence/rrealloc --- (4)" << std::endl;
-                    throw std::runtime_error("Could not re-allocate "+ std::to_string(n) +" bytes\n");
-                }
-                std::cout << "BinarySequence/rrealloc --- (5)" << std::endl;
-                return p;
-            }
-            // static void* rrealloc( void *p, Length n ) {
-            //     if( p == NULL )
-            //         return RCodec<Word, Length>::rmalloc(n);
-            //     if( n == 0 ) {
-            //         RCodec<Word, Length>::rfree(p);
-            //         return NULL;
-            //     }
-            //     p = (void *)realloc( p, n );
-            //     if(p == NULL ) {
-            //         throw std::runtime_error("Could not re-allocate "+ std::to_string(n) +" bytes\n");
-            //     }
-            //     return p;
-            // }
-
-            /**
-             * @brief This function serializes this binary sequence.
-             * 
-             * @param file_name 
-             */
-            void save( std::string file_name ) {
-                // TODO Test it!
-                // std::cout << "save --- (1)" << std::endl;
-                samg::matutx::WordSequenceSerializer<Word> serializer = samg::matutx::WordSequenceSerializer<Word>();
-                // std::cout << "save --- (2)" << std::endl;
-                serializer.template add_value<std::size_t>( this->k );
-                // std::cout << "save --- (3)" << std::endl;
-                serializer.template add_value<Length>( this->length );
-                // std::cout << "save --- (4)" << std::endl;
-                serializer.template add_value<Length>( this->src_length );
-                // std::cout << "save --- (5)" << std::endl;
-                serializer.template add_value<Length>( this->max_length );
-                // std::cout << "save --- (6)" << std::endl;
-                // serializer.template add_values<Word,Length>( this->sequence, this->bitmap_length / sizeof(Word) );
-                // serializer.template add_values<Word,Length>( this->sequence, this->src_length );
-                serializer.template add_values<Word,Length>( this->sequence, this->max_length );
-                // std::cout << "save --- (7)" << std::endl;
-                serializer.save( file_name );
-                // std::cout << "save --- (8) --- end!" << std::endl;
-            }
-        };
 
         // TODO: Add `uint computeGolombRiceParameter_forList(uint *buff, uint n)` from [bc.hpp].
         /**
@@ -290,19 +91,19 @@ namespace samg {
 
                 static const std::size_t WORD = sizeof(Word) * BITS_PER_BYTE;
                 
-                BinarySequence<Word,Length> sequence;
+                // BinarySequence/*<Word,Length>*/ sequence;
                 Length iterator;
 
-                /**
-                 * @brief This function allows computing the log2 of x.
-                 * 
-                 * @param x 
-                 * @return std::double_t 
-                 */
-                static const std::double_t log2(const double x) {
-                    return std::log(x) / std::log(2.0); // NOTE Much more efficient than std::log2! 34 nanoseconds avg.
-                    // return std::log2(x); // NOTE 180 nanoseconds avg.
-                }
+                // /**
+                //  * @brief This function allows computing the log2 of x.
+                //  * 
+                //  * @param x 
+                //  * @return std::double_t 
+                //  */
+                // static const std::double_t log2(const double x) {
+                //     return std::log(x) / std::log(2.0); // NOTE Much more efficient than std::log2! 34 nanoseconds avg.
+                //     // return std::log2(x); // NOTE 180 nanoseconds avg.
+                // }
 
                 /**
                  * @brief writes e[p..p+len-1] = s, len <= W
@@ -436,29 +237,262 @@ namespace samg {
                 }
 
             public:
+
+                /**
+                 * @brief This struct represents a binary sequence.
+                 * 
+                 * @tparam Word used to encode bits.
+                 * @tparam Length used to represents lengths of the binary sequence (i.e. actual length and indexes to traverse the sequence).
+                 */
+                typedef struct _BinarySequence_ {
+                /*template<typename Word, typename Length = std::uint64_t>*/ 
+                    static_assert(
+                        std::is_same_v<Word, std::uint8_t> ||
+                        std::is_same_v<Word, std::uint16_t> ||
+                        std::is_same_v<Word, std::uint32_t> ||
+                        std::is_same_v<Word, std::uint64_t>,
+                        "First typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
+                    static_assert(
+                        std::is_same_v<Length, std::uint8_t> ||
+                        std::is_same_v<Length, std::uint16_t> ||
+                        std::is_same_v<Length, std::uint32_t> ||
+                        std::is_same_v<Length, std::uint64_t>,
+                        "Second typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
+
+                    static const Length WORD_GROWING_SPAN = 100; // Space in number of Word-type that the bitmap must grow. 
+                    Word    *sequence; // It is the bitmap.
+                    std::size_t k;
+                    Length  length, // Index of current bit within the bitmap 'sequence'.
+                            src_length, // Number of encoded integers.
+                            max_length; // Maximum capacity of the bitmap in Word(s).
+                    
+                    /**
+                     * @brief Construct a new Binary Sequence object
+                     * 
+                     * @param file_name 
+                     */
+                    _BinarySequence_( const std::string file_name ) {
+                        // TODO Test it!
+                        std::cout << "BinarySequence --- (1)" << std::endl;
+                        samg::matutx::WordSequenceSerializer<Word> serializer = samg::matutx::WordSequenceSerializer<Word>( file_name );
+                        std::cout << "BinarySequence --- (2)" << std::endl;
+                        this->k = serializer.template get_value<std::size_t>();
+                        std::cout << "BinarySequence --- (3): k = " << this->k << std::endl;
+                        this->length = serializer.template get_value<Length>();
+                        std::cout << "BinarySequence --- (4): length = " << this->length << std::endl;
+                        this->src_length = serializer.template get_value<Length>();
+                        std::cout << "BinarySequence --- (5): src_length = " << this->src_length << std::endl;
+                        this->max_length = serializer.template get_value<Length>();
+                        std::cout << "BinarySequence --- (6): max_length = " << this->max_length << std::endl;
+                        // std::vector<Word> seq = serializer.get_next_values( this->src_length );
+                        std::vector<Word> seq = serializer.get_next_values( this->max_length );
+                        std::cout << "BinarySequence --- (7)" << std::endl;
+                        this->sequence = seq.data();
+                        // this->sequence = BinarySequence/*<Word,Length>*/::rrealloc( this->sequence, this->max_length );
+                        std::cout << "BinarySequence --- (8) --- end!" << std::endl;
+                    }
+                    
+                    /**
+                     * @brief Construct a new Binary Sequence object
+                     * 
+                     * @param k 
+                     */
+                    _BinarySequence_( const std::size_t k ):
+                        // bitmap_length( src_length * 2 * sizeof(Word) ),
+                        k(k),
+                        length(0),
+                        src_length(0),
+                        max_length( WORD_GROWING_SPAN )
+                    {
+                        this->sequence = BinarySequence/*<Word,Length>*/::rmalloc( this->max_length );
+                    }
+
+                    /**
+                     * @brief Construct a new Binary Sequence object
+                     * 
+                     * @param sequence 
+                     * @param sequence_length is the bit-index of sequence.
+                     * @param src_length is the number of Word-type integers stored in sequence.
+                     * @param k 
+                     */
+                    _BinarySequence_( Word *sequence, const Length sequence_length, const Length src_length, const std::size_t k ):
+                        k(k),
+                        sequence( sequence ),
+                        length( sequence_length ),
+                        src_length( src_length ),
+                        max_length( src_length )
+                        // max_length( sequence_length )
+                    {}
+
+                    /**
+                     * @brief This function adds a new integer n with length n_bits[b] in the bitmap.
+                     * 
+                     * @param n 
+                     * @param n_bits 
+                     */
+                    void add( Word n, std::size_t n_bits ) {
+                        // std::cout << "RCodec/BinarySequence/add --- n = " << n << "; |n| = " << n_bits << "[b]" << std::endl;
+                        if( std::ceil( (double)(this->length + n_bits) / (double) BITS_PER_BYTE ) >= ( this->max_length * sizeof(Word) ) ) {
+                            // std::cout << "RCodec/BinarySequence/add --- growing bitmap from " << this->max_length << "[W]";
+                            this->max_length += BinarySequence::WORD_GROWING_SPAN;
+                            // std::cout << " to " << this->max_length << " [W]" << std::endl;
+                            this->sequence = BinarySequence::rrealloc( this->sequence, this->max_length );
+                        }
+                        this->length = RCodec<Word, Length>::_rice_encode_(this->sequence, this->length, n, this->k);
+                        ++(this->src_length);
+                        // RCodec<Word,Length>::display_binary_sequence(*this,false);
+                    }
+
+                    /**
+                     * @brief This function frees pointer p.
+                     * 
+                     * @param p 
+                     */
+                    static void rfree( Word *p ) {
+                    // static void rfree( void *p ) {
+                        if (p) {
+                            free(p);
+                        }
+                    }
+
+                    /**
+                     * @brief This function reserves space for n Word-type integers. 
+                     * 
+                     * @param n 
+                     * @return Word* 
+                     */
+                    static Word* rmalloc( Length n ) {
+                        Word *p;
+                        if (n == 0) {
+                            return NULL;
+                        }
+                        p = ( Word* ) malloc( n * sizeof(Word) );
+                        if (p == NULL) {
+                            throw std::runtime_error("Could not allocate "+ std::to_string(n) +" bytes\n");
+                        }
+                        return p;
+                    }
+                    // static void* rmalloc( Length n ) {
+                    //     void *p;
+                    //     if (n == 0)
+                    //         return NULL;
+                    //     p = (void *)malloc(n);
+                    //     if (p == NULL) {
+                    //         throw std::runtime_error("Could not allocate "+ std::to_string(n) +" bytes\n");
+                    //     }
+                    //     return p;
+                    // }
+
+                    /**
+                     * @brief This function reallocate space for n Word-type integers in pointer p. 
+                     * 
+                     * @param p 
+                     * @param n 
+                     * @return Word* 
+                     */
+                    static Word* rrealloc( Word *p, Length n ) {
+                        // std::cout << "RCodec/BinarySequence/rrealloc --- (1)" << std::endl;
+                        if( p == NULL ) {
+                            // std::cout << "RCodec/BinarySequence/rrealloc --- (2)" << std::endl;
+                            return BinarySequence/*<Word, Length>*/::rmalloc( n );
+                        }
+                        if( n == 0 ) {
+                            // std::cout << "RCodec/BinarySequence/rrealloc --- (3)" << std::endl;
+                            BinarySequence/*<Word, Length>*/::rfree( p );
+                            return NULL;
+                        }
+                        // std::cout << "RCodec/BinarySequence/rrealloc --- (4)" << std::endl;
+                        p = ( Word* ) realloc( p, n * sizeof(Word) );
+                        if(p == NULL ) {
+                            // std::cout << "RCodec/BinarySequence/rrealloc --- (5)" << std::endl;
+                            throw std::runtime_error("Could not re-allocate "+ std::to_string(n) +" bytes\n");
+                        }
+                        // std::cout << "RCodec/BinarySequence/rrealloc --- (6)" << std::endl;
+                        return p;
+                    }
+                    // static void* rrealloc( void *p, Length n ) {
+                    //     if( p == NULL )
+                    //         return RCodec<Word, Length>::rmalloc(n);
+                    //     if( n == 0 ) {
+                    //         RCodec<Word, Length>::rfree(p);
+                    //         return NULL;
+                    //     }
+                    //     p = (void *)realloc( p, n );
+                    //     if(p == NULL ) {
+                    //         throw std::runtime_error("Could not re-allocate "+ std::to_string(n) +" bytes\n");
+                    //     }
+                    //     return p;
+                    // }
+
+                    /**
+                     * @brief This function serializes this binary sequence.
+                     * 
+                     * @param file_name 
+                     */
+                    void save( std::string file_name ) {
+                        // TODO Test it!
+                        // std::cout << "save --- (1)" << std::endl;
+                        samg::matutx::WordSequenceSerializer<Word> serializer = samg::matutx::WordSequenceSerializer<Word>();
+                        // std::cout << "save --- (2)" << std::endl;
+                        serializer.template add_value<std::size_t>( this->k );
+                        // std::cout << "save --- (3)" << std::endl;
+                        serializer.template add_value<Length>( this->length );
+                        // std::cout << "save --- (4)" << std::endl;
+                        serializer.template add_value<Length>( this->src_length );
+                        // std::cout << "save --- (5)" << std::endl;
+                        serializer.template add_value<Length>( this->max_length );
+                        // std::cout << "save --- (6)" << std::endl;
+                        // serializer.template add_values<Word,Length>( this->sequence, this->bitmap_length / sizeof(Word) );
+                        // serializer.template add_values<Word,Length>( this->sequence, this->src_length );
+                        serializer.template add_values<Word,Length>( this->sequence, this->max_length );
+                        // std::cout << "save --- (7)" << std::endl;
+                        serializer.save( file_name );
+                        // std::cout << "save --- (8) --- end!" << std::endl;
+                    }
+                } BinarySequence;
+
+                BinarySequence sequence;
                 
-                RCodec( BinarySequence<Word,Length> bs ): 
+                RCodec( BinarySequence/*<Word,Length>*/ bs ): 
                     sequence( bs )
                 { this->restart(); }
 
                 RCodec( const std::size_t k ): 
-                    sequence( BinarySequence<Word,Length>( k ) )
+                    sequence( BinarySequence/*<Word,Length>*/( k ) )
                 { this->restart(); }
 
                 RCodec( Word *sequence, const Length sequence_length, const Length src_length, const std::size_t k ): 
-                    sequence( BinarySequence<Word,Length>( sequence, sequence_length, src_length, k ) )
+                    sequence( BinarySequence/*<Word,Length>*/( sequence, sequence_length, src_length, k ) )
                 { this->restart(); }
+
+                /**
+                 * @brief Given a list of (n) integers (buff) [typically gap values from an inverted list], computes the optimal b parameter, that is, the number of bits that will be coded binary-wise from a given encoded value.
+                 * @note $$ val = \lfloor (\log_2( \sum_{i=0}^{n-1} (diff[i])) / n )) \rfloor $$
+                 * 
+                 * @param sequence 
+                 * @return std::size_t 
+                 */
+                static std::size_t compute_GR_parameter_for_list( std::vector<Word> sequence ) {
+                    Word total =0;
+                    register Length i;
+                    for ( i = 0; i < sequence.size(); i++ ) total += sequence[i];
+                    total /= sequence.size();
+                    std::size_t val;
+                    FLOORLOG_2(((uint)total),val);
+                    
+                    return val;
+                }
 
                 /**
                  * @brief This function encodes an integer n.
                  * 
                  * @param sequence 
                  * @param k 
-                 * @return BinarySequence<Word,Length> 
+                 * @return BinarySequence
                  */
-                static BinarySequence<Word,Length> encode( std::vector<Word> sequence, const std::size_t k ) {
+                static BinarySequence/*<Word,Length>*/ encode( std::vector<Word> sequence, const std::size_t k ) {
                     // std::cout << "encode (1)" << std::endl;
-                    BinarySequence<Word,Length> bs( k );
+                    BinarySequence/*<Word,Length>*/ bs( k );
                     // std::cout << "encode (2) --- bitmap_length = " << bs.bitmap_length << std::endl;
 
                     // std::size_t MAX_N_BITS = 0; // !NOTE For testing/debugging purposes!
@@ -470,7 +504,7 @@ namespace samg {
                         // bs.length = RCodec<Word, Length>::_rice_encode_(bs.sequence, bs.length, sequence[i], k);
                         // ++(bs.src_length);
 
-                        bs.add( n, RCodec<Word,Length>::_value_size_( n, bs.k ) );
+                        bs.add( sequence[i], RCodec<Word,Length>::_value_size_( sequence[i], bs.k ) );
                     }
                     // std::cout << "encode> MAX_N_BITS = " << MAX_N_BITS << std::endl;
                     // std::cout << "encode (3)" << std::endl;
@@ -484,7 +518,7 @@ namespace samg {
                  * @param bs 
                  * @return std::vector<Word>
                  */
-                static std::vector<Word> decode( BinarySequence<Word,Length> &bs ) {
+                static std::vector<Word> decode( BinarySequence/*<Word,Length>*/ &bs ) {
                     Length    position = 0;
                     std::vector<Word> sequence;
 
@@ -509,8 +543,8 @@ namespace samg {
                     // // std::cout << "RiceRuns/append --- n = " << n << "; |n| = " << n_length << "[b]" << std::endl;
                     // if( std::ceil( (double)(this->sequence.length + n_length) / (double) RCodec<Word,Length>::BITS_PER_BYTE ) >= ( this->sequence.max_length * sizeof(Word) ) ) {
                     //     // this->sequence.bitmap_length *= 2;
-                    //     this->sequence.max_length += BinarySequence<Word,Length>::WORD_GROWING_SPAN;
-                    //     this->sequence.sequence = BinarySequence<Word,Length>::rrealloc( this->sequence.sequence, this->sequence.max_length );
+                    //     this->sequence.max_length += BinarySequence/*<Word,Length>*/::WORD_GROWING_SPAN;
+                    //     this->sequence.sequence = BinarySequence/*<Word,Length>*/::rrealloc( this->sequence.sequence, this->sequence.max_length );
                     //     // std::cout << "RiceRuns/append --- n = " << n << "\tgrowing BinarySequence bitmap!" << std::endl;
                     // }
                     // this->sequence.length = RCodec<Word, Length>::_rice_encode_( this->sequence.sequence, this->sequence.length, n, this->sequence.k );
@@ -554,7 +588,7 @@ namespace samg {
                  * 
                  * @return BinarySequence 
                  */
-                BinarySequence<Word, Length> get_binary_sequence() const {
+                BinarySequence/*<Word, Length>*/ get_binary_sequence() const {
                     return this->sequence;
                 }
 
@@ -586,15 +620,23 @@ namespace samg {
                 }
 
                 /**
-                 * @brief @brief This function displays the bitmap and the metadata of a BinarySequence
+                 * @brief This function displays the bitmap and the metadata of a BinarySequence
                  * 
+                 * @param info 
                  * @param bs 
+                 * @param show_bitmap 
                  */
-                static void display_binary_sequence( BinarySequence<Word,Length> bs, bool show_bitmap = true ) {
-                    std::cout << "Stored integers: "<< bs.src_length <<"/"<<bs.max_length<<"; k: "<< bs.k <<"; bitmap @ "<< bs.length <<" ( | " << ( bs.src_length * sizeof(Word) ) << "[B] / " << ( bs.max_length * sizeof(Word) ) << "[B] v " << ( bs.src_length * sizeof(Word) * BITS_PER_BYTE ) << "[b] / " << ( bs.max_length * sizeof(Word) * BITS_PER_BYTE ) << "[b] | ) ";
+                static void display_binary_sequence( std::string info, BinarySequence bs, bool show_bitmap = true ) {
+                    std::cout << info << std::endl;
+                    std::cout << "\tStored integers in "<<samg::utils::number_to_comma_separated_string(bs.max_length)<<"[W]: "<< samg::utils::number_to_comma_separated_string(bs.src_length) << std::endl;
+                    std::cout << "\t|Bitmap| in bytes: " << samg::utils::number_to_comma_separated_string( std::ceil( (double)bs.length / (double)BITS_PER_BYTE) ) << "[B] / " << samg::utils::number_to_comma_separated_string( bs.max_length * sizeof(Word) ) << "[B]" << std::endl;
+                    std::cout << "\t|Bitmap| in bits: " << samg::utils::number_to_comma_separated_string( bs.length ) << "[b] / " << samg::utils::number_to_comma_separated_string( bs.max_length * sizeof(Word) * BITS_PER_BYTE ) << "[b]" << std::endl;
+                    std::cout << "\tCompression rate: Potential size<" << samg::utils::number_to_comma_separated_string( bs.src_length * sizeof(Word) * BITS_PER_BYTE ) << "[b]>; Actual size<"<< samg::utils::number_to_comma_separated_string( bs.length ) << "[b]>; rate = " << samg::utils::number_to_comma_separated_string( ((double)bs.length / (double)(bs.src_length * sizeof(Word) * BITS_PER_BYTE)) * 100 , 2 ) << "%" << std::endl;
+                    std::cout << "\tBitmap index @ " << samg::utils::number_to_comma_separated_string(bs.length) << std::endl;
+                    std::cout << "\tk: "<< samg::utils::number_to_comma_separated_string(bs.k) << std::endl;
 
                     if( show_bitmap ) {
-                        std::cout << "= ";
+                        std::cout << "\tBitmap: ";
                         for (Length i = 0; i < bs.length; i++) {
                             if ( RCodec<Word, Length>::_bitget_( bs.sequence, i ) )
                                 std::cout << "1";
@@ -606,7 +648,7 @@ namespace samg {
                 }
 
                 friend std::ostream & operator<<(std::ostream & strm, const RCodec<Word,Length> &codec) {
-                    BinarySequence<Word, Length> bs = codec.get_binary_sequence();
+                    BinarySequence/*<Word, Length>*/ bs = codec.get_binary_sequence();
                     Word    *buff = bs.sequence,
                             n = bs.length;
                     bool printer_prompt = false;
@@ -1674,7 +1716,7 @@ namespace samg {
                 AbsoluteSequence next_buffer;
 
             public:
-                RiceRuns( BinarySequence<Word,Length> bs ): 
+                RiceRuns( typename RCodec<Word,Length>::BinarySequence bs ): 
                     codec( 
                         RCodec<Word,Length>(
                             bs
@@ -1713,9 +1755,9 @@ namespace samg {
                  * 
                  * @param sequence 
                  * @param k 
-                 * @return BinarySequence<Word, Length> 
+                 * @return BinarySequence
                  */
-                static BinarySequence<Word, Length> encode( const AbsoluteSequence sequence, const std::size_t k ) {
+                static typename RCodec<Word,Length>::BinarySequence encode( const AbsoluteSequence sequence, const std::size_t k ) {
                     // std::cout << "RiceRuns/encode (1)" << std::endl;
                     RCodec<Word,Length> codec( 
                         // sequence.size(),
@@ -1747,7 +1789,7 @@ namespace samg {
                         // std::cout << "\tRiceRuns/encode/do-while (6)" << std::endl;
                     } while( !fsm.is_end_state() );
 
-                    std::cout << "RiceRuns/encode> MAX_N_BITS = " << codec.MAX_N_BITS << "[b] / " << ( sizeof(Word) * 8 ) << std::endl;
+                    // std::cout << "RiceRuns/encode> MAX_N_BITS = " << codec.MAX_N_BITS << "[b] / " << ( sizeof(Word) * 8 ) << std::endl;
 
                     return codec.get_binary_sequence();
                 }
@@ -1758,7 +1800,7 @@ namespace samg {
                  * @param bs 
                  * @return AbsoluteSequence 
                  */
-                static AbsoluteSequence decode( BinarySequence<Word,Length> bs  ) {
+                static AbsoluteSequence decode( typename RCodec<Word,Length>::BinarySequence bs  ) {
                     return RiceRuns<Word,Length>::decode( bs.sequence, bs.length, bs.src_length, bs.k );
                 }
 
@@ -1798,9 +1840,9 @@ namespace samg {
                 /**
                  * @brief This function returns the Golomb-Rice encoded bitmap.
                  * 
-                 * @return BinarySequence<Word,Length>
+                 * @return BinarySequence
                  */
-                BinarySequence<Word,Length> get_encoded_sequence() const {
+                typename RCodec<Word,Length>::BinarySequence get_encoded_sequence() const {
                     return this->codec.get_binary_sequence();
                 }
 
@@ -1809,7 +1851,7 @@ namespace samg {
                  * 
                  * @param bs 
                  */
-                void set_encoded_sequence( BinarySequence<Word,Length> bs ) {
+                void set_encoded_sequence( typename RCodec<Word,Length>::BinarySequence bs ) {
                     this->set_encoded_sequence( bs.sequence, bs.length, bs.src_length, bs.k );
                 }
 

@@ -112,15 +112,15 @@ namespace samg {
         }
         /***************************************************************/
         /**
-         * @brief This function is an auxiliar function to convert time into a comma-separated string representation.
+         * @brief This function is an auxiliar function to convert a number into a comma-separated string representation.
          * 
-         * @param time 
+         * @param n 
          * @return std::string 
          */
-        std::string convert_time_to_string(const std::double_t time) {
+        std::string number_to_comma_separated_string( const std::double_t n, const std::size_t precision = 0 ) {
             std::stringstream ss;
             ss.imbue(std::locale("en_US.UTF-8"));  // Use the appropriate locale for your system
-            ss << std::fixed << std::setprecision(0) << time;
+            ss << std::fixed << std::setprecision(precision) << n;
             return ss.str();
         }
         /***************************************************************/

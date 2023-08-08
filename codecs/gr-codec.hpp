@@ -53,6 +53,8 @@
 #include <samg/matutx.hpp>
 #include <stdexcept>
 
+#define BITS_PER_BYTE 8
+
 namespace samg {
     namespace grcodec {
 
@@ -76,7 +78,7 @@ namespace samg {
                 std::is_same_v<Length, std::uint64_t>,
                 "Second typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
 
-            static const Length WORD_GROWING_SPAN = 4096; // Space in number of Word-type that the bitmap must grow. 
+            static const Length WORD_GROWING_SPAN = 100; // Space in number of Word-type that the bitmap must grow. 
             Word    *sequence; // It is the bitmap.
             std::size_t k;
             Length  length, // Index of current bit within the bitmap 'sequence'.
@@ -140,6 +142,23 @@ namespace samg {
                 max_length( src_length )
                 // max_length( sequence_length )
             {}
+
+            /**
+             * @brief This function adds a new integer n with length n_bits[b] in the bitmap.
+             * 
+             * @param n 
+             * @param n_bits 
+             */
+            void add( Word n, std::size_t n_bits ) {
+                // std::cout << "RiceRuns/append --- n = " << n << "; |n| = " << n_length << "[b]" << std::endl;
+                if( std::ceil( (double)(this->length + n_bits) / (double) BITS_PER_BYTE ) >= ( this->max_length * sizeof(Word) ) ) {
+                    this->max_length += BinarySequence<Word,Length>::WORD_GROWING_SPAN;
+                    this->sequence = BinarySequence<Word,Length>::rrealloc( this->sequence, this->max_length );
+                }
+
+                this->length = RCodec<Word, Length>::_rice_encode_(this->sequence, this->length, n, this->k);
+                ++(this->src_length);
+            }
 
             /**
              * @brief This function frees pointer p.
@@ -269,8 +288,7 @@ namespace samg {
             private:
                 typedef std::uint8_t bit_t;
 
-                static const std::size_t    BITS_PER_BYTE = sizeof(std::uint8_t) * 8,
-                                            WORD = sizeof(Word) * BITS_PER_BYTE;
+                static const std::size_t WORD = sizeof(Word) * BITS_PER_BYTE;
                 
                 BinarySequence<Word,Length> sequence;
                 Length iterator;
@@ -370,7 +388,7 @@ namespace samg {
                  * @param nbits 
                  * @return Length 
                  */
-                static inline Length _value_size_( Word val, std::size_t nbits ) {
+                static inline std::size_t _value_size_( Word val, std::size_t nbits ) {
                     return std::floor( val / std::pow(2,nbits) ) + 1 + nbits; // unary encoding length + 1 (the 0 ending unary encoding) + remainder length.
                 }
 
@@ -440,17 +458,21 @@ namespace samg {
                  */
                 static BinarySequence<Word,Length> encode( std::vector<Word> sequence, const std::size_t k ) {
                     // std::cout << "encode (1)" << std::endl;
-                    BinarySequence<Word,Length> &bs = new BinarySequence<Word,Length>(sequence.size(), k);
+                    BinarySequence<Word,Length> bs( k );
                     // std::cout << "encode (2) --- bitmap_length = " << bs.bitmap_length << std::endl;
 
-                    std::size_t MAX_N_BITS = 0; // !NOTE For testing/debugging purposes!
-                    Length n_length; // !NOTE For testing/debugging purposes!
+                    // std::size_t MAX_N_BITS = 0; // !NOTE For testing/debugging purposes!
+                    // Length n_length; // !NOTE For testing/debugging purposes!
                     for ( Length i = 0; i < sequence.size(); ++i ) {
-                        n_length = RCodec<Word,Length>::_value_size_( sequence[i], k ); // !NOTE For testing/debugging purposes!
-                        MAX_N_BITS = ( n_length > MAX_N_BITS ) ? n_length : MAX_N_BITS; // !NOTE For testing/debugging purposes!
-                        bs.length = RCodec<Word, Length>::_rice_encode_(bs.sequence, bs.length, sequence[i], k);
+                        // n_length = RCodec<Word,Length>::_value_size_( sequence[i], k ); // !NOTE For testing/debugging purposes!
+                        // MAX_N_BITS = ( n_length > MAX_N_BITS ) ? n_length : MAX_N_BITS; // !NOTE For testing/debugging purposes!
+
+                        // bs.length = RCodec<Word, Length>::_rice_encode_(bs.sequence, bs.length, sequence[i], k);
+                        // ++(bs.src_length);
+
+                        bs.add( n, RCodec<Word,Length>::_value_size_( n, bs.k ) );
                     }
-                    std::cout << "encode> MAX_N_BITS = " << MAX_N_BITS << std::endl;
+                    // std::cout << "encode> MAX_N_BITS = " << MAX_N_BITS << std::endl;
                     // std::cout << "encode (3)" << std::endl;
 
                     return bs;
@@ -480,19 +502,22 @@ namespace samg {
                  * 
                  * @warning This implementation is O(n), where n is the number of bits in the internal bitmap.
                  */
-                std::size_t MAX_N_BITS = 0; // !NOTE For testing/debugging purposes!
+                // std::size_t MAX_N_BITS = 0; // !NOTE For testing/debugging purposes!
                 void append(const Word n) {
-                    Length n_length = RCodec<Word,Length>::_value_size_( n, this->sequence.k );
-                    MAX_N_BITS = ( n_length > MAX_N_BITS ) ? n_length : MAX_N_BITS;// !NOTE For testing/debugging purposes!
-                    // std::cout << "RiceRuns/append --- n = " << n << "; |n| = " << n_length << "[b]" << std::endl;
-                    if( std::ceil( (double)(this->sequence.length + n_length) / (double) RCodec<Word,Length>::BITS_PER_BYTE ) >= ( this->sequence.max_length * sizeof(Word) ) ) {
-                        // this->sequence.bitmap_length *= 2;
-                        this->sequence.max_length += BinarySequence<Word,Length>::WORD_GROWING_SPAN;
-                        this->sequence.sequence = BinarySequence<Word,Length>::rrealloc( this->sequence.sequence, this->sequence.max_length );
-                        // std::cout << "RiceRuns/append --- n = " << n << "\tgrowing BinarySequence bitmap!" << std::endl;
-                    }
-                    this->sequence.length = RCodec<Word, Length>::_rice_encode_( this->sequence.sequence, this->sequence.length, n, this->sequence.k );
-                    ++(this->sequence.src_length);
+                    // Length n_length = RCodec<Word,Length>::_value_size_( n, this->sequence.k );
+                    // // MAX_N_BITS = ( n_length > MAX_N_BITS ) ? n_length : MAX_N_BITS;// !NOTE For testing/debugging purposes!
+                    // // std::cout << "RiceRuns/append --- n = " << n << "; |n| = " << n_length << "[b]" << std::endl;
+                    // if( std::ceil( (double)(this->sequence.length + n_length) / (double) RCodec<Word,Length>::BITS_PER_BYTE ) >= ( this->sequence.max_length * sizeof(Word) ) ) {
+                    //     // this->sequence.bitmap_length *= 2;
+                    //     this->sequence.max_length += BinarySequence<Word,Length>::WORD_GROWING_SPAN;
+                    //     this->sequence.sequence = BinarySequence<Word,Length>::rrealloc( this->sequence.sequence, this->sequence.max_length );
+                    //     // std::cout << "RiceRuns/append --- n = " << n << "\tgrowing BinarySequence bitmap!" << std::endl;
+                    // }
+                    // this->sequence.length = RCodec<Word, Length>::_rice_encode_( this->sequence.sequence, this->sequence.length, n, this->sequence.k );
+                    // ++(this->sequence.src_length);
+
+                    this->sequence.add( n, RCodec<Word,Length>::_value_size_( n, this->sequence.k ) );
+
                     // RCodec<Word,Length>::display_binary_sequence(this->sequence);
                     // ++(this->iterator);
                 }
@@ -566,7 +591,7 @@ namespace samg {
                  * @param bs 
                  */
                 static void display_binary_sequence( BinarySequence<Word,Length> bs, bool show_bitmap = true ) {
-                    std::cout << "Stored integers: "<< bs.src_length <<"/"<<bs.max_length<<"; k: "<< bs.k <<"; bitmap @ "<< bs.length <<" ( | " << ( bs.src_length * sizeof(Word) ) << "[B] / " << ( bs.max_length * sizeof(Word) ) << "[B] v " << ( bs.src_length * sizeof(Word) * RCodec<Word,Length>::BITS_PER_BYTE ) << "[b] / " << ( bs.max_length * sizeof(Word) * RCodec<Word,Length>::BITS_PER_BYTE ) << "[b] | ) ";
+                    std::cout << "Stored integers: "<< bs.src_length <<"/"<<bs.max_length<<"; k: "<< bs.k <<"; bitmap @ "<< bs.length <<" ( | " << ( bs.src_length * sizeof(Word) ) << "[B] / " << ( bs.max_length * sizeof(Word) ) << "[B] v " << ( bs.src_length * sizeof(Word) * BITS_PER_BYTE ) << "[b] / " << ( bs.max_length * sizeof(Word) * BITS_PER_BYTE ) << "[b] | ) ";
 
                     if( show_bitmap ) {
                         std::cout << "= ";
@@ -617,7 +642,7 @@ namespace samg {
                     std::is_same_v<Type, std::uint64_t>,
                     "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
             private:
-                static const std::size_t BITS_PER_BYTE = sizeof(std::uint8_t)*8;
+                // static const std::size_t BITS_PER_BYTE = sizeof(std::uint8_t)*8;
                 std::size_t m;
                 sdsl::bit_vector sequence;
                 std::uint64_t iterator_index;
@@ -771,7 +796,7 @@ namespace samg {
                     
                     sdsl::bit_vector v(r_bits + q + 1);
                     
-                    v.set_int(0,r,GRCodec::BITS_PER_BYTE);
+                    v.set_int(0,r,BITS_PER_BYTE);
 
                     for (std::size_t i = r_bits + 1; i < (r_bits + q + 1); ++i) {
                         v[i] = 1;
@@ -797,9 +822,9 @@ namespace samg {
                     sdsl::bit_vector v(r_bits + q + 1);
                     
                     if( phase ) {
-                        v.set_int(0,r,GRCodec::BITS_PER_BYTE);
+                        v.set_int(0,r,BITS_PER_BYTE);
                     } else {
-                        v.set_int(0,r+c,GRCodec::BITS_PER_BYTE);
+                        v.set_int(0,r+c,BITS_PER_BYTE);
                     }
 
                     for (std::size_t i = r_bits + 1; i < (r_bits + q + 1); ++i) {

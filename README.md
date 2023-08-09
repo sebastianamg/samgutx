@@ -7,8 +7,29 @@ The following is the detail of one-header libraries available in this repository
 * `codecs`:
   * `qmx.hpp`: It is an unsigned 32-bits integer encoder/decoder modified from [@amallia's QMX repository](https://github.com/amallia/QMX). A mechanism to get a set of integers from a 128-bits `SIMD` word at a time was added. Copyright © 2014-2017 Andrew Trotman under the [BSD-2-Clause](https://opensource.org/license/bsd-2-clause/) licence. The implementation is based on:
   > A. Trotman and J. Lin, "In Vacuo and In Situ Evaluation of SIMD Codecs," in Proceedings of the 21st Australasian Document Computing Symposium, in ADCS ’16. New York, NY, USA: Association for Computing Machinery, Dec. 2016, pp. 1–8. doi: 10.1145/3015022.3015023. 
-  * `gr-codec.hpp`: It contains an implementation of ***Rice-runs*** and ***Golomb-Rice*** codecs. The library [sdsl-lite](https://github.com/simongog/sdsl-lite) is required! The following classes and functions are available:
+  * `gr-codec.hpp`: It contains an implementation of ***Rice-runs***, ***Golomb-Rice*** and ***Rice*** (exclusive *Rice* implementation based on [`uiuiHRDC` library](https://github.com/migumar2/uiHRDC)) codecs. The library [sdsl-lite](https://github.com/simongog/sdsl-lite) is required! The following classes and functions are available:
     * `enum GRCodecType`: Available values are `GOLOMB_RICE`, and `EXPONENTIAL_GOLOMB`. However, at the moment `GOLOMB_RICE` is operative only. 
+    * `template<typename Word, typename Length = std::uint64_t> class RCodec`: Based on [`uiuiHRDC` library](https://github.com/migumar2/uiHRDC).
+      * `RCodec<Word,Length>::BinarySequence`: Struct that represents a binary sequence.
+        * `RCodec<Word,Length>::BinarySequence( const std::string file_name )`: Retrieve a serialized binary sequence from a file.
+        * `RCodec<Word,Length>::BinarySequence( const std::size_t k )`: Builds an empty binary sequence.
+        * `RCodec<Word,Length>::BinarySequence( Word *sequence, const Length sequence_length, const Length src_length, const std::size_t k )`: Builds a binary sequence from its basic components. 
+        * `void add( Word n, std::size_t n_bits )`: Appends a new `n_bits`-long element in the binary sequence.
+        * `void save( std::string file_name )`: Serializes the current binary sequence to a specified file.
+      * `RCodec( RCodec<Word,Length>::BinarySequence bs )`: Builds a `RCodec` based on a specified binary sequence. 
+      * `RCodec( const std::size_t k )`: Builds an empty `RCodec`.
+      * `RCodec( Word *sequence, const Length sequence_length, const Length src_length, const std::size_t k )`: Builds a `RCodec` using basic components of a `RCodec<Word,Length>::BinarySequence`.
+      * `static std::size_t compute_GR_parameter_for_list( std::vector<Word> sequence )`: Helps to compute an efficient `k` parameter given a list of elements to encode.
+      * `static RCodec<Word,Length>::BinarySequence encode( std::vector<Word> sequence, const std::size_t k )`: This function encodes an integer `n`.
+      * `static std::vector<Word> decode( RCodec<Word,Length>::BinarySequence &bs )`: This function allows decoding an integer encoded as a bitmap.
+      * `void append(const Word n)`: This function allows appending the encoded representation of `n` to an internal bitmap.
+      * `const Word next()`: This function iterates on the internal bitmap as decodes and returns the next integer. 
+      * `void restart()`: This function restarts the iteration on the internal bitmap.
+      * `RCodec<Word,Length>::BinarySequence get_binary_sequence() const`: This function returns a copy of the internal bitmap.
+      * `const Length length()`: This function returns the number of stored bits.
+      * `const Length size()`: This function returns the number of encoded integers.
+      * `const Length get_current_iterator_index()`: This function returns the current iterator index.
+      * `static void display_binary_sequence( std::string info, RCodec<Word,Length>::BinarySequence bs, bool show_bitmap = true )`: This function displays the bitmap and the metadata of a `RCodec<Word,Length>::BinarySequence`.
     * `template<typename Type> class GRCodec`:
       * `static sdsl::bit_vector encode(const Type n, const std::size_t m, GRCodecType type = GRCodecType::GOLOMB_RICE )`: This static function allows encoding an integer `n`.
       * `static Type decode(sdsl::bit_vector v, const std::size_t m, GRCodecType type = GRCodecType::GOLOMB_RICE )`: This static function allows decoding an integer encoded as a bitmap `v`.
@@ -19,8 +40,11 @@ The following is the detail of one-header libraries available in this repository
       * `const sdsl::bit_vector get_bit_vector()`: This function returns a copy of the internal bitmap.
       * `const std::size_t length()`: This function returns the number of stored bits.
       * `const std::uint64_t get_current_iterator_index()`: This function returns the current iterator index.
-    * `template<typename Type> class RiceRuns`:
-      * `static void encode(const std::vector<Type> sequence, const std::size_t k )`: This static function encodes a sequence of Type integers using Rice-runs. The following is the FSM used by this function:
+    * `template<typename Word> class RiceRuns`: This class represents a *Rice-runs* encoding of integers of type Word. This codec uses `RCodec` class to encode codewords.
+      * `RiceRuns( typename RCodec<Word,Length>::BinarySequence bs )`: Builds a `RiceRuns` object based on a `RCodec<Word,Length>::BinarySequence`.
+      * `RiceRuns( const std::size_t k )`: Builds an empty `RiceRuns` object based on the *Rice* parameter `k`.
+      * `RiceRuns( Word *sequence, const Length sequence_length, const Length src_length, const std::size_t k )`: Builds a `RiceRuns` object using basic components of a `RCodec<Word,Length>::BinarySequence`.
+      * `static void encode(const std::vector<Word> sequence, const std::size_t k )`: This static function encodes a sequence of Word integers using *Rice-runs*. The following is the FSM used by this function:
   
 		![FSM to encode](img/codecs-grcodec-riceruns-encode.png)
 
@@ -36,7 +60,8 @@ The following is the detail of one-header libraries available in this repository
 		>
 		> `wn(a,b)` is a function to output `b` times the negative number `a`.
 
-      * `static std::vector<Type> decode( sdsl::bit_vector encoded_sequence, const std::size_t k )`: This static function decodes an encoded sequence of Type integers using Rice-runs. The following is the FSM used by this function:
+      * `static std::vector<Word> decode( typename RCodec<Word,Length>::BinarySequence bs  )`: This static function decodes an encoded sequence of Word integers using *Rice-runs*.
+      * `static std::vector<Word> decode( sdsl::bit_vector encoded_sequence, const std::size_t k )`: This static function decodes an encoded sequence of Word integers using *Rice-runs*. The following is the FSM used by this function:
 		
 		![FSM to decode](img/codecs-grcodec-riceruns-decode.png)
 
@@ -50,13 +75,18 @@ The following is the detail of one-header libraries available in this repository
 		>
 		> `w(a,b)` is a function to output `b` times `a`.
     
+      * `typename RCodec<Word,Length>::BinarySequence get_encoded_sequence()`: This function returns the Rice encoded bitmap.
       * `sdsl::bit_vector get_encoded_sequence()`: This function returns the ***Golomb-Rice*** encoded bitmap.
+      * `void set_encoded_sequence( typename RCodec<Word,Length>::BinarySequence bs )` and `void set_encoded_sequence( Word *sequence, const Length sequence_length, const Length src_length, const std::size_t k )`: These functions sets the internal encoded sequence.
+      * `const Word next()`: This function allows retrieving one by one positive integers from the *Rice-runs* encoded internal bitmap. 
+      * `void restart_encoded_sequence_iterator()`: This function restarts the traversal of the encoded sequence.
+      * `bool has_more()`: This function returns whether the internal encoded sequence has more codewords to decode or not.
 
     * Additionally, the file [`gr-codec-test.cpp`](https://github.com/sebastianamg/samgutx/blob/main/codecs/gr-codec-test.cpp) contains test cases used to check the correctiveness of both ***Golomb-Rice*** and ***Rice-runs*** implementations. It uses [Google Test](http://google.github.io/googletest/) library. To compile this file, use the following command: `g++-11 -ggdb -g3 -I ~/include/ -L ~/lib/ gr-codec-test.cpp -o gr-codec-test -lsdsl -lgtest`.
 
 
 * `samg`:
-  * `commons.hpp`: It contains methods for converting objects and vectors to string (the object requires implementing `operator<<`), printing a vector, copying data to a `std::stack` from a range defined by `begin` and `end` iterators, and converting time (`std::double_t`) to string.  
+  * `commons.hpp`: It contains methods for converting objects and vectors to string (the object requires implementing `operator<<`), printing a vector, array and queue, copying data to a `std::stack` from a range defined by `begin` and `end` iterators, and converting a number (`std::double_t`) to string providing a precision ($0$ is the default).
   * `logger.hpp`: It contains a wrap class for [`c-logger`](https://github.com/adaxiik/c-logger) implemented by @adaxiik. The wrapper class, called `samg::Logger` provides with methods to output `debug`, `info`, `warn`, `error`, and `fatal` messages, along with a method to directly output a `stdout` message. Furthermore, it provides with a mechanism to "turn" on and off the logger. Since this is a one-header file, @adaxiik's `c-logger` has been replicated within the file. 
   * `matutx.hpp`: It provides functions and a class to serialize a sequence of integers called `WordSequenceSerializer`. Available functions and a class are as follows:
     * `FileFormat identify_file_format(const std::string file_name)`: This function allows identifying a file extension based on the input file name. Available formats are defined by the `enum FileFormat`. 
@@ -69,17 +99,17 @@ The following is the detail of one-header libraries available in this repository
       * `template<typename TypeSrc, typename TypeTrg = Type> std::vector<TypeTrg> parse_values(std::vector<TypeSrc> V)`: This function allows parsing integer values stored in an input vector of type TypeSrc into type TypeTrg.
       * `template<typename TypeSrc, typename TypeTrg=Type> TypeTrg parse_value(TypeSrc v)`: This function allows parsing an integer value of type TypeSrc into type TypeTrg.
       * `template<typename TypeSrc> void add_value(TypeSrc v)`: This function allows adding an `8`/`16`/`32`/`64`-bits value. 
-      * `template<typename TypeSrc> void add_values(const TypeSrc *v, const std::size_t l)`: This function allows adding a collection of l unsigned integer values.
+      * `template<typename TypeSrc = Type, typename TypeLength = std::size_t> void add_values(const TypeSrc *v, const TypeLength l)`: This function allows adding a collection of l unsigned integer values.
       * `template<typename TypeSrc> void add_values(const std::vector<TypeSrc> V)`: This function allows adding a collection of unsigned integer values. 
       * `void add_value(std::string v)`: This function allows serializing a string.
       * `void add_map_entry(const std::pair<std::string,std::string> p)`: This function allows adding a `std::map<std::string,std::string>` entry.
       * `void add_map(std::map<std::string,std::string> m)`: This function allows adding a `map<std::string,std::string>`.
       * `void save(const std::string file_name)`: This function allows saving the serialization into a given file. 
-      * `std::vector<Type> get_remaining_values()`: This function allows getting remaining values from the serialization, starting from where an internal index is.
-      * `std::vector<Type> get_next_values(std::uint64_t length)`: This function allows retrieving the next `length` values. 
-      * `std::vector<Type> get_values(std::uint64_t beginning_index, std::uint64_t length)`: This function allows retrieving the next `length` values starting at `beginning_index`.
-      * `const Type get_value(const std::uint64_t i) const`: This function allows getting the `i`-th value from the serialization. 
-      * `const Type get_value()`: This function allows retrieving the next value, based on an internal index. 
+      * `template<typename TypeTrg = Type> const std::vector<TypeTrg> get_remaining_values()`: This function allows getting remaining values from the serialization, starting from where an internal index is.
+      * `template<typename TypeTrg = Type> const std::vector<TypeTrg> get_next_values(std::uint64_t length)`: This function allows retrieving the next `length` values of type `TypeTrg`.
+      * `template<typename TypeTrg = Type> const std::vector<TypeTrg> get_values(std::uint64_t beginning_index, std::uint64_t length)`: This function allows retrieving the next `length` values of type `TypeTrg` starting at `beginning_index`..
+      * `template<typename TypeTrg = Type> const Type get_value_at( std::uint64_t i )`: This function allows getting the `i`-th `TypeTrg` type value from the serialization. 
+      * `template<typename TypeTrg = Type> const TypeTrg get_value()`: This function allows retrieving the next value, based on an internal index.
       * `std::string get_string_value()`: This function allows retrieving a serialized string. 
       * `std::pair<std::string,std::string> get_map_entry()`: This function allows retrieving a serialized `std::map<std::string,std::string>`'s entry.
       * `std::map<std::string,std::string> get_map()`: This function allows retrieving a serialized `std::map<std::string,std::string>`.
@@ -89,6 +119,90 @@ The following is the detail of one-header libraries available in this repository
       * `const void print()`: This method displays the sequence of Type words that compose the serialization.
 
 # Examples
+
+## `codecs/samg::grcodec::RCodec` and `codecs/samg::grcodec::RiceRuns`
+
+```c++
+// riceruns-test.cpp
+// To Compile: g++-11 -ggdb -g3 -Wno-register -I ~/include/ -L ~/lib/ riceruns-test.cpp -o riceruns-test -lsdsl
+
+#include <codecs/gr-codec.hpp>
+#include <samg/commons.hpp>
+#include <samg/matutx.hpp>
+#include <iostream>
+#include <string>
+#include <sstream>
+#include <array>
+#include <random>
+
+using Word = std::uint32_t;
+using Length = std::uint64_t;
+
+// Encode and decode each vector using k.
+void run_test( std::string info, std::string file_name, std::vector<Word> sequence, const std::size_t k ) {
+    std::cout << info << std::endl;
+    
+    // Encode:
+    std::queue<Word> tmp;
+    for (std::size_t i = 0; i < sequence.size(); ++i) {
+        tmp.push( sequence[i] );
+    }
+
+    samg::grcodec::RCodec<Word,Length>::BinarySequence bs = samg::grcodec::RiceRuns<Word,Length>::encode( tmp, k );
+    samg::grcodec::RCodec<Word,Length>::display_binary_sequence( "..::Rice-runs Encoded Sequence::..", bs, false );
+
+    // Serializing binary sequence to file:
+    bs.save(file_name);
+
+    // Retrieving binary sequence from file:
+    samg::grcodec::RCodec<Word,Length>::BinarySequence bs2 = samg::grcodec::RCodec<Word,Length>::BinarySequence(file_name);
+    samg::grcodec::RCodec<Word,Length>::display_binary_sequence( "..::Rice-runs Retrieved Encoded Sequence::..", bs2, false );
+
+    samg::grcodec::RiceRuns<Word,Length> codec( bs2 );
+    
+    // Compare original and decoded sequences:
+    bool same = true;
+    
+    for ( Length i = 0; same && i < sequence.size(); ++i ) {
+        Word n = codec.next();
+        same = sequence[i] == n;
+        if( !same ) {
+            std::cerr << "sequence["<<i<<"]<"<<sequence[i]<<"> != n<"<<n<<">" << std::endl;
+        }
+    }
+    if( same ) {
+        std::cout << "Test: Successful!" << std::endl;
+    } else {
+        std::cerr << "Test: Wrong!" << std::endl;
+    }
+    std::cout << "---------------------------------------------------------------" << std::endl;
+}
+
+int main(int argc, char const *argv[]) {
+    if( argc == 1 ) {
+        std::cerr << "You must specify a number of elements to generate and a range width for random numbers." << std::endl;
+        return 1;
+    }
+    const Length N = std::stoull(argv[1]); // Sequence length N.
+    const Length R = std::stoull(argv[2]); // Random numbers range [0,R)
+    std::vector<Word> sequence;
+
+    // Generating random sequence:
+    std::random_device rd;
+    std::mt19937_64 gen(rd());
+    std::uniform_int_distribution<Word> dist(0,R-1);
+    sequence.clear();
+    for (Word i = 0; i < N; ++i) {
+        sequence.push_back(dist(gen));
+    }
+
+    std::size_t k = samg::grcodec::RCodec<Word,Length>::compute_GR_parameter_for_list(sequence);
+    run_test( "..::Random Sequence Test::.. (k="+std::to_string(k)+")", "trial_riceruns4-rnd.rrn", sequence, k );
+
+    return 0;
+}
+
+```
 
 ## `codecs/samg::grcodec::GRCodec`
 
@@ -117,67 +231,6 @@ int main(int argc, char const *argv[]) {
     
     while( codec.has_more() ) {
         std::cout << "\t next = " << codec.next() << " |bits|= " << codec.length() << " ---> " << codec <<std::endl;
-    }
-
-    return 0;
-}
-```
-
-## `codecs/samg::grcodec::RiceRuns`
-
-```c++
-// riceruns-test.cpp
-// To Compile: g++-11 -ggdb -g3 -I ~/include/ -L ~/lib/ riceruns-test.cpp -o riceruns-test -lsdsl
-
-#include <codecs/gr-codec.hpp>
-#include <samg/commons.hpp>
-#include <iostream>
-#include <sstream>
-#include <array>
-
-int main(int argc, char const *argv[]) {
-    using Type = std::uint16_t;
-
-	// It encodes 3-dimensional coordinates sorted by dimension in ascending order.
-    const std::vector<Type> sequence {0,0,1,0,0,2,0,0,3,0,0,6,0,0,7,0,1,0,0,1,1,0,1,3,0,1,7,0,2,0,0,2,1,0,2,2,0,2,4,0,2,5,0,3,0,0,3,1,0,3,3,0,3,7,0,4,1,0,4,6,0,5,0,0,5,2,0,5,4,0,5,6,0,5,7,0,6,0,0,6,1,0,6,2,0,6,3,0,6,7,0,7,0,0,7,4,0,7,7,1,0,2,1,0,5,1,1,0,1,1,1,1,1,2,1,1,3,1,1,5,1,1,6,1,1,7,1,2,0,1,2,6,1,2,7,1,3,1,1,3,2,1,3,4,1,3,6,1,3,7,1,4,3,1,4,4,1,4,6,1,5,0,1,5,1,1,5,2,1,5,4,1,5,6,1,6,2,1,6,3,1,6,4,1,7,1,1,7,5,1,7,7,2,0,2,2,0,3,2,0,4,2,0,7,2,1,2,2,1,3,2,1,4,2,1,5,2,1,6,2,2,0,2,2,1,2,2,7,2,3,0,2,3,1,2,3,2,2,3,3,2,3,4,2,3,5,2,3,6,2,4,0,2,4,6,2,4,7,2,5,1,2,5,5,2,5,7,2,6,0,2,6,3,2,7,1,2,7,5,2,7,6,3,0,0,3,0,2,3,0,5,3,1,0,3,1,4,3,1,5,3,2,1,3,2,2,3,2,3,3,3,3,3,3,4,3,3,6,3,3,7,3,4,0,3,4,2,3,4,4,3,4,5,3,4,7,3,5,2,3,5,3,3,6,0,3,6,3,3,6,5,3,6,6,3,7,4,3,7,5,3,7,6,4,0,0,4,0,1,4,0,2,4,0,4,4,0,5,4,0,6,4,1,0,4,1,1,4,1,2,4,1,3,4,1,5,4,1,6,4,2,3,4,2,4,4,2,5,4,2,7,4,3,0,4,3,3,4,3,4,4,3,5,4,3,7,4,4,2,4,4,3,4,4,6,4,5,1,4,5,2,4,5,5,4,5,7,4,6,1,4,6,2,4,6,4,4,6,5,4,6,7,4,7,3,5,0,6,5,1,1,5,1,2,5,1,3,5,1,4,5,1,5,5,1,6,5,2,0,5,2,1,5,2,3,5,2,4,5,2,6,5,3,2,5,3,3,5,4,2,5,4,5,5,4,6,5,4,7,5,5,0,5,5,2,5,5,3,5,5,4,5,5,6,5,6,0,5,6,1,5,6,2,5,6,3,5,6,4,5,6,5,5,7,1,5,7,3,5,7,4,5,7,5,5,7,6,6,0,0,6,0,3,6,0,5,6,0,6,6,1,2,6,1,3,6,1,4,6,1,7,6,2,4,6,2,5,6,3,0,6,3,1,6,3,4,6,3,5,6,3,7,6,4,0,6,4,2,6,4,3,6,4,6,6,4,7,6,5,2,6,5,3,6,5,4,6,5,6,6,6,1,6,6,3,6,6,6,6,6,7,6,7,0,6,7,4,6,7,7,7,0,0,7,0,2,7,0,4,7,0,5,7,0,7,7,1,2,7,1,3,7,1,5,7,1,7,7,2,0,7,2,1,7,2,4,7,2,5,7,3,0,7,3,1,7,3,3,7,3,4,7,3,7,7,4,3,7,4,6,7,5,0,7,5,1,7,5,4,7,5,7,7,6,0,7,6,2,7,6,3,7,6,5,7,6,6,7,6,7,7,7,1,7,7,2,7,7,3,7,7,5,7,7,6,7,7,7};
-
-	// Unzip dimensions of each coordinates in three different vectors. 
-    const std::size_t N_SEQS = 3;
-    std::array<std::vector<Type>,N_SEQS> sequences;
-
-    for (std::size_t i = 0; i < sequence.size(); ++i) {
-        sequences[i % N_SEQS].push_back(sequence[i]);
-    }
-    
-	// Encode and decode each vector using k = 3.
-	const std::size_t k = 3;
-    for (std::size_t i = 0; i < sequences.size(); ++i) {
-
-		// Encode sequences[i]:
-		sdsl::bit_vector bm = samg::grcodec::RiceRuns<Type>::encode( sequences[i], k );
-
-		// Decode sequence:
-		std::vector<Type> dv = samg::grcodec::RiceRuns<Type>::decode( bm, k );
-
-		// Display results:
-        samg::utils::print_vector<Type>("Original Sequence " + std::to_string(i+1) + " (||="+ std::to_string(sequences[i].size()) +"):",sequences[i]);
-
-        std::cout << "Golomb-Rice Encoded Sequence " << (i+1) << " --- || = " << bm.size() << " ---> " << bm << std::endl;
-        
-		samg::utils::print_vector<Type>("Decoded Sequence " + std::to_string(i+1) + " (||="+ std::to_string(dv.size()) + "): ",dv);
-        
-		// Compare original and decoded sequences:
-		bool same = sequences[i].size() == dv.size();
-        for (size_t j = 0; same && j < dv.size(); ++j) {
-			same = sequences[i][j] == dv[j];
-        }
-        if( same ) {
-            std::cout << "Test " << i << ": Successful!" << std::endl;
-        } else {
-            std::cerr << "Test " << i << ": Wrong!" << std::endl;
-        }
-        
-        std::cout << "---------------------------------------------------------------" << std::endl;
     }
 
     return 0;

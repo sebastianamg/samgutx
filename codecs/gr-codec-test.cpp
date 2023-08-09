@@ -45,11 +45,12 @@ namespace grcodec {
                 ~N3SequencesDataSet() override {}
                 // Methods:
                 void SetUp() override {
-                    for (size_t i = 0; i < 3; ++i) {
-                        std::cout << "|s1["<<i<<"]| = " << s1[i].size() << std::endl;
-                        std::cout << "|s2["<<i<<"]| = " << s2[i].size() << std::endl;
-                        std::cout << "|s3["<<i<<"]| = " << s3[i].size() << std::endl;
-                    }
+                    std::cout << "|sx[~]| = " << s3[0].size() << std::endl;
+                    // for (size_t i = 0; i < 3; ++i) {
+                        // std::cout << "|s1["<<i<<"]| = " << s1[i].size() << std::endl;
+                        // std::cout << "|s2["<<i<<"]| = " << s2[i].size() << std::endl;
+                        // std::cout << "|s3["<<i<<"]| = " << s3[i].size() << std::endl;
+                    // }
                 }
                 void TearDown() override {}
                 static bool are_equal( std::queue<Word> &v1, std::queue<Word> &v2 ) {

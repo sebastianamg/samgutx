@@ -299,6 +299,8 @@ namespace samg {
                         std::is_same_v<TypeSrc, std::uint64_t>,
                         "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
 
+                    // std::cout << "add_value(v) = " << v << std::endl;
+
                     std::vector<TypeSrc> V = {v};
                     std::vector<Type> X = this->parse_values<TypeSrc>(V);
                     this->sequence.insert(this->sequence.end(),X.begin(),X.end());
@@ -375,8 +377,11 @@ namespace samg {
                         std::is_same_v<TypeSrc, std::uint32_t> ||
                         std::is_same_v<TypeSrc, std::uint64_t>,
                         "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
-                    std::vector<Type> X = this->parse_values<TypeSrc>(V);
-                    this->sequence.insert(this->sequence.end(),X.begin(),X.end());
+                    for (TypeSrc v : V) {
+                        this->add_value(v);
+                    }
+                    // std::vector<Type> X = this->parse_values<TypeSrc>(V);
+                    // this->sequence.insert(this->sequence.end(),X.begin(),X.end());
                 }
 
                 /**
@@ -423,6 +428,8 @@ namespace samg {
                 void save(const std::string file_name) {
                     WordSequenceSerializer::store_binary_sequence<Type>(this->sequence,file_name);
                 }
+
+                // ***************************************************************
 
                 /**
                  * @brief This function allows getting remaining values from the serialization starting from where an internal index is. 
@@ -481,17 +488,17 @@ namespace samg {
                  * @return const Type 
                  */
                 template<typename TypeTrg = Type> const Type get_value_at( std::uint64_t i ) const {
-                    if( sizeof(TypeTrg) <= sizeof(Type) ) {
-                        return (TypeTrg) this->sequence[i];
-                    } else {
+                    // if( sizeof(TypeTrg) <= sizeof(Type) ) {
+                    //     return (TypeTrg) this->sequence[i];
+                    // } else {
                         std::vector<Type> V;
-                        std::uint64_t limit = sizeof(TypeTrg) / sizeof(Type);
+                        std::uint64_t limit = std::ceil( sizeof(TypeTrg) / sizeof(Type) );
                         for ( ; i < limit; ++i ) {
                             V.push_back( this->sequence[i] );
                         }
                         std::vector<TypeTrg> T = this->parse_values<Type,TypeTrg>(V);
                         return T[0]; // Assuming T contains only one value.
-                    }
+                    // }
                 }
 
                 /**
@@ -501,17 +508,18 @@ namespace samg {
                  * @return const TypeTrg 
                  */
                 template<typename TypeTrg = Type> const TypeTrg get_value() {
-                    if( sizeof(TypeTrg) <= sizeof(Type) ) {
-                        return (TypeTrg) this->sequence[this->current_index++];
-                    } else {
+                    // if( sizeof(TypeTrg) <= sizeof(Type) ) {
+                    //     return (TypeTrg) this->sequence[this->current_index++];
+                    // } else {
                         std::vector<Type> V;
-                        std::uint64_t limit = sizeof(TypeTrg) / sizeof(Type);
+                        std::uint64_t limit = std::ceil( (double)sizeof(TypeTrg) / (double)sizeof(Type) );
                         for (std::size_t i = 0; i < limit; ++i ) {
                             V.push_back( this->sequence[this->current_index++] );
                         }
                         std::vector<TypeTrg> T = this->parse_values<Type,TypeTrg>(V);
+                        // std::cout << "get_value (|TypeTrg|<"<< sizeof(TypeTrg) <<">) = " << T[0] << std::endl;
                         return T[0]; // Assuming T contains only one value.
-                    }
+                    // }
                 }
 
                 /**

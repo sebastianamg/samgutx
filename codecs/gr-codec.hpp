@@ -448,6 +448,7 @@ namespace samg {
                         // std::cout << "save --- (7)" << std::endl;
                         serializer.save( file_name );
                         // std::cout << "save --- (8) --- end!" << std::endl;
+                        serializer.print();
                     }
                 } BinarySequence;
 

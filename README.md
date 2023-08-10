@@ -95,7 +95,8 @@ The following is the detail of one-header libraries available in this repository
     * `std::string change_extension(const std::string file_name, const std::string old_ext, const std::string new_ext)`: This function allows replacing a given old extension of file name by a new one.
     * `WordSequenceSerializer` class: This class allows serializing and deserializing a sequence of integers defined through its template. The class provides the following members:
       * `WordSequenceSerializer()`: This constructor gets the serializer ready to start a new serialization. 
-      *  `WordSequenceSerializer(const std::string file_name)`: This constructor gets the serializer ready to deserialize data from a binary file.
+      *  `WordSequenceSerializer(const std::string file_name)`: This constructor builds a serializer with data retrieved from a binary file.
+      * `WordSequenceSerializer( std::vector<Type> sequence)`: This constructor builds a serialized from a serialized sequence.
       * `template<typename TypeSrc, typename TypeTrg = Type> std::vector<TypeTrg> parse_values(std::vector<TypeSrc> V)`: This function allows parsing integer values stored in an input vector of type TypeSrc into type TypeTrg.
       * `template<typename TypeSrc, typename TypeTrg=Type> TypeTrg parse_value(TypeSrc v)`: This function allows parsing an integer value of type TypeSrc into type TypeTrg.
       * `template<typename TypeSrc> void add_value(TypeSrc v)`: This function allows adding an `8`/`16`/`32`/`64`-bits value. 
@@ -116,6 +117,7 @@ The following is the detail of one-header libraries available in this repository
       * `const bool has_more() const`: This method allows verifying whether the serialization has or not more elements. 
       * `const std::uint64_t get_current_index() const`: This method returns the current internal index.
       * `const std::uint64_t size() const`: This method returns the number of Type words that composes the serialization. 
+      * `std::vector<Type> get_serialized_sequence()`: This function returns the internal serialized sequence.
       * `const void print()`: This method displays the sequence of Type words that compose the serialization.
 
 # Examples

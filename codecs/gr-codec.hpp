@@ -452,6 +452,31 @@ namespace samg {
                         // std::cout << "save --- (8) --- end!" << std::endl;
                         // serializer.print();
                     }
+
+                    /**
+                     * @brief This function serializes this binary sequence.
+                     * 
+                     * @param file_name 
+                     */
+                    std::vector<Word> get_serialization( ) {
+                        // TODO Test it!
+                        // std::cout << "save --- (1)" << std::endl;
+                        samg::matutx::WordSequenceSerializer<Word> serializer = samg::matutx::WordSequenceSerializer<Word>();
+                        // std::cout << "save --- (2)" << std::endl;
+                        serializer.template add_value<std::size_t>( this->k );
+                        // std::cout << "save --- (3)" << std::endl;
+                        serializer.template add_value<Length>( this->length );
+                        // std::cout << "save --- (4)" << std::endl;
+                        serializer.template add_value<Length>( this->src_length );
+                        // std::cout << "save --- (5)" << std::endl;
+                        serializer.template add_value<Length>( this->max_length );
+                        // std::cout << "save --- (6)" << std::endl;
+                        // serializer.template add_values<Word,Length>( this->sequence, this->bitmap_length / sizeof(Word) );
+                        // serializer.template add_values<Word,Length>( this->sequence, this->src_length );
+                        serializer.template add_values<Word,Length>( this->sequence, this->max_length );
+                        // std::cout << "save --- (7)" << std::endl;
+                        return serializer.get_serialized_sequence();
+                    }
                 } BinarySequence;
 
                 BinarySequence sequence;

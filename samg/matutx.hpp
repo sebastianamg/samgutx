@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <iostream>
+#include <type_traits>
 
 /**
  * ---------------------------------------------------------------
@@ -42,11 +43,12 @@ namespace samg {
     namespace matutx {
 
         enum FileFormat {
-            MTX,
-            K2T,
-            MDX,
-            KNT,
-            QMX,
+            MTX, // MatrixMarket plain-text format.
+            K2T, // k2-tree binary format.
+            MDX, // MultidimensionalMatrixMarket plain-text format.
+            KNT, // kn-tree binary format.
+            QMX, // QMX binary format.
+            RRN, // Rice-runs binary format.
             Unknown
         };
         /**
@@ -79,6 +81,11 @@ namespace samg {
             position = file_name.find(".qmx");
             if (position != std::string::npos) {
                 return FileFormat::QMX;
+            } 
+
+            position = file_name.find(".rrn");
+            if (position != std::string::npos) {
+                return FileFormat::RRN;
             } 
 
             return FileFormat::Unknown;
@@ -239,13 +246,21 @@ namespace samg {
                 WordSequenceSerializer(): current_index(0ULL) {}
                 
                 /**
-                 * @brief Construct a new word sequence serializer object to retrieve data serialized and stored in the input file.
+                 * @brief Construct a new word sequence serializer object that retrieves data from an input file.
                  * 
                  * @param file_name
                  */
                 WordSequenceSerializer(const std::string file_name): current_index(0ULL) {
                     this->sequence = WordSequenceSerializer::retrieve_binary_sequence<Type>(file_name);
                 }
+                /**
+                 * @brief Construct a new Word Sequence Serializer object from a serialized sequence.
+                 * 
+                 * @param sequence 
+                 */
+                WordSequenceSerializer( std::vector<Type> sequence): 
+                    sequence(sequence),
+                    current_index(0ULL) {}
 
                 /**
                  * @brief This function allows parsing integer values stored in an input vector of type TypeSrc into type TypeTrg.
@@ -586,6 +601,15 @@ namespace samg {
                  */
                 const std::uint64_t size() const {
                     return this->sequence.size();
+                }
+
+                /**
+                 * @brief This function returns the internal serialized sequence.
+                 * 
+                 * @return std::vector<Type> 
+                 */
+                std::vector<Type> get_serialized_sequence() const {
+                    return this->sequence;
                 }
 
                 /**

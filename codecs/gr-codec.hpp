@@ -1191,7 +1191,7 @@ namespace samg {
             
             private:
                 typedef std::int64_t rseq_t; // Data type internally used by the relative sequence. It can be changed here to reduce memory footprint in case numbers in a relative sequence are small enough to fit in fewer bits.  
-                typedef std::queue<RiceRuns::rseq_t> RelativeSequence;
+                typedef std::queue<RiceRuns<Word,Length>::rseq_t> RelativeSequence;
                 typedef std::queue<Word> AbsoluteSequence;
                 // typedef std::queue<Word> AbsoluteBuffer;
 
@@ -1204,23 +1204,23 @@ namespace samg {
                 static const bool   IS_NEGATIVE = true;
                 
                 /**
-                 * @brief This function allows generating a gap centered in 0. The result is a value that belongs to either (-inf,-RiceRuns::ESCAPE_RANGE_SPAN+1] or [RiceRuns::ESCAPE_RANGE_SPAN,inf). This transformation of v allows to release values in [-RiceRuns::ESCAPE_RANGE_SPAN,RiceRuns::ESCAPE_RANGE_SPAN-1] to be used as scape symbols during encoding/decoding of, for instance, negative values.
+                 * @brief This function allows generating a gap centered in 0. The result is a value that belongs to either (-inf,-RiceRuns<Word,Length>::ESCAPE_RANGE_SPAN+1] or [RiceRuns<Word,Length>::ESCAPE_RANGE_SPAN,inf). This transformation of v allows to release values in [-RiceRuns<Word,Length>::ESCAPE_RANGE_SPAN,RiceRuns<Word,Length>::ESCAPE_RANGE_SPAN-1] to be used as scape symbols during encoding/decoding of, for instance, negative values.
                  * 
                  * @param v 
-                 * @return RiceRuns::rseq_t 
+                 * @return RiceRuns<Word,Length>::rseq_t 
                  */
-                static RiceRuns::rseq_t transform_rval( RiceRuns::rseq_t v ) {
-                    return v >= 0 ? v + RiceRuns::ESCAPE_RANGE_SPAN : v - RiceRuns::ESCAPE_RANGE_SPAN; // Transform relative value. 
+                static RiceRuns<Word,Length>::rseq_t transform_rval( RiceRuns<Word,Length>::rseq_t v ) {
+                    return v >= 0 ? v + RiceRuns<Word,Length>::ESCAPE_RANGE_SPAN : v - RiceRuns<Word,Length>::ESCAPE_RANGE_SPAN; // Transform relative value. 
                 }
 
                 /**
                  * @brief This function allows recovering an original value transformed by `transform_rval`.
                  * 
                  * @param v 
-                 * @return RiceRuns::rseq_t 
+                 * @return RiceRuns<Word,Length>::rseq_t 
                  */
-                static RiceRuns::rseq_t recover_rval( RiceRuns::rseq_t v ) {
-                    return v < 0 ? v + RiceRuns::ESCAPE_RANGE_SPAN : v - RiceRuns::ESCAPE_RANGE_SPAN; // Recover relative value.
+                static RiceRuns<Word,Length>::rseq_t recover_rval( RiceRuns<Word,Length>::rseq_t v ) {
+                    return v < 0 ? v + RiceRuns<Word,Length>::ESCAPE_RANGE_SPAN : v - RiceRuns<Word,Length>::ESCAPE_RANGE_SPAN; // Recover relative value.
                 }
 
                 /**
@@ -1247,11 +1247,11 @@ namespace samg {
                         // ans.push_back( transform_rval( sequence[0] ) );
                         while( !sequence.empty() ) {
                             current = sequence.front(); sequence.pop();
-                            ans.push( transform_rval( ((RiceRuns::rseq_t)(current)) - ((RiceRuns::rseq_t)(previous)) ) );
+                            ans.push( transform_rval( ((RiceRuns<Word,Length>::rseq_t)(current)) - ((RiceRuns<Word,Length>::rseq_t)(previous)) ) );
                             previous = current;
                         }
                         // for (std::size_t i = 1; i < sequence.size(); ++i) {
-                        //     ans.push_back( transform_rval( ((RiceRuns::rseq_t)(sequence[i])) - ((RiceRuns::rseq_t)(sequence[i-1])) ) );
+                        //     ans.push_back( transform_rval( ((RiceRuns<Word,Length>::rseq_t)(sequence[i])) - ((RiceRuns<Word,Length>::rseq_t)(sequence[i-1])) ) );
                         // }
                     }
                     return ans;
@@ -1283,7 +1283,7 @@ namespace samg {
                         // ans.push_back( recover_rval( relative_sequence[0] ) );
                         // for (std::size_t i = 1; i < sequence.size(); ++i) {
                         while( !sequence.empty() ){
-                            ans.push( ((RiceRuns::rseq_t)ans.back()) + recover_rval( sequence.front() ) );
+                            ans.push( ((RiceRuns<Word,Length>::rseq_t)ans.back()) + recover_rval( sequence.front() ) );
                             sequence.pop();
                         }
                     }
@@ -1335,44 +1335,44 @@ namespace samg {
                          * @brief Functions to be executed by each state.
                          * 
                          */
-                        const std::array<std::function<void( RCodec<Word,Length>&, RiceRuns::rseq_t&, const RiceRuns::rseq_t, Length& )>,10> sfunction = {
-                            []( RCodec<Word,Length> &codec, RiceRuns::rseq_t &previous_n,const RiceRuns::rseq_t n, Length &r ) { // ES_Q0
+                        const std::array<std::function<void( RCodec<Word,Length>&, RiceRuns<Word,Length>::rseq_t&, const RiceRuns<Word,Length>::rseq_t, Length& )>,10> sfunction = {
+                            []( RCodec<Word,Length> &codec, RiceRuns<Word,Length>::rseq_t &previous_n,const RiceRuns<Word,Length>::rseq_t n, Length &r ) { // ES_Q0
                                 previous_n = n;
                                 r = 1;
                             },
-                            []( RCodec<Word,Length> &codec, RiceRuns::rseq_t &previous_n,const RiceRuns::rseq_t n, Length &r ) { // ES_Q1
+                            []( RCodec<Word,Length> &codec, RiceRuns<Word,Length>::rseq_t &previous_n,const RiceRuns<Word,Length>::rseq_t n, Length &r ) { // ES_Q1
                                 ++r;
                             },
-                            []( RCodec<Word,Length> &codec, RiceRuns::rseq_t &previous_n,const RiceRuns::rseq_t n, Length &r ) { // ES_Q2
+                            []( RCodec<Word,Length> &codec, RiceRuns<Word,Length>::rseq_t &previous_n,const RiceRuns<Word,Length>::rseq_t n, Length &r ) { // ES_Q2
                                 _write_integer_( codec, previous_n, r );
                                 previous_n = n;
                                 r = 1;
                             },
-                            []( RCodec<Word,Length> &codec, RiceRuns::rseq_t &previous_n,const RiceRuns::rseq_t n, Length &r ) { // ES_Q3
+                            []( RCodec<Word,Length> &codec, RiceRuns<Word,Length>::rseq_t &previous_n,const RiceRuns<Word,Length>::rseq_t n, Length &r ) { // ES_Q3
                                 _write_integer_( codec, previous_n, r );
                                 previous_n = n;
                                 r = 1;
                             },
-                            []( RCodec<Word,Length> &codec, RiceRuns::rseq_t &previous_n,const RiceRuns::rseq_t n, Length &r ) { // ES_Q4
-                                _write_integer_( codec, previous_n, r, RiceRuns::IS_NEGATIVE );
+                            []( RCodec<Word,Length> &codec, RiceRuns<Word,Length>::rseq_t &previous_n,const RiceRuns<Word,Length>::rseq_t n, Length &r ) { // ES_Q4
+                                _write_integer_( codec, previous_n, r, RiceRuns<Word,Length>::IS_NEGATIVE );
                                 previous_n = n;
                                 r = 1;
                             },
-                            []( RCodec<Word,Length> &codec, RiceRuns::rseq_t &previous_n,const RiceRuns::rseq_t n, Length &r ) { // ES_Q5
+                            []( RCodec<Word,Length> &codec, RiceRuns<Word,Length>::rseq_t &previous_n,const RiceRuns<Word,Length>::rseq_t n, Length &r ) { // ES_Q5
                                 ++r;
                             },
-                            []( RCodec<Word,Length> &codec, RiceRuns::rseq_t &previous_n,const RiceRuns::rseq_t n, Length &r ) { // ES_Q6
-                                _write_integer_( codec, previous_n, r, RiceRuns::IS_NEGATIVE );
+                            []( RCodec<Word,Length> &codec, RiceRuns<Word,Length>::rseq_t &previous_n,const RiceRuns<Word,Length>::rseq_t n, Length &r ) { // ES_Q6
+                                _write_integer_( codec, previous_n, r, RiceRuns<Word,Length>::IS_NEGATIVE );
                                 previous_n = n;
                                 r = 1;
                             },
-                            []( RCodec<Word,Length> &codec, RiceRuns::rseq_t &previous_n,const RiceRuns::rseq_t n, Length &r ) { // ES_PSINK
+                            []( RCodec<Word,Length> &codec, RiceRuns<Word,Length>::rseq_t &previous_n,const RiceRuns<Word,Length>::rseq_t n, Length &r ) { // ES_PSINK
                                 _write_integer_( codec, previous_n, r );
                             },
-                            []( RCodec<Word,Length> &codec, RiceRuns::rseq_t &previous_n,const RiceRuns::rseq_t n, Length &r ) { // ES_NSINK
-                                _write_integer_( codec, previous_n, r, RiceRuns::IS_NEGATIVE );
+                            []( RCodec<Word,Length> &codec, RiceRuns<Word,Length>::rseq_t &previous_n,const RiceRuns<Word,Length>::rseq_t n, Length &r ) { // ES_NSINK
+                                _write_integer_( codec, previous_n, r, RiceRuns<Word,Length>::IS_NEGATIVE );
                             },
-                            []( RCodec<Word,Length> &codec, RiceRuns::rseq_t &previous_n,const RiceRuns::rseq_t n, Length &r ) { // ES_ERROR
+                            []( RCodec<Word,Length> &codec, RiceRuns<Word,Length>::rseq_t &previous_n,const RiceRuns<Word,Length>::rseq_t n, Length &r ) { // ES_ERROR
                                 throw std::runtime_error("Encoding error state!");
                             }
                         };
@@ -1403,17 +1403,17 @@ namespace samg {
                          * @param r 
                          * @param is_negative 
                          */
-                        static void _write_integer_( RCodec<Word,Length> &codec, RiceRuns::rseq_t n, const Length r, const bool is_negative = false ) {
+                        static void _write_integer_( RCodec<Word,Length> &codec, RiceRuns<Word,Length>::rseq_t n, const Length r, const bool is_negative = false ) {
                             n = ( is_negative ) ? n * -1 : n;
-                            if( r < RiceRuns::RLE_THRESHOLD ) {
+                            if( r < RiceRuns<Word,Length>::RLE_THRESHOLD ) {
                                 for (Length j = 0; j < r; ++j) {
-                                    if( is_negative ) { codec.append(RiceRuns::NEGATIVE_FLAG); }
+                                    if( is_negative ) { codec.append(RiceRuns<Word,Length>::NEGATIVE_FLAG); }
                                     codec.append(n);
                                 }
                                 // std::cout << " Write ---> r<" << r << "> x (" << (is_negative ? " NEG<00>":"") << " n<" << n << "> )" << std::endl;
                             } else {
-                                codec.append(RiceRuns::REPETITION_FLAG);
-                                if( is_negative ) { codec.append(RiceRuns::NEGATIVE_FLAG); }
+                                codec.append(RiceRuns<Word,Length>::REPETITION_FLAG);
+                                if( is_negative ) { codec.append(RiceRuns<Word,Length>::NEGATIVE_FLAG); }
                                 codec.append(n);
                                 codec.append(r);
 
@@ -1430,8 +1430,8 @@ namespace samg {
                          * @param n 
                          * @return const ECase 
                          */
-                        // static const ECase _get_case_( const RelativeSequence rs, std::size_t &i, const RiceRuns::rseq_t previous_n, RiceRuns::rseq_t &n ) {
-                        static const ECase _get_case_( RelativeSequence &rs, const RiceRuns::rseq_t previous_n, RiceRuns::rseq_t &n ) {
+                        // static const ECase _get_case_( const RelativeSequence rs, std::size_t &i, const RiceRuns<Word,Length>::rseq_t previous_n, RiceRuns<Word,Length>::rseq_t &n ) {
+                        static const ECase _get_case_( RelativeSequence &rs, const RiceRuns<Word,Length>::rseq_t previous_n, RiceRuns<Word,Length>::rseq_t &n ) {
                             // if( i == rs.size() ) {
                             if( rs.empty() ) {
                                 return ECase::EC_EOS;
@@ -1463,7 +1463,7 @@ namespace samg {
                          * @param i 
                          * @param n 
                          */
-                        void _init_( RelativeSequence &rs, RiceRuns::rseq_t &n ) {
+                        void _init_( RelativeSequence &rs, RiceRuns<Word,Length>::rseq_t &n ) {
                             // i = 0;
                             // n = rs[i++];
                             n = rs.front(); rs.pop();
@@ -1481,8 +1481,8 @@ namespace samg {
                          * @param n 
                          * @return EState 
                          */
-                        // EState next( const RelativeSequence rs, std::size_t &i, const RiceRuns::rseq_t previous_n, RiceRuns::rseq_t &n ) {
-                        EState next( RelativeSequence &rs, const RiceRuns::rseq_t previous_n, RiceRuns::rseq_t &n ) {
+                        // EState next( const RelativeSequence rs, std::size_t &i, const RiceRuns<Word,Length>::rseq_t previous_n, RiceRuns<Word,Length>::rseq_t &n ) {
+                        EState next( RelativeSequence &rs, const RiceRuns<Word,Length>::rseq_t previous_n, RiceRuns<Word,Length>::rseq_t &n ) {
                             // std::cout << "FSMEncoder/next> (1)" << std::endl;
                             if( this->is_init ) {
                                 // std::cout << "FSMEncoder/next> (1.1.1) --- previous_n = " << previous_n << "; n = " << n << std::endl;
@@ -1509,7 +1509,7 @@ namespace samg {
                          * @param n 
                          * @param r 
                          */
-                        void run( RCodec<Word,Length> &codec, RiceRuns::rseq_t &previous_n, const RiceRuns::rseq_t n, Length &r ) {
+                        void run( RCodec<Word,Length> &codec, RiceRuns<Word,Length>::rseq_t &previous_n, const RiceRuns<Word,Length>::rseq_t n, Length &r ) {
                             this->sfunction[this->current_state]( codec, previous_n, n, r );
                         }
                         
@@ -1598,7 +1598,7 @@ namespace samg {
                                 // Empty
                             },
                             []( RelativeSequence &rs, Word &previous_n,const Word n ) { // DS_Q3
-                                _write_integer_( rs, n, 1, RiceRuns::IS_NEGATIVE );
+                                _write_integer_( rs, n, 1, RiceRuns<Word,Length>::IS_NEGATIVE );
                             },
                             []( RelativeSequence &rs, Word &previous_n,const Word n ) { // DS_04
                                 // Empty
@@ -1616,7 +1616,7 @@ namespace samg {
                                 previous_n = n;
                             },
                             []( RelativeSequence &rs, Word &previous_n,const Word n ) { // DS_Q9
-                                _write_integer_( rs, previous_n, n, RiceRuns::IS_NEGATIVE );
+                                _write_integer_( rs, previous_n, n, RiceRuns<Word,Length>::IS_NEGATIVE );
                             },
                             []( RelativeSequence &rs, Word &previous_n,const Word n ) { // DS_SINK
                                 // Empty
@@ -1655,7 +1655,7 @@ namespace samg {
                          * @param is_negative 
                          */
                         static void _write_integer_( RelativeSequence &rs, const Word n, const Length r, const bool is_negative = false ) {
-                            RiceRuns::rseq_t x = is_negative ? ((RiceRuns::rseq_t)n) * -1 : n;
+                            RiceRuns<Word,Length>::rseq_t x = is_negative ? ((RiceRuns<Word,Length>::rseq_t)n) * -1 : n;
                             for (Length j = 0; j < r; ++j) {
                                 // rs.push_back(x);
                                 rs.push(x);
@@ -1674,11 +1674,11 @@ namespace samg {
                                 return DCase::DC_EOS;
                             }else {
                                 n = codec.next();
-                                if( n != RiceRuns::NEGATIVE_FLAG && n != RiceRuns::REPETITION_FLAG ) {
+                                if( n != RiceRuns<Word,Length>::NEGATIVE_FLAG && n != RiceRuns<Word,Length>::REPETITION_FLAG ) {
                                     return DCase::DC_INT;
-                                } else if( n == RiceRuns::NEGATIVE_FLAG ) {
+                                } else if( n == RiceRuns<Word,Length>::NEGATIVE_FLAG ) {
                                     return DCase::DC_NEGFLAG;
-                                } else if( n == RiceRuns::REPETITION_FLAG ) {
+                                } else if( n == RiceRuns<Word,Length>::REPETITION_FLAG ) {
                                     return DCase::DC_REPFLAG;
                                 } else {
                                     return DCase::DC_ERROR;
@@ -1760,6 +1760,16 @@ namespace samg {
                         void restart() {
                             this->is_init = false;
                         }
+
+                        // FSMDecoder& operator=(const FSMDecoder &other_object) {
+                        //     if (this != &other_object) {
+                        //     // Copy the members of the other object to this object.
+                        //     for (int i = 0; i < other_object.members.size(); i++) {
+                        //         this->members[i] = other_object.members[i];
+                        //     }
+                        //     }
+                        //     return *this;
+                        // }
                 };
 
                 // Attributes for relative-sequence traversal:
@@ -1802,6 +1812,17 @@ namespace samg {
                     is_first(true)
                 { this->restart_encoded_sequence_iterator(); }
 
+                // RiceRuns( const RiceRuns<Word,Length> &codec ) {
+                //     this->codec = codec.codec;
+                //     this->decoding_fsm = codec.decoding_fsm;
+                //     this->previous_n = codec.previous_n;
+                //     this->n = codec.n;
+                //     this->previous_relative_value = codec.previous_relative_value;
+                //     this->is_first = codec.is_first;
+                //     this->next_buffer = codec.next_buffer;
+                //     // this->restart_encoded_sequence_iterator(); 
+                // }
+
                 // ~RiceRuns() {
                 //     delete this->codec;
                 // }
@@ -1825,15 +1846,15 @@ namespace samg {
 
                     FSMEncoder fsm;
 
-                    RelativeSequence relative_sequence = RiceRuns::_get_transformed_relative_sequence_( sequence );
+                    RelativeSequence relative_sequence = RiceRuns<Word,Length>::_get_transformed_relative_sequence_( sequence );
 
-                    // samg::utils::print_queue<RiceRuns::rseq_t>("Relative transformed queue |"+ std::to_string(relative_sequence.size()) +"|: ", relative_sequence);
+                    // samg::utils::print_queue<RiceRuns<Word,Length>::rseq_t>("Relative transformed queue |"+ std::to_string(relative_sequence.size()) +"|: ", relative_sequence);
 
                     // std::cout << "RiceRuns/encode (3)" << std::endl;
 
                     Length r; // Let r be a repetition counter of n.
 
-                    RiceRuns::rseq_t    previous_n, // Previous sequence value.
+                    RiceRuns<Word,Length>::rseq_t    previous_n, // Previous sequence value.
                                         n;          // Next sequence value.
 
                     do {
@@ -1890,7 +1911,7 @@ namespace samg {
                         fsm.run( relative_sequence, previous_n, n );
                     }while( !fsm.is_end_state() );
 
-                    return RiceRuns::_get_transformed_absolute_sequence_( relative_sequence );
+                    return RiceRuns<Word,Length>::_get_transformed_absolute_sequence_( relative_sequence );
                 }
 
                 /**
@@ -1956,10 +1977,10 @@ namespace samg {
                         }
 
                         // Retrieve a transformed sequence from the relative one:
-                        this->next_buffer = RiceRuns::_get_transformed_absolute_sequence_( relative_sequence );
+                        this->next_buffer = RiceRuns<Word,Length>::_get_transformed_absolute_sequence_( relative_sequence );
                         
                         // Back up the last relativized (transformed) absolute value:
-                        this->previous_relative_value = RiceRuns::transform_rval( this->next_buffer.back() );
+                        this->previous_relative_value = RiceRuns<Word,Length>::transform_rval( this->next_buffer.back() );
                         
                         // It it is not the first time executing `next`, then remove the previously added last relativized absolute value:
                         // (it was already used to compute the next absolute value(s))

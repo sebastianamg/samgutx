@@ -96,6 +96,7 @@ The following is the detail of one-header libraries available in this repository
     * `WordSequenceSerializer` class: This class allows serializing and deserializing a sequence of integers defined through its template. The class provides the following members:
       * `WordSequenceSerializer()`: This constructor gets the serializer ready to start a new serialization. 
       *  `WordSequenceSerializer(const std::string file_name)`: This constructor builds a serializer with data retrieved from a binary file.
+      * `BinarySequence( std::vector<Word> serialization )`: this constructor builds a new Binary Sequence object from a serialization.
       * `WordSequenceSerializer( std::vector<Type> sequence)`: This constructor builds a serialized from a serialized sequence.
       * `template<typename TypeSrc, typename TypeTrg = Type> std::vector<TypeTrg> parse_values(std::vector<TypeSrc> V)`: This function allows parsing integer values stored in an input vector of type TypeSrc into type TypeTrg.
       * `template<typename TypeSrc, typename TypeTrg=Type> TypeTrg parse_value(TypeSrc v)`: This function allows parsing an integer value of type TypeSrc into type TypeTrg.

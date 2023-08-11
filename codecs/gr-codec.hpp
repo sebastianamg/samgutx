@@ -293,6 +293,34 @@ namespace samg {
                         // this->sequence = BinarySequence/*<Word,Length>*/::rrealloc( this->sequence, this->max_length );
                         // std::cout << "BinarySequence --- (8) --- end!" << std::endl;
                     }
+
+                    /**
+                     * @brief Construct a new Binary Sequence object from a serialization.
+                     * 
+                     * @param file_name 
+                     */
+                    _BinarySequence_( std::vector<Word> serialization ) {
+                        // TODO Test it!
+                        // std::cout << "BinarySequence --- (1)" << std::endl;
+                        samg::matutx::WordSequenceSerializer<Word> serializer = samg::matutx::WordSequenceSerializer<Word>( serialization );
+                        // std::cout << "BinarySequence --- (2)" << std::endl;
+                        this->k = serializer.template get_value<std::size_t>();
+                        // std::cout << "BinarySequence --- (3): k = " << this->k << std::endl;
+                        this->length = serializer.template get_value<Length>();
+                        // std::cout << "BinarySequence --- (4): length = " << this->length << std::endl;
+                        this->src_length = serializer.template get_value<Length>();
+                        // std::cout << "BinarySequence --- (5): src_length = " << this->src_length << std::endl;
+                        this->max_length = serializer.template get_value<Length>();
+                        // std::cout << "BinarySequence --- (6): max_length = " << this->max_length << std::endl;
+                        // std::vector<Word> seq = serializer.get_next_values( this->src_length );
+                        std::vector<Word> seq = serializer.get_next_values( this->max_length );
+                        // samg::utils::print_vector<Word>("_BinarySequence_ - sequence right after retrieval: ",seq);
+                        // std::cout << "BinarySequence --- (7)" << std::endl;
+                        this->sequence = BinarySequence::rmalloc(this->max_length);
+                        std::memcpy( this->sequence, seq.data(), this->max_length * sizeof(Word) );
+                        // this->sequence = BinarySequence/*<Word,Length>*/::rrealloc( this->sequence, this->max_length );
+                        // std::cout << "BinarySequence --- (8) --- end!" << std::endl;
+                    }
                     
                     /**
                      * @brief Construct a new Binary Sequence object

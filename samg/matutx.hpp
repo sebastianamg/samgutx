@@ -258,7 +258,7 @@ namespace samg {
                  * 
                  * @param sequence 
                  */
-                WordSequenceSerializer( std::vector<Type> sequence): 
+                WordSequenceSerializer( std::vector<Type> sequence ): 
                     sequence(sequence),
                     current_index(0ULL) {}
 

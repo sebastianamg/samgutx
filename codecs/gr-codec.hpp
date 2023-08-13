@@ -259,7 +259,7 @@ namespace samg {
                         std::is_same_v<Length, std::uint64_t>,
                         "Second typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
 
-                    static const Length WORD_GROWING_SPAN = 100; // Space in number of Word-type that the bitmap must grow. 
+                    static const Length WORD_GROWING_SPAN = 4000; // Space in number of Word-type that the bitmap must grow. 
                     Word    *sequence; // It is the bitmap.
                     std::size_t k;
                     Length  length, // Index of current bit within the bitmap 'sequence'.

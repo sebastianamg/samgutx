@@ -8,3 +8,5 @@
 /mm_io.h
 /pbar.hpp
 /sdsl
+benchmark/benchmark.h
+benchmark/export.h

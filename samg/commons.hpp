@@ -1,6 +1,8 @@
 #pragma once
 #include <string>
 #include <sstream>
+#include <iostream>
+#include <fstream>
 #include <cstdint>
 #include <iomanip>
 #include <vector>
@@ -117,11 +119,28 @@ namespace samg {
          * @param n 
          * @return std::string 
          */
-        std::string number_to_comma_separated_string( const std::double_t n, const std::size_t precision = 0 ) {
+        std::string number_to_comma_separated_string( const double n, const std::size_t precision = 0 ) {
             std::stringstream ss;
             ss.imbue(std::locale("en_US.UTF-8"));  // Use the appropriate locale for your system
             ss << std::fixed << std::setprecision(precision) << n;
             return ss.str();
+        }
+        /***************************************************************/
+        /**
+         * @brief This function returns the size of a file. 
+         * 
+         * @param file_name 
+         * @return std::size_t 
+         */
+        std::size_t get_file_size( const std::string file_name ) {
+            // Open the file in read mode:
+            std::ifstream file(file_name, std::ios::binary);
+            // Get the file size:
+            file.seekg(0, std::ios::end);
+            std::size_t size = file.tellg();
+            // Close the file:
+            file.close();
+            return size;
         }
         /***************************************************************/
     }

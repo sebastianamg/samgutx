@@ -13,21 +13,21 @@ namespace samg {
                 static const std::string INITIAL_MEMORY;
                 static const std::string FINAL_MEMORY;
 
-                template <class F, class ...Args>
-                auto measure_time(F&& func, Args&&... args) {
+                template <typename R, class F, class ...Args>
+                R measure_time(F&& func, Args&&... args) {
                     auto start = ClockT::now();
-                    auto ans = std::invoke(std::forward<F>(func), std::forward<Args>(args)...);
-                    this->profile[Profiler::EXECUTION_TIME] = std::chrono::duration_cast<TimeT>(ClockT::now()-start).count();
+                    R ans = std::invoke(std::forward<F>(func), std::forward<Args>(args)...);
+                    this->profile[Profiler::EXECUTION_TIME] = std::to_string( std::chrono::duration_cast<TimeT>(ClockT::now()-start).count() );
                     return ans;
                 }
 
-                template <class F, class ...Args>
-                auto measure_memory(F&& func, Args&&... args) {
+                template <typename R, class F, class ...Args>
+                R measure_memory(F&& func, Args&&... args) {
                     const pid_t this_process = getpid();
                     std::uint64_t beginning_memory = _get_memory_usage_(this_process);
-                    auto ans = std::invoke(std::forward<F>(func), std::forward<Args>(args)...);
+                    R ans = std::invoke(std::forward<F>(func), std::forward<Args>(args)...);
                     std::uint64_t ending_memory = _get_memory_usage_(this_process);
-                    this->profile[Profiler::MEMORY_USAGE] = ending_memory > beginning_memory ?  ending_memory - beginning_memory : beginning_memory - ending_memory;
+                    this->profile[Profiler::MEMORY_USAGE] = std::to_string( ending_memory > beginning_memory ?  ending_memory - beginning_memory : beginning_memory - ending_memory );
                     return ans;
                 }
 
@@ -35,22 +35,26 @@ namespace samg {
                 R measure_all(F&& func, Args&&... args) {
                     const pid_t this_process = getpid();
                     std::uint64_t beginning_memory = _get_memory_usage_(this_process);
-                    this->profile[Profiler::INITIAL_MEMORY] = beginning_memory; 
+                    this->profile[Profiler::INITIAL_MEMORY] = std::to_string( beginning_memory ); 
                     auto start = ClockT::now();
                     R ans = std::invoke(std::forward<F>(func), std::forward<Args>(args)...);
                     // auto ans = std::invoke(std::forward<F>(func), std::forward<Args>(args)...);
-                    this->profile[Profiler::EXECUTION_TIME] = std::chrono::duration_cast<TimeT>(ClockT::now()-start).count();
+                    this->profile[Profiler::EXECUTION_TIME] = std::to_string( std::chrono::duration_cast<TimeT>(ClockT::now()-start).count() );
                     std::uint64_t ending_memory = _get_memory_usage_(this_process);
-                    this->profile[Profiler::FINAL_MEMORY] = ending_memory;
-                    this->profile[Profiler::MEMORY_USAGE] = ending_memory > beginning_memory ?  ending_memory - beginning_memory : beginning_memory - ending_memory;
+                    this->profile[Profiler::FINAL_MEMORY] = std::to_string( ending_memory );
+                    this->profile[Profiler::MEMORY_USAGE] = std::to_string( ending_memory > beginning_memory ?  ending_memory - beginning_memory : beginning_memory - ending_memory );
                     return ans;
                 }
 
-                std::map<std::string,double> get_profile() {
+                void add_profile_entry( std::string key, std::string entry ) {
+                    this->profile[key] = entry;
+                }
+
+                std::map<std::string,std::string> get_profile() {
                     return this->profile;
                 }
             private:
-                std::map<std::string,double> profile;
+                std::map<std::string,std::string> profile;
 
                 static std::uint64_t _get_memory_usage_(pid_t pid) {
                     const std::size_t max_name_length = 64;

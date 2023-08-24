@@ -1,6 +1,8 @@
 #pragma once
+#include <cmath>
 #include <string>
 #include <iostream>
+#include <fstream>
 #include <type_traits>
 
 /**
@@ -51,6 +53,7 @@ namespace samg {
             RRN, // Rice-runs binary format.
             Unknown
         };
+
         /**
          * @brief This function allows identifying a file extension based on the input file name.
          * 
@@ -195,8 +198,8 @@ namespace samg {
                  * @param file_name 
                  */
                 template<typename UINT_T = std::uint32_t> static void store_binary_sequence(const std::vector<UINT_T> data, const std::string file_name) { 
-                    std::ofstream file(file_name, std::ios::binary);
-                    if (file) {
+                    std::ofstream file = std::ofstream(file_name, std::ios::binary);
+                    if ( file.is_open() ) {
                         // Writing the vector's data to the file
                         file.write(reinterpret_cast<const char*>(data.data()), data.size() * sizeof(UINT_T));
                         file.close();

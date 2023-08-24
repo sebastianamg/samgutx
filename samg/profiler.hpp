@@ -1,8 +1,13 @@
 #pragma once
+#include <fcntl.h>
+#include <unistd.h>
 #include <chrono>
 #include <map>
+#include <cmath>
 #include <string>
-#include <unistd.h>
+#include <string.h>
+#include <functional>
+
 namespace samg {
     namespace profiler {
 

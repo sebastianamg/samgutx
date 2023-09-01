@@ -102,9 +102,14 @@ namespace samg {
          * @param new_ext 
          * @return std::string 
          */
-        std::string append_info_and_extension(const std::string file_name, const std::string to_append,const std::string new_ext) {
+        std::string append_info_and_extension(const std::string file_name, const std::string to_append, std::string new_ext) {
+            std::size_t position = new_ext.find(".");
+            if (position == std::string::npos) {
+                new_ext = "." + new_ext;
+            }
+
             std::string new_file_name = file_name;
-            std::size_t position = new_file_name.find_last_of(".");
+            position = new_file_name.find_last_of(".");
             if (position != std::string::npos) {
                 new_file_name = new_file_name.substr(0,position) + "-" + to_append + "." + new_ext;
             } else {
@@ -120,9 +125,14 @@ namespace samg {
          * @param new_ext 
          * @return std::string 
          */
-        std::string change_extension(const std::string file_name, const std::string new_ext) {
+        std::string change_extension(const std::string file_name, std::string new_ext) {
+            std::size_t position = new_ext.find(".");
+            if (position == std::string::npos) {
+                new_ext = "." + new_ext;
+            }
+
             std::string new_file_name = file_name;
-            std::size_t position = new_file_name.find_last_of(".") + 1UL;
+            position = new_file_name.find_last_of(".") + 1UL;
             if (position != std::string::npos) {
                 new_file_name.replace(position, new_ext.length(), new_ext);
             } else {
@@ -132,21 +142,33 @@ namespace samg {
         }
 
         /**
-         * @brief This function allows replacing a given old extension of file name by a new one. 
+         * @brief This function allows replacing a given old extension of file name by a new one and append a string before the new extension. 
          * 
          * @param file_name 
          * @param old_ext 
          * @param new_ext 
+         * @param to_append 
          * @return std::string 
          */
-        std::string change_extension(const std::string file_name, const std::string old_ext, const std::string new_ext) {
-            std::string new_file_name = file_name;
-            std::size_t position = new_file_name.find(old_ext);
-            if (position != std::string::npos) {
-                new_file_name.replace(position, new_ext.length(), new_ext);
-            } else {
-                new_file_name += ".knt";
+        std::string change_extension(const std::string file_name, std::string old_ext, std::string new_ext, const std::string to_append="") {
+            std::size_t position = old_ext.find(".");
+            if (position == std::string::npos) {
+                old_ext = "." + old_ext;
             }
+            position = new_ext.find(".");
+            if (position == std::string::npos) {
+                new_ext = "." + new_ext;
+            }
+
+            std::string new_file_name = file_name;
+            position = new_file_name.find(old_ext);
+            if (position != std::string::npos) {
+                // std::cout << "change_extension> (1) position=" << position <<"; |new_file_name|=" << new_file_name.length() << std::endl;
+                new_file_name = new_file_name.replace(position, old_ext.length(), "");
+            }
+            // std::cout << "change_extension> (2)" << std::endl;
+            new_file_name += to_append + new_ext;
+            // std::cout << "change_extension> (3) new_file_name=" << new_file_name << std::endl;
             return new_file_name;
         }
 
@@ -370,7 +392,7 @@ namespace samg {
                 // }
 
                 /**
-                 * @brief This function allows adding a collection of l unsigned integer values. 
+                 * @brief This function allows adding a collection of l TypeSrc integer values. 
                  * 
                  * @tparam TypeSrc 
                  * @param v 
@@ -396,7 +418,7 @@ namespace samg {
                         std::is_same_v<TypeSrc, std::uint64_t>,
                         "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
                     for (TypeSrc v : V) {
-                        this->add_value(v);
+                        this->add_value<TypeSrc>(v);
                     }
                     // std::vector<Type> X = this->parse_values<TypeSrc>(V);
                     // this->sequence.insert(this->sequence.end(),X.begin(),X.end());

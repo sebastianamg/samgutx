@@ -92,7 +92,7 @@ The following is the detail of one-header libraries available in this repository
     * `FileFormat identify_file_format(const std::string file_name)`: This function allows identifying a file extension based on the input file name. Available formats are defined by the `enum FileFormat`. 
     * `std::string append_info_and_extension(const std::string file_name, const std::string to_append,const std::string new_ext)`: This function allows appending a string to and replace the extension of a file name. 
     * `std::string change_extension(const std::string file_name, const std::string new_ext)`: This function allows replacing the extension of a file name by a new one, regardless the previous extension is.
-    * `std::string change_extension(const std::string file_name, const std::string old_ext, const std::string new_ext)`: This function allows replacing a given old extension of file name by a new one.
+    * `std::string change_extension(const std::string file_name, std::string old_ext, std::string new_ext, const std::string to_append="")`: This function allows replacing a given old extension of file name by a new one and append a string before the new extension.
     * `WordSequenceSerializer` class: This class allows serializing and deserializing a sequence of integers defined through its template. The class provides the following members:
       * `WordSequenceSerializer()`: This constructor gets the serializer ready to start a new serialization. 
       *  `WordSequenceSerializer(const std::string file_name)`: This constructor builds a serializer with data retrieved from a binary file.

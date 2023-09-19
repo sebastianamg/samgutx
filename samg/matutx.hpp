@@ -132,7 +132,7 @@ namespace samg {
             }
 
             std::string new_file_name = file_name;
-            position = new_file_name.find_last_of(".") + 1UL;
+            position = new_file_name.find_last_of(".");
             if (position != std::string::npos) {
                 new_file_name.replace(position, new_ext.length(), new_ext);
             } else {

@@ -48,7 +48,7 @@ namespace samg {
     namespace utils {
         /***************************************************************/
         /**
-         * Artifact for feedback/debugging purposes.
+         * Artifact for feedback/debugging purposes. 
          * @brief This function allows getting a string representation of an object.
          *  
          * @param obj is the input object.

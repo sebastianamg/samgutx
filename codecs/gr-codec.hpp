@@ -259,19 +259,22 @@ namespace samg {
                         std::is_same_v<Length, std::uint64_t>,
                         "Second typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
 
-                    static const Length WORD_GROWING_SPAN = 4000; // Space in number of Word-type that the bitmap must grow. 
+                    static const Length WORD_GROWING_SPAN = 4096; // Space in number of Word-type that the bitmap must grow. 
                     Word    *sequence; // It is the bitmap.
                     std::size_t k;
                     Length  length, // Index of current bit within the bitmap 'sequence'.
                             src_length, // Number of encoded integers.
                             max_length; // Maximum capacity of the bitmap in Word(s).
+                    bool free_sequence = false; // Use to determine whether free or not the `sequence` pointer. It could be freed only when the pointer is created internally in the struct. If it comes from outside, is not freed to prevent side effects.
                     
                     /**
                      * @brief Construct a new Binary Sequence object
                      * 
                      * @param file_name 
                      */
-                    _BinarySequence_( const std::string file_name ) {
+                    _BinarySequence_( const std::string file_name )/*:
+                        free_sequence(true) */
+                    {
                         // TODO Test it!
                         // std::cout << "BinarySequence --- (1)" << std::endl;
                         samg::matutx::WordSequenceSerializer<Word> serializer = samg::matutx::WordSequenceSerializer<Word>( file_name );
@@ -292,6 +295,7 @@ namespace samg {
                         std::memcpy( this->sequence, seq.data(), this->max_length * sizeof(Word) );
                         // this->sequence = BinarySequence/*<Word,Length>*/::rrealloc( this->sequence, this->max_length );
                         // std::cout << "BinarySequence --- (8) --- end!" << std::endl;
+                        this->free_sequence = true;
                     }
 
                     /**
@@ -299,7 +303,9 @@ namespace samg {
                      * 
                      * @param file_name 
                      */
-                    _BinarySequence_( std::vector<Word> serialization ) {
+                    _BinarySequence_( std::vector<Word> serialization )/*:
+                        free_sequence(true) */
+                    {
                         // TODO Test it!
                         // std::cout << "BinarySequence --- (1)" << std::endl;
                         samg::matutx::WordSequenceSerializer<Word> serializer = samg::matutx::WordSequenceSerializer<Word>( serialization );
@@ -328,6 +334,7 @@ namespace samg {
                      * @param k 
                      */
                     _BinarySequence_( const std::size_t k ):
+                        // free_sequence(true),
                         // bitmap_length( src_length * 2 * sizeof(Word) ),
                         k(k),
                         length(0),
@@ -346,6 +353,7 @@ namespace samg {
                      * @param k 
                      */
                     _BinarySequence_( Word *sequence, const Length sequence_length, const Length src_length, const std::size_t k ):
+                        // free_sequence(false),
                         k(k),
                         sequence( sequence ),
                         length( sequence_length ),
@@ -354,6 +362,12 @@ namespace samg {
                         // max_length( sequence_length )
                     {}
 
+                    // ~_BinarySequence_() {
+                    //     if(this->free_sequence) {
+                    //         BinarySequence::rfree( this->sequence );
+                    //     }
+                    // }
+
                     /**
                      * @brief This function adds a new integer n with length n_bits[b] in the bitmap.
                      * 
@@ -361,10 +375,10 @@ namespace samg {
                      * @param n_bits 
                      */
                     void add( Word n, std::size_t n_bits ) {
-                        // std::cout << "RCodec/BinarySequence/add --- n = " << n << "; |n| = " << n_bits << "[b]" << std::endl;
-                        if( std::ceil( (double)(this->length + n_bits) / (double) BITS_PER_BYTE ) >= ( this->max_length * sizeof(Word) ) ) {
+                        // std::cout << "RCodec/BinarySequence/add --- n = " << n << "; |n| = " << n_bits << "[b]; length = " << this->length << "; max_length [B] = " << (this->max_length * sizeof(Word)) << std::endl;
+                        if( std::ceil( (double)(this->length + n_bits ) / (double) BITS_PER_BYTE ) >= ( this->max_length * sizeof(Word) ) ) {
                             // std::cout << "RCodec/BinarySequence/add --- growing bitmap from " << this->max_length << "[W]";
-                            this->max_length += BinarySequence::WORD_GROWING_SPAN;
+                            this->max_length += ( std::ceil( (double)n_bits / (double)BITS_PER_BYTE ) + BinarySequence::WORD_GROWING_SPAN);
                             // std::cout << " to " << this->max_length << " [W]" << std::endl;
                             this->sequence = BinarySequence::rrealloc( this->sequence, this->max_length );
                         }

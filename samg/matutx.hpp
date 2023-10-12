@@ -51,6 +51,7 @@ namespace samg {
             KNT, // kn-tree binary format.
             QMX, // QMX binary format.
             RRN, // Rice-runs binary format.
+            GRAPH, // Graph format from LAW webgraph framework [https://law.di.unimi.it/index.php].
             Unknown
         };
 
@@ -89,6 +90,11 @@ namespace samg {
             position = file_name.find(".rrn");
             if (position != std::string::npos) {
                 return FileFormat::RRN;
+            } 
+
+            position = file_name.find(".graph");
+            if (position != std::string::npos) {
+                return FileFormat::GRAPH;
             } 
 
             return FileFormat::Unknown;

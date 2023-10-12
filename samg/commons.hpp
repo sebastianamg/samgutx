@@ -143,5 +143,90 @@ namespace samg {
             return size;
         }
         /***************************************************************/
+        /**
+         * @brief This function returns the text from a file. 
+         * 
+         * @param infile 
+         * @return std::string
+         * 
+         * @warning Bear in mind the size of the text. 
+         */
+        inline std::string read_from_file(const std::string infile) {
+            std::ifstream instream(infile);
+            if (!instream.is_open()) {
+                throw std::runtime_error("Couldn't open the file \""+infile+"\"!");
+            }
+            instream.unsetf(std::ios::skipws);      // No white space skipping!
+            std::string txt = std::string(std::istreambuf_iterator<char>(instream.rdbuf()),
+                std::istreambuf_iterator<char>());
+            instream.close();
+            return txt;
+        }
+        /***************************************************************/
+        /**
+         * @brief This funtion converts an encoded number from base `base` to base 10.
+         * 
+         * @param str 
+         * @param base 
+         * @return std::uint64_t 
+         */
+        std::uint64_t from_base(std::string str, int base = 10) {
+            if (base < 2 or base > 36) {
+                throw std::invalid_argument("base " + std::to_string(base) + " is not between 2 and 36");
+            }
+            std::uint64_t number = 0;
+            for (char& c : str) {
+                int digit = c;
+                if (digit < 58) {
+                    digit -= 48;
+                }
+                else if (digit < 91)
+                {
+                    digit -= 55;
+                }
+                else {
+                    digit -= 87;
+                }
+                if (digit < 0 or digit >= base) {
+                    throw std::invalid_argument( "input string is not a valid integer in base " + std::to_string(base) );
+                }
+                number = number * base + digit;
+            }
+            return number;
+        }
+
+        /**
+         * @brief This function convert a number from base 10 to base `base`.
+         * 
+         * @param number 
+         * @param base 
+         * @param length 
+         * @return std::string 
+         */
+        std::string to_base(std::uint64_t number, int base, std::size_t length = 0 ) {
+            if (base < 2 or base > 36) {
+                throw std::invalid_argument("base " + std::to_string(base) + " is not between 2 and 36");
+            }
+            std::string repr = "";
+            int digit;
+            while (number) {
+                std::uint64_t quotient = number / base;
+                digit = number - quotient * base;
+                number = quotient;
+                if (digit < 10) {
+                    digit += 48;
+                }
+                else {
+                    digit += 87;
+                }
+                repr = char(digit) + repr;
+            }
+
+            while( repr.length() < length ){
+                repr = "0" + repr;
+            }
+
+            return repr;
+        }
     }
 }

@@ -10,3 +10,9 @@
 /sdsl
 benchmark/benchmark.h
 benchmark/export.h
+cpp_properties/lexer.hpp
+cpp_properties/parser.hpp
+cpp_properties/action/properties_action.hpp
+cpp_properties/actor/properties_actor.hpp
+cpp_properties/actor/traits/properties_actor_traits.hpp
+cpp_properties/encoding/encoding.hpp

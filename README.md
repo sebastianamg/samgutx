@@ -86,20 +86,21 @@ The following is the detail of one-header libraries available in this repository
 
 
 * `samg`:
-  * `commons.hpp`: It contains methods for converting objects and vectors to string (the object requires implementing `operator<<`), printing a vector, array and queue, copying data to a `std::stack` from a range defined by `begin` and `end` iterators, converting a number (`std::double_t`) to string providing a precision ($0$ is the default), and retrieving the size of a file.
+  * `commons.hpp`: It contains methods for converting objects and vectors to string (the object requires implementing `operator<<`), printing a vector, array and queue, copying data to a `std::stack` from a range defined by `begin` and `end` iterators, converting a number (`std::double_t`) to string providing a precision ($0$ is the default), retrieving the size of a file, retrieving the content of a text file, and converting numbers to and from a given base.
   * `logger.hpp`: It contains a wrap class for [`c-logger`](https://github.com/adaxiik/c-logger) implemented by @adaxiik. The wrapper class, called `samg::Logger` provides with methods to output `debug`, `info`, `warn`, `error`, and `fatal` messages, along with a method to directly output a `stdout` message. Furthermore, it provides with a mechanism to "turn" on and off the logger. Since this is a one-header file, @adaxiik's `c-logger` has been replicated within the file. 
   * `matutx.hpp`: It provides functions and a class to serialize a sequence of integers called `WordSequenceSerializer`. Available functions and a class are as follows:
     * `FileFormat identify_file_format(const std::string file_name)`: This function allows identifying a file extension based on the input file name. Available formats are defined by the `enum FileFormat`. 
     * `std::string append_info_and_extension(const std::string file_name, const std::string to_append,const std::string new_ext)`: This function allows appending a string to and replace the extension of a file name. 
     * `std::string change_extension(const std::string file_name, const std::string new_ext)`: This function allows replacing the extension of a file name by a new one, regardless the previous extension is.
+    * `std::string get_file_basename(const std::string file_name)`: This function returns the file base name.
     * `std::string change_extension(const std::string file_name, std::string old_ext, std::string new_ext, const std::string to_append="")`: This function allows replacing a given old extension of file name by a new one and append a string before the new extension.
     * `WordSequenceSerializer` class: This class allows serializing and deserializing a sequence of integers defined through its template. The class provides the following members:
       * `WordSequenceSerializer()`: This constructor gets the serializer ready to start a new serialization. 
       *  `WordSequenceSerializer(const std::string file_name)`: This constructor builds a serializer with data retrieved from a binary file.
       * `BinarySequence( std::vector<Word> serialization )`: this constructor builds a new Binary Sequence object from a serialization.
       * `WordSequenceSerializer( std::vector<Type> sequence)`: This constructor builds a serialized from a serialized sequence.
-      * `template<typename TypeSrc, typename TypeTrg = Type> std::vector<TypeTrg> parse_values(std::vector<TypeSrc> V)`: This function allows parsing integer values stored in an input vector of type TypeSrc into type TypeTrg.
-      * `template<typename TypeSrc, typename TypeTrg=Type> TypeTrg parse_value(TypeSrc v)`: This function allows parsing an integer value of type TypeSrc into type TypeTrg.
+      * `template<typename TypeSrc, typename TypeTrg = Type> std::vector<TypeTrg> parse_values(std::vector<TypeSrc> V)`: This function allows parsing integer values stored in an input vector of type `TypeSrc` into type `TypeTrg`.
+      * `template<typename TypeSrc, typename TypeTrg=Type> TypeTrg parse_value(TypeSrc v)`: This function allows parsing an integer value of type `TypeSrc` into type `TypeTrg`.
       * `template<typename TypeSrc> void add_value(TypeSrc v)`: This function allows adding an `8`/`16`/`32`/`64`-bits value. 
       * `template<typename TypeSrc = Type, typename TypeLength = std::size_t> void add_values(const TypeSrc *v, const TypeLength l)`: This function allows adding a collection of l unsigned integer values.
       * `template<typename TypeSrc> void add_values(const std::vector<TypeSrc> V)`: This function allows adding a collection of unsigned integer values. 

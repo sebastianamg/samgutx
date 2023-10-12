@@ -136,7 +136,22 @@ namespace samg {
             if (position != std::string::npos) {
                 new_file_name.replace(position, new_ext.length(), new_ext);
             } else {
-                new_file_name += "."+new_ext;
+                new_file_name += new_ext;
+            }
+            return new_file_name;
+        }
+
+        /**
+         * @brief This function returns the file base name.
+         * 
+         * @param file_name 
+         * @return std::string 
+         */
+        std::string get_file_basename(const std::string file_name) {
+            std::string new_file_name = file_name;
+            std::size_t position = new_file_name.find_last_of(".");
+            if (position != std::string::npos) {
+                new_file_name.replace(position, 0, "");
             }
             return new_file_name;
         }

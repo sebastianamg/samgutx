@@ -151,7 +151,7 @@ namespace samg {
             std::string new_file_name = file_name;
             std::size_t position = new_file_name.find_last_of(".");
             if (position != std::string::npos) {
-                new_file_name.replace(position, 0, "");
+                new_file_name.replace(position, file_name.length() - position, "");
             }
             return new_file_name;
         }

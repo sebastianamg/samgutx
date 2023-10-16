@@ -65,6 +65,44 @@
 namespace samg {
     namespace grcodec {
 
+        template<typename Type> class QueueAdapter : public std::queue<Type> {
+            private:
+                typename std::vector<Type>::iterator begin,
+                                            end;
+            public:
+                QueueAdapter(
+                    typename std::vector<Type>::iterator begin,
+                    typename std::vector<Type>::iterator end
+                ) :
+                    begin( begin ),
+                    end( end ), 
+                    std::queue<Type>() {}
+
+                Type front() /*override*/ {
+                    return *(this->begin);
+                }
+ 
+                Type back() /*override*/ {
+                    return *(this->end);
+                }
+
+                bool empty() /*override*/ {
+                    return this->begin == this->end;
+                }
+ 
+                std::size_t size() /*override*/ {
+                    return this->end - this->begin;
+                }
+ 
+                void pop() /*override*/ {
+                    this->begin++;
+                }
+
+                static typename std::queue<Type>& get_instance( typename std::vector<Type>::iterator begin, typename std::vector<Type>::iterator end ) {
+                    return *( new QueueAdapter(begin,end) );
+                }
+        };
+
         // TODO: Add `uint computeGolombRiceParameter_forList(uint *buff, uint n)` from [bc.hpp].
         /**
          * @brief This class represents a Golomb-Rice encoding of a sequence of integers based on the [https://github.com/migumar2/uiHRDC uiuiHRDC] library.

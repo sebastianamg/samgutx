@@ -140,10 +140,9 @@ namespace samg {
             std::string new_file_name = file_name;
             position = new_file_name.find_last_of(".");
             if (position != std::string::npos) {
-                new_file_name.replace(position, new_ext.length(), new_ext);
-            } else {
-                new_file_name += new_ext;
+                new_file_name.replace(position, new_file_name.length(), "");
             }
+            new_file_name += new_ext;
             return new_file_name;
         }
 
@@ -184,12 +183,9 @@ namespace samg {
             std::string new_file_name = file_name;
             position = new_file_name.find(old_ext);
             if (position != std::string::npos) {
-                // std::cout << "change_extension> (1) position=" << position <<"; |new_file_name|=" << new_file_name.length() << std::endl;
-                new_file_name = new_file_name.replace(position, old_ext.length(), "");
+                new_file_name = new_file_name.replace(position, new_file_name.length(), "");
             }
-            // std::cout << "change_extension> (2)" << std::endl;
             new_file_name += to_append + new_ext;
-            // std::cout << "change_extension> (3) new_file_name=" << new_file_name << std::endl;
             return new_file_name;
         }
 

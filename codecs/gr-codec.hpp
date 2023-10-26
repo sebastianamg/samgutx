@@ -65,41 +65,82 @@
 namespace samg {
     namespace grcodec {
 
-        template<typename Type> class QueueAdapter : public std::queue<Type> {
+        template<typename Type> class QueueAdapter {
             private:
-                typename std::vector<Type>::iterator begin,
-                                            end;
+                typename std::vector<Type>::iterator    begin,
+                                                        end;
+                typename std::vector<Type>::reverse_iterator rbegin;
+                std::queue<Type> queue;
+                bool is_queue;
             public:
                 QueueAdapter(
                     typename std::vector<Type>::iterator begin,
-                    typename std::vector<Type>::iterator end
+                    typename std::vector<Type>::iterator end,
+                    typename std::vector<Type>::reverse_iterator rbegin
                 ) :
                     begin( begin ),
-                    end( end ), 
-                    std::queue<Type>() {}
+                    end( end ),
+                    rbegin( rbegin ),
+                    is_queue(false) {}
+
+                QueueAdapter() :
+                    queue ( std::queue<Type>() ),
+                    is_queue(true) {}
 
                 Type front() /*override*/ {
-                    return *(this->begin);
+                    if( this->is_queue ) {
+                        return this->queue.front();
+                    } else {
+                        return *(this->begin);
+                    }
                 }
- 
+
                 Type back() /*override*/ {
-                    return *(this->end);
+                    if( this->is_queue ) {
+                        return this->queue.back();
+                    } else {
+                        return *(this->rbegin);
+                    }
+                }
+
+                void push( Type v ) {
+                    if( this->is_queue ) {
+                        this->queue.push( v );
+                    } else {
+                        throw std::runtime_error("QueueAdapter> Non-implemented method!");
+                    }
                 }
 
                 bool empty() /*override*/ {
-                    return this->begin == this->end;
-                }
- 
-                std::size_t size() /*override*/ {
-                    return this->end - this->begin;
-                }
- 
-                void pop() /*override*/ {
-                    this->begin++;
+                    if( this->is_queue ) {
+                        return this->queue.empty();
+                    } else {
+                        return this->begin == this->end;
+                    }
                 }
 
-                static typename std::queue<Type>& get_instance( typename std::vector<Type>::iterator begin, typename std::vector<Type>::iterator end ) {
-                    return *( new QueueAdapter(begin,end) );
+                std::size_t size() /*override*/ {
+                    if( this->is_queue ) {
+                        return this->queue.size();
+                    } else {
+                        return this->end - this->begin;
+                    }
+                }
+
+                void pop() /*override*/ {
+                    if( this->is_queue ) {
+                        this->queue.pop();
+                    } else {
+                        this->begin++;
+                    }
+                }
+
+                static QueueAdapter<Type>& get_instance( 
+                    typename std::vector<Type>::iterator begin, 
+                    typename std::vector<Type>::iterator end,
+                    typename std::vector<Type>::reverse_iterator rbegin
+                ) {
+                    return *( new QueueAdapter<Type>( begin, end, rbegin ) );
                 }
         };
 
@@ -1243,8 +1284,10 @@ namespace samg {
             
             private:
                 typedef std::int64_t rseq_t; // Data type internally used by the relative sequence. It can be changed here to reduce memory footprint in case numbers in a relative sequence are small enough to fit in fewer bits.  
-                typedef std::queue<RiceRuns<Word,Length>::rseq_t> RelativeSequence;
-                typedef std::queue<Word> AbsoluteSequence;
+                // typedef std::queue<RiceRuns<Word,Length>::rseq_t> RelativeSequence;
+                typedef QueueAdapter<RiceRuns<Word,Length>::rseq_t> RelativeSequence;
+                // typedef std::queue<Word> AbsoluteSequence;
+                typedef QueueAdapter<Word> AbsoluteSequence;
                 // typedef std::queue<Word> AbsoluteBuffer;
 
                 static const Length RLE_THRESHOLD = 3,     // Minimum number of repetitions to be compressed.
@@ -1283,7 +1326,7 @@ namespace samg {
                  */
                 static RelativeSequence _get_transformed_relative_sequence_( AbsoluteSequence sequence ) {
                     RelativeSequence ans;
-                    
+                    // std::cout << sequence.size() << std::endl;
                     // if( sequence.size() > 0 ) {
                     if( !sequence.empty() ) {
                         /* NOTE
@@ -1299,6 +1342,7 @@ namespace samg {
                         // ans.push_back( transform_rval( sequence[0] ) );
                         while( !sequence.empty() ) {
                             current = sequence.front(); sequence.pop();
+                            // std::cout << current << std::endl;
                             ans.push( transform_rval( ((RiceRuns<Word,Length>::rseq_t)(current)) - ((RiceRuns<Word,Length>::rseq_t)(previous)) ) );
                             previous = current;
                         }

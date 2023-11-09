@@ -228,5 +228,95 @@ namespace samg {
 
             return repr;
         }
+        /***************************************************************/
+        /**
+         * @brief This function allows appending a string to and replace the extension of a file name. 
+         * 
+         * @param file_name 
+         * @param to_append 
+         * @param new_ext 
+         * @return std::string 
+         */
+        std::string append_info_and_extension(const std::string file_name, const std::string to_append, std::string new_ext) {
+            std::size_t position = new_ext.find(".");
+            if (position == std::string::npos) {
+                new_ext = "." + new_ext;
+            }
+
+            std::string new_file_name = file_name;
+            position = new_file_name.find_last_of(".");
+            if (position != std::string::npos) {
+                new_file_name = new_file_name.substr(0,position) + "-" + to_append + "." + new_ext;
+            } else {
+                new_file_name += + "-" + to_append + "." + new_ext;
+            }
+            return new_file_name;
+        }
+
+        /**
+         * @brief This function allows replacing the extension of a file name by a new one regardless the previous extension is. 
+         * 
+         * @param file_name 
+         * @param new_ext 
+         * @return std::string 
+         */
+        std::string change_extension(const std::string file_name, std::string new_ext) {
+            std::size_t position = new_ext.find(".");
+            if (position == std::string::npos) {
+                new_ext = "." + new_ext;
+            }
+
+            std::string new_file_name = file_name;
+            position = new_file_name.find_last_of(".");
+            if (position != std::string::npos) {
+                new_file_name.replace(position, new_file_name.length(), "");
+            }
+            new_file_name += new_ext;
+            return new_file_name;
+        }
+
+        /**
+         * @brief This function returns the file base name.
+         * 
+         * @param file_name 
+         * @return std::string 
+         */
+        std::string get_file_basename(const std::string file_name) {
+            std::string new_file_name = file_name;
+            std::size_t position = new_file_name.find_last_of(".");
+            if (position != std::string::npos) {
+                new_file_name.replace(position, file_name.length() - position, "");
+            }
+            return new_file_name;
+        }
+
+        /**
+         * @brief This function allows replacing a given old extension of file name by a new one and append a string before the new extension. 
+         * 
+         * @param file_name 
+         * @param old_ext 
+         * @param new_ext 
+         * @param to_append 
+         * @return std::string 
+         */
+        std::string change_extension(const std::string file_name, std::string old_ext, std::string new_ext, const std::string to_append="") {
+            std::size_t position = old_ext.find(".");
+            if (position == std::string::npos) {
+                old_ext = "." + old_ext;
+            }
+            position = new_ext.find(".");
+            if (position == std::string::npos) {
+                new_ext = "." + new_ext;
+            }
+
+            std::string new_file_name = file_name;
+            position = new_file_name.find(old_ext);
+            if (position != std::string::npos) {
+                new_file_name = new_file_name.replace(position, new_file_name.length(), "");
+            }
+            new_file_name += to_append + new_ext;
+            return new_file_name;
+        }
+        /***************************************************************/
     }
 }

@@ -57,6 +57,8 @@
 #include <string.h>
 #include <cstring>
 
+#include <samg/matutx.hpp>
+
 #define QMX_SOURCE_OFFSET 0
 #define QMX_KEYS_OFFSET 1
 #define QMX_DESTINATION_OFFSET 2
@@ -558,9 +560,11 @@ namespace QMX
 					Get the lengths of the integers
 			*/
 			current_length = length_buffer;
-			for (current = (uint32_t *)source; current < source + source_integers;
-				 current++)
+			for (current = (uint32_t *)source; current < source + source_integers; current++){
+				// printf("encode> current = %u\n",(*current));
 				*current_length++ = bits_needed_for(*current);
+			}
+
 
 			/*
 					Shove a bunch of 0 length integers on the end to allow for overflow
@@ -833,9 +837,8 @@ namespace QMX
 			bits = length_buffer[0];
 			keys = length_buffer; // we're going to re-use the length_buffer because it
 								  // can't overlap and this saves a double malloc
-			for (current = (uint32_t *)source + 1; current < source + source_integers;
-				 current++)
-			{
+			for (current = (uint32_t *)source + 1; current < source + source_integers; current++) {
+				// printf("encode> Delta = current<%u> - source<%u> = %u\n",current,source,current-source);
 				uint32_t new_needed = length_buffer[current - source];
 				if (new_needed == bits)
 					run_length++;
@@ -849,6 +852,346 @@ namespace QMX
 			}
 			write_out(&destination, (uint32_t *)current - run_length, run_length, bits,
 					  &keys);
+
+			/*
+					Copy the lengths to the end, backwards
+			*/
+			uint8_t *from = length_buffer + (keys - length_buffer) - 1;
+			uint8_t *to = destination;
+			for (uint32_t pos = 0; pos < keys - length_buffer; pos++)
+				*to++ = *from--;
+			destination += keys - length_buffer;
+
+			/*
+					Compute the length (in bytes)
+			*/
+			return destination - (uint8_t *)into; // return length in bytes
+		}
+
+		size_t encode2(void *into_as_void, size_t encoded_buffer_length,
+					  samg::matutx::reader::Reader& source ) {
+			uint32_t *into = static_cast<uint32_t *>(into_as_void);
+			const uint32_t WASTAGE = 512;
+			uint8_t *current_length, *destination = (uint8_t *)into, *keys;
+			uint32_t *current, run_length, bits, wastage;
+			uint32_t block, largest;
+			const size_t source_integers = source.get_number_of_entries() * source.get_number_of_dimensions();
+
+			/*
+					make sure we have enough room to store the lengths
+			*/
+			// samg::matutx::reader::Reader& source = samg::matutx::reader::create_instance(input_file_name);
+			// size_t source_integers = source.get_number_of_entries() * source.get_number_of_dimensions();
+
+			if (length_buffer_length < source_integers)
+			{
+				delete[] length_buffer;
+				length_buffer = new uint8_t[(size_t)((length_buffer_length = source_integers) + WASTAGE)];
+			}
+
+			/*
+					Get the lengths of the integers
+			*/
+			current_length = length_buffer;
+			samg::matutx::streamer::IntStreamerAdapter<integer> source2 = samg::matutx::streamer::IntStreamerAdapter<integer>(source);
+			while( source2.has_next() ){
+				*current_length++ = bits_needed_for(source2.next());
+			}
+
+			// for (current = (uint32_t *)source; current < source + source_integers;
+			// 	 current++)
+			// 	*current_length++ = bits_needed_for(*current);
+
+			/*
+					Shove a bunch of 0 length integers on the end to allow for overflow
+			*/
+			for (wastage = 0; wastage < WASTAGE; wastage++)
+				*current_length++ = 0;
+
+			/*
+					Process the lengths.  To maximise SSE throughput we need each write
+			   to be 128-bit (4*32-bit) alignned and therefore we need each compress
+			   "block" to be the same size where a compress "block" is a set of four
+			   encoded integers starting on a 4-integer boundary.
+			*/
+			for (current_length = length_buffer;
+				 current_length < length_buffer + source_integers + 4;
+				 current_length += 4)
+				*current_length = *(current_length + 1) = *(current_length + 2) =
+					*(current_length + 3) =
+						maximum(*current_length, *(current_length + 1),
+								*(current_length + 2), *(current_length + 3));
+
+			/*
+					This code makes sure we can do aligned reads, promoting to larger
+			   integers if necessary
+			*/
+			current_length = length_buffer;
+			while (current_length < length_buffer + source_integers)
+			{
+				/**
+				 * - If there are fewer than 16 values remaining and they all fit into 8-bits,
+				 * then its smaller than storing stripes.
+				 * - If there are fewer than 8 values remaining and they all fit into 16-bits (2-bits each),
+				 * then its smaller than storing stripes.
+				 * - If there are fewer than 4 values remaining and they all fit into 32-bits (8-bits each),
+				 * then its smaller than storing stripes.
+				 **/
+				if (source_integers - (current_length - length_buffer) < 4)
+				{
+					largest = 0;
+					for (block = 0; block < 8; block++)
+						largest = maximum((uint8_t)largest, *(current_length + block));
+					if (largest <= 8)
+						for (block = 0; block < 8; block++)
+							*(current_length + block) = 8;
+					else if (largest <= 16)
+						for (block = 0; block < 8; block++)
+							*(current_length + block) = 16;
+					else if (largest <= 32)
+						for (block = 0; block < 8; block++)
+							*(current_length + block) = 32;
+				}
+				else if (source_integers - (current_length - length_buffer) < 8)
+				{
+					largest = 0;
+					for (block = 0; block < 8; block++)
+						largest = maximum((uint8_t)largest, *(current_length + block));
+					if (largest <= 8)
+						for (block = 0; block < 8; block++)
+							*(current_length + block) = 8;
+					else if (largest <= 16)
+						for (block = 0; block < 16; block++)
+							*(current_length + block) = 16;
+				}
+				else if (source_integers - (current_length - length_buffer) < 16)
+				{
+					largest = 0;
+					for (block = 0; block < 16; block++)
+						largest = maximum((uint8_t)largest, *(current_length + block));
+					if (largest <= 8)
+						for (block = 0; block < 16; block++)
+							*(current_length + block) = 8;
+				}
+				/*
+						Otherwise we have the standard rules for a block
+				*/
+				switch (*current_length)
+				{
+				case 0:
+					for (block = 0; block < 256; block += 4)
+						if (*(current_length + block) > 0)
+							*current_length = *(current_length + 1) = *(current_length + 2) =
+								*(current_length + 3) = 1; // promote
+					if (*current_length == 0)
+					{
+						for (block = 0; block < 256; block++)
+							current_length[block] = 0;
+						current_length += 256;
+					}
+					break;
+				case 1:
+					for (block = 0; block < 128; block += 4)
+						if (*(current_length + block) > 1)
+							*current_length = *(current_length + 1) = *(current_length + 2) =
+								*(current_length + 3) = 2; // promote
+					if (*current_length == 1)
+					{
+						for (block = 0; block < 128; block++)
+							current_length[block] = 1;
+						current_length += 128;
+					}
+					break;
+				case 2:
+					for (block = 0; block < 64; block += 4)
+						if (*(current_length + block) > 2)
+							*current_length = *(current_length + 1) = *(current_length + 2) =
+								*(current_length + 3) = 3; // promote
+					if (*current_length == 2)
+					{
+						for (block = 0; block < 64; block++)
+							current_length[block] = 2;
+						current_length += 64;
+					}
+					break;
+				case 3:
+					for (block = 0; block < 40; block += 4)
+						if (*(current_length + block) > 3)
+							*current_length = *(current_length + 1) = *(current_length + 2) =
+								*(current_length + 3) = 4; // promote
+					if (*current_length == 3)
+					{
+						for (block = 0; block < 40; block++)
+							current_length[block] = 3;
+						current_length += 40;
+					}
+					break;
+				case 4:
+					for (block = 0; block < 32; block += 4)
+						if (*(current_length + block) > 4)
+							*current_length = *(current_length + 1) = *(current_length + 2) =
+								*(current_length + 3) = 5; // promote
+					if (*current_length == 4)
+					{
+						for (block = 0; block < 32; block++)
+							current_length[block] = 4;
+						current_length += 32;
+					}
+					break;
+				case 5:
+					for (block = 0; block < 24; block += 4)
+						if (*(current_length + block) > 5)
+							*current_length = *(current_length + 1) = *(current_length + 2) =
+								*(current_length + 3) = 6; // promote
+					if (*current_length == 5)
+					{
+						for (block = 0; block < 24; block++)
+							current_length[block] = 5;
+						current_length += 24;
+					}
+					break;
+				case 6:
+					for (block = 0; block < 20; block += 4)
+						if (*(current_length + block) > 6)
+							*current_length = *(current_length + 1) = *(current_length + 2) =
+								*(current_length + 3) = 7; // promote
+					if (*current_length == 6)
+					{
+						for (block = 0; block < 20; block++)
+							current_length[block] = 6;
+						current_length += 20;
+					}
+					break;
+				case 7:
+					for (block = 0; block < 36; block += 4) // 36 in a double 128-bit word
+						if (*(current_length + block) > 7)
+							*current_length = *(current_length + 1) = *(current_length + 2) =
+								*(current_length + 3) = 8; // promote
+					if (*current_length == 7)
+					{
+						for (block = 0; block < 36; block++)
+							current_length[block] = 7;
+						current_length += 36;
+					}
+					break;
+				case 8:
+					for (block = 0; block < 16; block += 4)
+						if (*(current_length + block) > 8)
+							*current_length = *(current_length + 1) = *(current_length + 2) =
+								*(current_length + 3) = 9; // promote
+					if (*current_length == 8)
+					{
+						for (block = 0; block < 16; block++)
+							current_length[block] = 8;
+						current_length += 16;
+					}
+					break;
+				case 9:
+					for (block = 0; block < 28; block += 4) // 28 in a double 128-bit word
+						if (*(current_length + block) > 9)
+							*current_length = *(current_length + 1) = *(current_length + 2) =
+								*(current_length + 3) = 10; // promote
+					if (*current_length == 9)
+					{
+						for (block = 0; block < 28; block++)
+							current_length[block] = 9;
+						current_length += 28;
+					}
+					break;
+				case 10:
+					for (block = 0; block < 12; block += 4)
+						if (*(current_length + block) > 10)
+							*current_length = *(current_length + 1) = *(current_length + 2) =
+								*(current_length + 3) = 12; // promote
+					if (*current_length == 10)
+					{
+						for (block = 0; block < 12; block++)
+							current_length[block] = 10;
+						current_length += 12;
+					}
+					break;
+				case 12:
+					for (block = 0; block < 20; block += 4) // 20 in a double 128-bit word
+						if (*(current_length + block) > 12)
+							*current_length = *(current_length + 1) = *(current_length + 2) =
+								*(current_length + 3) = 16; // promote
+					if (*current_length == 12)
+					{
+						for (block = 0; block < 20; block++)
+							current_length[block] = 12;
+						current_length += 20;
+					}
+					break;
+				case 16:
+					for (block = 0; block < 8; block += 4)
+						if (*(current_length + block) > 16)
+							*current_length = *(current_length + 1) = *(current_length + 2) =
+								*(current_length + 3) = 21; // promote
+					if (*current_length == 16)
+					{
+						for (block = 0; block < 8; block++)
+							current_length[block] = 16;
+						current_length += 8;
+					}
+					break;
+				case 21:
+					for (block = 0; block < 12; block += 4) // 12 in a double 128-bit word
+						if (*(current_length + block) > 21)
+							*current_length = *(current_length + 1) = *(current_length + 2) =
+								*(current_length + 3) = 32; // promote
+					if (*current_length == 21)
+					{
+						for (block = 0; block < 12; block++)
+							current_length[block] = 21;
+						current_length += 12;
+					}
+					break;
+				case 32:
+					for (block = 0; block < 4; block += 4)
+						if (*(current_length + block) > 32)
+							*current_length = *(current_length + 1) = *(current_length + 2) =
+								*(current_length + 3) =
+									64; // LCOV_EXCL_LINE  // can't happen	// promote
+					if (*current_length == 32)
+					{
+						for (block = 0; block < 4; block++)
+							current_length[block] = 32;
+						current_length += 4;
+					}
+					break;
+				default:
+					exit(printf(
+						"Selecting on a non whole power of 2, must exit\n")); // LCOV_EXCL_LINE
+					break;													  // LCOV_EXCL_LINE
+				}
+			}
+
+			/*
+					We can now compress based on the lengths in length_buffer
+			*/
+			run_length = 1;
+			bits = length_buffer[0];
+			keys = length_buffer; // we're going to re-use the length_buffer because it
+								  // can't overlap and this saves a double malloc
+			// source = samg::matutx::reader::create_instance(input_file_name);
+			samg::matutx::streamer::IntStreamerAdapter<integer> source3 = samg::matutx::streamer::IntStreamerAdapter<integer>(samg::matutx::reader::create_instance(source.get_input_file_name()));
+			std::vector<uint32_t> tmp;
+			size_t length_buffer_index = 1;
+			while( source3.has_next() ) {
+				tmp.push_back(source3.next());
+				// printf("encode2> Delta = index = %u\n",length_buffer_index);
+				uint32_t new_needed = length_buffer[ length_buffer_index ];
+				if (new_needed == bits){
+					run_length++;
+				} else {
+					write_out(&destination, tmp.data(), run_length, bits, &keys);
+					bits = new_needed;
+					run_length = 1;
+					tmp.clear();
+				}
+				length_buffer_index++; //+= sizeof(uint32_t);
+			}
+			write_out(&destination, tmp.data(), run_length, bits, &keys);
 
 			/*
 					Copy the lengths to the end, backwards

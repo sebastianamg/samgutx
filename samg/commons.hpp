@@ -203,7 +203,7 @@ namespace samg {
          * @param length 
          * @return std::string 
          */
-        std::string to_base(std::uint64_t number, int base, std::size_t length = 0 ) {
+        const std::string to_base(std::uint64_t number, const int base, const std::size_t length = 0 ) {
             if (base < 2 or base > 36) {
                 throw std::invalid_argument("base " + std::to_string(base) + " is not between 2 and 36");
             }

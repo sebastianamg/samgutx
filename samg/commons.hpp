@@ -7,6 +7,9 @@
 #include <iomanip>
 #include <vector>
 #include <queue>
+// #include <set>
+#include <boost/algorithm/string.hpp>
+// #include <boost/range.hpp>
 
 /**
  * ---------------------------------------------------------------
@@ -42,6 +45,8 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN 
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF 
  * THE POSSIBILITY OF SUCH DAMAGE. 
+ * 
+ * @warning This header depends on Boost string Library!
  */
 
 namespace samg {
@@ -76,29 +81,33 @@ namespace samg {
             return ss.str();
         }
         /***************************************************************/
-        template<typename UINT_T = std::uint32_t> void print_vector(const std::string info, const std::vector<UINT_T> v, bool new_line = true) {
+        template<typename UINT_T = std::uint32_t> void print_vector(const std::string info, const std::vector<UINT_T> v, const bool new_line = true, const std::string separator=" ", const std::string to_remove="") {
             std::cout << info;
             for (UINT_T x : v) {
-                std::cout << x << " "; 
+                std::string y = to_string<UINT_T>(x);
+                for (char c : to_remove) {
+                    y.erase(std::remove(y.begin(), y.end(), c), y.end());
+                }
+                std::cout << y << separator; 
             }
             if( new_line ){
                 std::cout << std::endl;
             }
         }
-        template<typename UINT_T = std::uint32_t> void print_queue(const std::string info, std::queue<UINT_T> q, bool new_line = true) {
+        template<typename UINT_T = std::uint32_t> void print_queue(const std::string info, std::queue<UINT_T> q, bool new_line = true, std::string separator=" " ) {
             std::cout << info;
             while( !q.empty() ) {
-                std::cout << q.front() << " "; 
+                std::cout << q.front() << separator; 
                 q.pop();
             }
             if( new_line ){
                 std::cout << std::endl;
             }
         }
-        template<typename UINT_T = std::uint32_t> void print_array( const std::string info, UINT_T *buff, std::size_t length, bool new_line = true ) {
+        template<typename UINT_T = std::uint32_t> void print_array( const std::string info, UINT_T *buff, std::size_t length, bool new_line = true, std::string separator=" " ) {
             std::cout << info;
             for (std::size_t i = 0; i < length; ++i) {
-                std::cout << buff[i] << " "; 
+                std::cout << buff[i] << separator; 
             }
             if( new_line ){
                 std::cout << std::endl;

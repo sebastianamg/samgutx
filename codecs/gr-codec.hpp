@@ -64,85 +64,123 @@
 
 namespace samg {
     namespace grcodec {
+        namespace adapter {
+            enum QueueAdapterType {
+                Q_QUEUEADAPTER,
+                ITERATOR_QUEUEADAPTER
+            };
+            template<typename Type> class QueueAdapter {
+                protected:
+                    virtual void _swap_( QueueAdapter<Type>& other ) = 0;
+                public:
+                    virtual Type front() = 0;
+                    virtual Type back() = 0;
+                    virtual void push( Type v ) = 0;
+                    virtual bool empty() = 0;
+                    virtual std::size_t size() = 0;
+                    virtual void pop() = 0;
+                    static void swap( QueueAdapter<Type>& a, QueueAdapter<Type>& b ) {
+                        a._swap_( b );
+                    }
+            };
+            template<typename Type> class QQueueAdapter : public QueueAdapter<Type> {
+                private:
+                    std::queue<Type> queue;
 
-        template<typename Type> class QueueAdapter {
-            private:
-                typename std::vector<Type>::iterator    begin,
-                                                        end;
-                typename std::vector<Type>::reverse_iterator rbegin;
-                std::queue<Type> queue;
-                bool is_queue;
-            public:
-                QueueAdapter(
-                    typename std::vector<Type>::iterator begin,
-                    typename std::vector<Type>::iterator end,
-                    typename std::vector<Type>::reverse_iterator rbegin
-                ) :
-                    begin( begin ),
-                    end( end ),
-                    rbegin( rbegin ),
-                    is_queue(false) {}
+                    void _swap_( QueueAdapter<Type>& other ) override {
+                        QQueueAdapter<Type>* x = dynamic_cast<QQueueAdapter<Type>*>( &other );
+                        std::swap( this->queue, x->queue );
+                    }
 
-                QueueAdapter() :
-                    queue ( std::queue<Type>() ),
-                    is_queue(true) {}
+                public:
+                    QQueueAdapter() :
+                        queue ( std::queue<Type>() ) {}
 
-                Type front() /*override*/ {
-                    if( this->is_queue ) {
+                    Type front() override {
                         return this->queue.front();
-                    } else {
+                    }
+
+                    Type back() override {
+                        return this->queue.back();
+                    }
+
+                    void push( Type v ) override {
+                        this->queue.push( v );
+                    }
+
+                    bool empty() override {
+                        return this->queue.empty();
+                    }
+
+                    std::size_t size() override {
+                        return this->queue.size();
+                    }
+
+                    void pop() override {
+                        this->queue.pop();
+                    }
+            };
+
+            template<typename Type> class IteratorQueueAdapter : public QueueAdapter<Type> {
+                private:
+                    typename std::vector<Type>::iterator    begin,
+                                                            end;
+                    typename std::vector<Type>::reverse_iterator rbegin;
+
+                    void _swap_( QueueAdapter<Type>& other ) override {
+                        throw std::runtime_error("IteratorQueueAdapter> Non-implemented method!");
+                    }
+
+                public:
+                    IteratorQueueAdapter(
+                        typename std::vector<Type>::iterator begin,
+                        typename std::vector<Type>::iterator end,
+                        typename std::vector<Type>::reverse_iterator rbegin
+                    ) :
+                        begin( begin ),
+                        end( end ),
+                        rbegin( rbegin ){}
+
+                    Type front() override {
                         return *(this->begin);
                     }
-                }
 
-                Type back() /*override*/ {
-                    if( this->is_queue ) {
-                        return this->queue.back();
-                    } else {
+                    Type back() override {
                         return *(this->rbegin);
                     }
-                }
 
-                void push( Type v ) {
-                    if( this->is_queue ) {
-                        this->queue.push( v );
-                    } else {
-                        throw std::runtime_error("QueueAdapter> Non-implemented method!");
+                    void push( Type v ) override {
+                        throw std::runtime_error("IteratorQueueAdapter> Non-implemented method!");
                     }
-                }
 
-                bool empty() /*override*/ {
-                    if( this->is_queue ) {
-                        return this->queue.empty();
-                    } else {
+                    bool empty() override {
                         return this->begin == this->end;
                     }
-                }
 
-                std::size_t size() /*override*/ {
-                    if( this->is_queue ) {
-                        return this->queue.size();
-                    } else {
+                    std::size_t size() override {
                         return this->end - this->begin;
                     }
-                }
 
-                void pop() /*override*/ {
-                    if( this->is_queue ) {
-                        this->queue.pop();
-                    } else {
+                    void pop() override {
                         this->begin++;
                     }
-                }
+            };
 
-                static QueueAdapter<Type>& get_instance( 
-                    typename std::vector<Type>::iterator begin, 
-                    typename std::vector<Type>::iterator end,
-                    typename std::vector<Type>::reverse_iterator rbegin
-                ) {
-                    return *( new QueueAdapter<Type>( begin, end, rbegin ) );
+            template<typename Type> QueueAdapter<Type>& get_instance( QueueAdapterType type,
+                typename std::vector<Type>::iterator begin = {}, 
+                typename std::vector<Type>::iterator end = {},
+                typename std::vector<Type>::reverse_iterator rbegin = {}
+            ) {
+                switch( type ) {
+                    case QueueAdapterType::Q_QUEUEADAPTER:
+                        return *( new QQueueAdapter<Type>( ) );
+                    case QueueAdapterType::ITERATOR_QUEUEADAPTER:
+                        return *( new IteratorQueueAdapter<Type>( begin, end, rbegin ) );
+                    default:
+                        throw std::runtime_error("adapter/get_instance> Non-implemented QueueAdapter!");
                 }
-        };
+            }
+        }
 
         // TODO: Add `uint computeGolombRiceParameter_forList(uint *buff, uint n)` from [bc.hpp].
         /**
@@ -625,6 +663,26 @@ namespace samg {
                     Word total =0;
                     register Length i;
                     for ( i = 0; i < sequence.size(); i++ ) total += sequence[i];
+                    total /= sequence.size();
+                    std::size_t val;
+                    FLOORLOG_2(((uint)total),val);
+                    
+                    return val;
+                }
+
+                /**
+                 * @brief Given a list of (n) integers (buff) [typically gap values from an inverted list], computes the optimal b parameter, that is, the number of bits that will be coded binary-wise from a given encoded value.
+                 * @note $$ val = \lfloor (\log_2( \sum_{i=0}^{n-1} (diff[i])) / n )) \rfloor $$
+                 * 
+                 * @param sequence 
+                 * @return std::size_t 
+                 */
+                static std::size_t compute_GR_parameter_for_list( adapter::QueueAdapter<Word>& sequence ) {
+                    Word total =0;
+                    register Length i;
+                    while( !(sequence.empty()) ) {
+                        total += sequence.front(); sequence.pop();
+                    }
                     total /= sequence.size();
                     std::size_t val;
                     FLOORLOG_2(((uint)total),val);
@@ -1285,9 +1343,9 @@ namespace samg {
             private:
                 typedef std::int64_t rseq_t; // Data type internally used by the relative sequence. It can be changed here to reduce memory footprint in case numbers in a relative sequence are small enough to fit in fewer bits.  
                 // typedef std::queue<RiceRuns<Word,Length>::rseq_t> RelativeSequence;
-                typedef QueueAdapter<RiceRuns<Word,Length>::rseq_t> RelativeSequence;
+                typedef adapter::QueueAdapter<RiceRuns<Word,Length>::rseq_t> RelativeSequence;
                 // typedef std::queue<Word> AbsoluteSequence;
-                typedef QueueAdapter<Word> AbsoluteSequence;
+                typedef adapter::QueueAdapter<Word> AbsoluteSequence;
                 // typedef std::queue<Word> AbsoluteBuffer;
 
                 static const Length RLE_THRESHOLD = 3,     // Minimum number of repetitions to be compressed.
@@ -1324,8 +1382,8 @@ namespace samg {
                  * @param sequence 
                  * @return RelativeSequence 
                  */
-                static RelativeSequence _get_transformed_relative_sequence_( AbsoluteSequence sequence ) {
-                    RelativeSequence ans;
+                static RelativeSequence& _get_transformed_relative_sequence_( AbsoluteSequence& sequence ) {
+                    RelativeSequence& ans = adapter::get_instance<RiceRuns<Word,Length>::rseq_t>( adapter::QueueAdapterType::Q_QUEUEADAPTER );
                     // std::cout << sequence.size() << std::endl;
                     // if( sequence.size() > 0 ) {
                     if( !sequence.empty() ) {
@@ -1372,8 +1430,8 @@ namespace samg {
                  * 
                  * @warning Side effects on input!
                  */
-                static AbsoluteSequence _get_transformed_absolute_sequence_( RelativeSequence &sequence ) {
-                    AbsoluteSequence ans;
+                static AbsoluteSequence& _get_transformed_absolute_sequence_( RelativeSequence &sequence ) {
+                    AbsoluteSequence& ans = adapter::get_instance<Word>( adapter::QueueAdapterType::Q_QUEUEADAPTER );
 
                     // if( relative_sequence.size() > 0 ) {
                     if( !sequence.empty() ) {
@@ -1879,19 +1937,34 @@ namespace samg {
                         // }
                 };
 
+
+                bool _encode_( ) {
+                    // Encode:
+                    RiceRuns<Word,Length>::rseq_t relative_v;
+                    // std::cout << "\tRiceRuns/encode/do-while (4)" << std::endl;
+                    this->encoding_fsm.next( this->encoding_buffer, this->encoding_previous_relative_n, relative_v );
+                    // std::cout << "\tRiceRuns/encode/do-while (5)" << std::endl;
+                    if( this->encoding_fsm.is_error_state() ) { std::runtime_error("Encoding error state!"); }
+                    this->encoding_fsm.run( this->codec, this->encoding_previous_relative_n, relative_v, this->encoding_r );
+                    // std::cout << "\tRiceRuns/encode/do-while (6)" << std::endl;
+                    return !this->encoding_fsm.is_end_state();
+                }
+
                 // Attributes for relative-sequence traversal:
-                RCodec<Word,Length> codec;
-                FSMDecoder decoding_fsm;
-                FSMEncoder encoding_fsm;
-                Word    decoding_previous_n, 
-                        decoding_n;
-                Length  encoding_r; // Repetition of current encoding value.
+                RCodec<Word,Length>             codec;
+                FSMDecoder                      decoding_fsm;
+                FSMEncoder                      encoding_fsm;
+                Word                            encoding_previous_n,
+                                                decoding_previous_n, 
+                                                decoding_n;
+                Length                          encoding_r; // Repetition of current encoding value.
                 RiceRuns<Word,Length>::rseq_t   encoding_relative_n,
                                                 encoding_previous_relative_n,
                                                 decoding_previous_relative_value;
-                bool    encoding_is_first,
-                        decoding_is_first;
-                AbsoluteSequence    decoding_next_buffer;
+                bool                            encoding_is_first,
+                                                decoding_is_first;
+                AbsoluteSequence&               decoding_next_buffer;
+                RelativeSequence&               encoding_buffer;
 
             public:
                 RiceRuns( typename RCodec<Word,Length>::BinarySequence bs ): 
@@ -1901,7 +1974,9 @@ namespace samg {
                         )
                     ),
                     encoding_is_first(true),
-                    decoding_is_first(true)
+                    decoding_is_first(true),
+                    decoding_next_buffer(adapter::get_instance<Word>( adapter::QueueAdapterType::Q_QUEUEADAPTER )),
+                    encoding_buffer(adapter::get_instance<RiceRuns<Word,Length>::rseq_t>( adapter::QueueAdapterType::Q_QUEUEADAPTER ))
                 { this->restart_encoded_sequence_iterator(); }
 
                 RiceRuns( const std::size_t k ): 
@@ -1911,7 +1986,9 @@ namespace samg {
                         )
                     ),
                     encoding_is_first(true),
-                    decoding_is_first(true)
+                    decoding_is_first(true),
+                    decoding_next_buffer(adapter::get_instance<Word>( adapter::QueueAdapterType::Q_QUEUEADAPTER )),
+                    encoding_buffer(adapter::get_instance<RiceRuns<Word,Length>::rseq_t>( adapter::QueueAdapterType::Q_QUEUEADAPTER ))
                 { this->restart_encoded_sequence_iterator(); }
 
                 RiceRuns( Word *sequence, const Length sequence_length, const Length src_length, const std::size_t k ): 
@@ -1924,7 +2001,9 @@ namespace samg {
                         )
                     ),
                     encoding_is_first(true),
-                    decoding_is_first(true)
+                    decoding_is_first(true),
+                    decoding_next_buffer(adapter::get_instance<Word>( adapter::QueueAdapterType::Q_QUEUEADAPTER )),
+                    encoding_buffer(adapter::get_instance<RiceRuns<Word,Length>::rseq_t>( adapter::QueueAdapterType::Q_QUEUEADAPTER ))
                 { this->restart_encoded_sequence_iterator(); }
 
                 // RiceRuns( const RiceRuns<Word,Length> &codec ) {
@@ -1943,6 +2022,8 @@ namespace samg {
                 // }
 
                 bool encode( Word v ) {
+                    
+                    // Relativize:
                     RiceRuns<Word,Length>::rseq_t relative_v;
                     if( this->encoding_is_first ) {
                         relative_v = RiceRuns<Word,Length>::transform_rval( v );
@@ -1950,14 +2031,14 @@ namespace samg {
                     } else {
                         relative_v = RiceRuns<Word,Length>::_get_transformed_relative_sequence_( this->encoding_previous_n, v );
                     }
+                    this->encoding_buffer.push( relative_v );
                     this->encoding_previous_n = v;
-                    // std::cout << "\tRiceRuns/encode/do-while (4)" << std::endl;
-                    this->encoding_fsm.next( relative_sequence, this->encoding_previous_n, v);
-                    // std::cout << "\tRiceRuns/encode/do-while (5)" << std::endl;
-                    if( fsm.is_error_state() ) { break; }
-                    fsm.run( codec, this->encoding_previous_n, v, this->encoding_r );
-                    // std::cout << "\tRiceRuns/encode/do-while (6)" << std::endl;
-                    return !fsm.is_end_state();
+                    
+                    return !this->_encode_();
+                }
+
+                bool finish_encode( ) {
+                    return !this->_encode_();
                 }
 
                 /**
@@ -1967,7 +2048,7 @@ namespace samg {
                  * @param k 
                  * @return BinarySequence
                  */
-                static typename RCodec<Word,Length>::BinarySequence encode( const AbsoluteSequence sequence, const std::size_t k ) {
+                static typename RCodec<Word,Length>::BinarySequence encode( AbsoluteSequence& sequence, const std::size_t k ) {
                     // std::cout << "RiceRuns/encode (1)" << std::endl;
                     RCodec<Word,Length> codec( 
                         // sequence.size(),
@@ -1979,7 +2060,7 @@ namespace samg {
 
                     FSMEncoder fsm;
 
-                    RelativeSequence relative_sequence = RiceRuns<Word,Length>::_get_transformed_relative_sequence_( sequence );
+                    RelativeSequence& relative_sequence = RiceRuns<Word,Length>::_get_transformed_relative_sequence_( sequence );
 
                     // samg::utils::print_queue<RiceRuns<Word,Length>::rseq_t>("Relative transformed queue |"+ std::to_string(relative_sequence.size()) +"|: ", relative_sequence);
 
@@ -2036,7 +2117,7 @@ namespace samg {
                     Word    previous_n, 
                             n;
 
-                    RelativeSequence relative_sequence;
+                    RelativeSequence& relative_sequence = adapter::get_instance<RiceRuns<Word,Length>::rseq_t>( adapter::QueueAdapterType::Q_QUEUEADAPTER );
 
                     do { 
                         fsm.next( codec, previous_n, n);
@@ -2091,7 +2172,7 @@ namespace samg {
                 const Word next() {
                     if( this->decoding_next_buffer.empty() ) {
                         std::uint8_t s;
-                        RelativeSequence relative_sequence;
+                        RelativeSequence& relative_sequence  = adapter::get_instance<RiceRuns<Word,Length>::rseq_t>( adapter::QueueAdapterType::Q_QUEUEADAPTER );
                         do { 
                             s = this->decoding_fsm.next( this->codec, this->decoding_previous_n, this->decoding_n);
                             if( decoding_fsm.is_error_state() ) { break; }
@@ -2100,13 +2181,14 @@ namespace samg {
 
                         // If it is not the first time executing `next`, then insert the previous relativized absolute value to the beginning of the just retrieved relative sequence:
                         if( !this->decoding_is_first ) {
-                            RelativeSequence tmp;
+                            RelativeSequence& tmp = adapter::get_instance<RiceRuns<Word,Length>::rseq_t>( adapter::QueueAdapterType::Q_QUEUEADAPTER );
                             tmp.push( this->decoding_previous_relative_value );
                             while( !relative_sequence.empty() ) {
                                 tmp.push( relative_sequence.front() );
                                 relative_sequence.pop();
                             }
-                            std::swap( tmp, relative_sequence );
+                            // std::swap( tmp, relative_sequence );
+                            adapter::QueueAdapter<RiceRuns<Word,Length>::rseq_t>::swap( tmp, relative_sequence );
                         }
 
                         // Retrieve a transformed sequence from the relative one:
@@ -2137,6 +2219,10 @@ namespace samg {
                     this->codec.restart();
                     this->decoding_fsm.restart();
                     this->encoding_fsm.restart();
+                    std::free( &(this->decoding_next_buffer) );
+                    std::free( &(this->encoding_buffer) );
+                    this->decoding_next_buffer = adapter::get_instance<Word>( adapter::QueueAdapterType::Q_QUEUEADAPTER );
+                    this->encoding_buffer = adapter::get_instance<RiceRuns<Word,Length>::rseq_t>( adapter::QueueAdapterType::Q_QUEUEADAPTER );
                 }
 
                 /**

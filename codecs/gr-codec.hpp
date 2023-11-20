@@ -1343,7 +1343,8 @@ namespace samg {
                         while( !sequence.empty() ) {
                             current = sequence.front(); sequence.pop();
                             // std::cout << current << std::endl;
-                            ans.push( transform_rval( ((RiceRuns<Word,Length>::rseq_t)(current)) - ((RiceRuns<Word,Length>::rseq_t)(previous)) ) );
+                            // ans.push( transform_rval( ((RiceRuns<Word,Length>::rseq_t)(current)) - ((RiceRuns<Word,Length>::rseq_t)(previous)) ) );
+                            ans.push( RiceRuns<Word,Length>::_get_transformed_relative_sequence_( current, previous ));
                             previous = current;
                         }
                         // for (std::size_t i = 1; i < sequence.size(); ++i) {
@@ -1351,6 +1352,16 @@ namespace samg {
                         // }
                     }
                     return ans;
+                }
+                /**
+                 * @brief This function converts `current` into a relative value given `previous`.
+                 * 
+                 * @param previous 
+                 * @param current 
+                 * @return RiceRuns<Word,Length>::rseq_t 
+                 */
+                static RiceRuns<Word,Length>::rseq_t _get_transformed_relative_sequence_( Word relativa_previous, Word relativa_current ) {
+                    return transform_rval( relativa_current - relativa_previous );
                 }
 
                 /**
@@ -1871,11 +1882,16 @@ namespace samg {
                 // Attributes for relative-sequence traversal:
                 RCodec<Word,Length> codec;
                 FSMDecoder decoding_fsm;
-                Word    previous_n, 
-                        n,
-                        previous_relative_value;
-                bool is_first;
-                AbsoluteSequence next_buffer;
+                FSMEncoder encoding_fsm;
+                Word    decoding_previous_n, 
+                        decoding_n;
+                Length  encoding_r; // Repetition of current encoding value.
+                RiceRuns<Word,Length>::rseq_t   encoding_relative_n,
+                                                encoding_previous_relative_n,
+                                                decoding_previous_relative_value;
+                bool    encoding_is_first,
+                        decoding_is_first;
+                AbsoluteSequence    decoding_next_buffer;
 
             public:
                 RiceRuns( typename RCodec<Word,Length>::BinarySequence bs ): 
@@ -1884,7 +1900,8 @@ namespace samg {
                             bs
                         )
                     ),
-                    is_first(true)
+                    encoding_is_first(true),
+                    decoding_is_first(true)
                 { this->restart_encoded_sequence_iterator(); }
 
                 RiceRuns( const std::size_t k ): 
@@ -1893,7 +1910,8 @@ namespace samg {
                             k
                         )
                     ),
-                    is_first(true)
+                    encoding_is_first(true),
+                    decoding_is_first(true)
                 { this->restart_encoded_sequence_iterator(); }
 
                 RiceRuns( Word *sequence, const Length sequence_length, const Length src_length, const std::size_t k ): 
@@ -1905,7 +1923,8 @@ namespace samg {
                              k 
                         )
                     ),
-                    is_first(true)
+                    encoding_is_first(true),
+                    decoding_is_first(true)
                 { this->restart_encoded_sequence_iterator(); }
 
                 // RiceRuns( const RiceRuns<Word,Length> &codec ) {
@@ -1922,6 +1941,24 @@ namespace samg {
                 // ~RiceRuns() {
                 //     delete this->codec;
                 // }
+
+                bool encode( Word v ) {
+                    RiceRuns<Word,Length>::rseq_t relative_v;
+                    if( this->encoding_is_first ) {
+                        relative_v = RiceRuns<Word,Length>::transform_rval( v );
+                        this->encoding_is_first = false;
+                    } else {
+                        relative_v = RiceRuns<Word,Length>::_get_transformed_relative_sequence_( this->encoding_previous_n, v );
+                    }
+                    this->encoding_previous_n = v;
+                    // std::cout << "\tRiceRuns/encode/do-while (4)" << std::endl;
+                    this->encoding_fsm.next( relative_sequence, this->encoding_previous_n, v);
+                    // std::cout << "\tRiceRuns/encode/do-while (5)" << std::endl;
+                    if( fsm.is_error_state() ) { break; }
+                    fsm.run( codec, this->encoding_previous_n, v, this->encoding_r );
+                    // std::cout << "\tRiceRuns/encode/do-while (6)" << std::endl;
+                    return !fsm.is_end_state();
+                }
 
                 /**
                  * @brief This function encodes a sequence of Word integers using Rice-runs. 
@@ -1951,7 +1988,7 @@ namespace samg {
                     Length r; // Let r be a repetition counter of n.
 
                     RiceRuns<Word,Length>::rseq_t    previous_n, // Previous sequence value.
-                                        n;          // Next sequence value.
+                                                     n;          // Next sequence value.
 
                     do {
                         // std::cout << "\tRiceRuns/encode/do-while (4)" << std::endl;
@@ -2052,19 +2089,19 @@ namespace samg {
                  * @return const Word 
                  */
                 const Word next() {
-                    if( this->next_buffer.empty() ) {
+                    if( this->decoding_next_buffer.empty() ) {
                         std::uint8_t s;
                         RelativeSequence relative_sequence;
                         do { 
-                            s = this->decoding_fsm.next( this->codec, this->previous_n, this->n);
+                            s = this->decoding_fsm.next( this->codec, this->decoding_previous_n, this->decoding_n);
                             if( decoding_fsm.is_error_state() ) { break; }
-                            decoding_fsm.run( relative_sequence, this->previous_n, this->n );
+                            decoding_fsm.run( relative_sequence, this->decoding_previous_n, this->decoding_n );
                         }while( !decoding_fsm.is_output_state() );
 
                         // If it is not the first time executing `next`, then insert the previous relativized absolute value to the beginning of the just retrieved relative sequence:
-                        if( !this->is_first ) {
+                        if( !this->decoding_is_first ) {
                             RelativeSequence tmp;
-                            tmp.push( this->previous_relative_value );
+                            tmp.push( this->decoding_previous_relative_value );
                             while( !relative_sequence.empty() ) {
                                 tmp.push( relative_sequence.front() );
                                 relative_sequence.pop();
@@ -2073,22 +2110,22 @@ namespace samg {
                         }
 
                         // Retrieve a transformed sequence from the relative one:
-                        this->next_buffer = RiceRuns<Word,Length>::_get_transformed_absolute_sequence_( relative_sequence );
+                        this->decoding_next_buffer = RiceRuns<Word,Length>::_get_transformed_absolute_sequence_( relative_sequence );
                         
                         // Back up the last relativized (transformed) absolute value:
-                        this->previous_relative_value = RiceRuns<Word,Length>::transform_rval( this->next_buffer.back() );
+                        this->decoding_previous_relative_value = RiceRuns<Word,Length>::transform_rval( this->decoding_next_buffer.back() );
                         
                         // It it is not the first time executing `next`, then remove the previously added last relativized absolute value:
                         // (it was already used to compute the next absolute value(s))
-                        if( !this->is_first ){
-                            this->next_buffer.pop();
+                        if( !this->decoding_is_first ){
+                            this->decoding_next_buffer.pop();
                         }
                         
-                        this->is_first = false;
+                        this->decoding_is_first = false;
                     }
 
-                    Word v = this->next_buffer.front();
-                    this->next_buffer.pop();
+                    Word v = this->decoding_next_buffer.front();
+                    this->decoding_next_buffer.pop();
                     return v;
                 }
 
@@ -2099,6 +2136,7 @@ namespace samg {
                 void restart_encoded_sequence_iterator() {
                     this->codec.restart();
                     this->decoding_fsm.restart();
+                    this->encoding_fsm.restart();
                 }
 
                 /**
@@ -2110,7 +2148,7 @@ namespace samg {
                 bool has_more() {
                     // return this->codec.has_more();
                     return  this->codec.has_more() || 
-                            !(this->next_buffer.empty());
+                            !(this->decoding_next_buffer.empty());
                 }
 
         };

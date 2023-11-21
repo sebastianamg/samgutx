@@ -97,7 +97,9 @@ namespace samg {
                         queue ( std::queue<Type>() ) {}
 
                     Type front() override {
-                        return this->queue.front();
+                        Type tmp = this->queue.front();
+                        std::cout << "QQueueAdapter / front> front = " << tmp << std::endl;
+                        return tmp;
                     }
 
                     Type back() override {
@@ -623,13 +625,13 @@ namespace samg {
                         samg::matutx::WordSequenceSerializer<Word> serializer = samg::matutx::WordSequenceSerializer<Word>();
                         // std::cout << "save --- (2)" << std::endl;
                         serializer.template add_value<std::size_t>( this->k );
-                        // std::cout << "save --- (3)" << std::endl;
+                        // std::cout << "save --- (3) this->k = " << this->k << std::endl;
                         serializer.template add_value<Length>( this->length );
-                        // std::cout << "save --- (4)" << std::endl;
+                        // std::cout << "save --- (4) this->length = " << this->length << std::endl;
                         serializer.template add_value<Length>( this->src_length );
-                        // std::cout << "save --- (5)" << std::endl;
+                        // std::cout << "save --- (5) this->src_length = " << this->src_length << std::endl;
                         serializer.template add_value<Length>( this->max_length );
-                        // std::cout << "save --- (6)" << std::endl;
+                        // std::cout << "save --- (6) this->max_length = " << this->max_length << std::endl;
                         // serializer.template add_values<Word,Length>( this->sequence, this->bitmap_length / sizeof(Word) );
                         // serializer.template add_values<Word,Length>( this->sequence, this->src_length );
                         serializer.template add_values<Word,Length>( this->sequence, this->max_length );
@@ -1418,8 +1420,10 @@ namespace samg {
                  * @param current 
                  * @return RiceRuns<Word,Length>::rseq_t 
                  */
-                static RiceRuns<Word,Length>::rseq_t _get_transformed_relative_sequence_( Word relativa_previous, Word relativa_current ) {
-                    return transform_rval( relativa_current - relativa_previous );
+                static RiceRuns<Word,Length>::rseq_t _get_transformed_relative_sequence_( RiceRuns<Word,Length>::rseq_t relativa_previous, RiceRuns<Word,Length>::rseq_t relativa_current ) {
+                    RiceRuns<Word,Length>::rseq_t ans = transform_rval( relativa_current - relativa_previous );
+                    std::cout << "\t\tRiceRuns / _get_transformed_relative_sequence_> relativa_previous = " << relativa_previous << "; relativa_current = " << relativa_current << "; ans = " << ans << std::endl;
+                    return ans;
                 }
 
                 /**
@@ -1603,6 +1607,7 @@ namespace samg {
                             }else {
                                 // n = rs[i++];
                                 n = rs.front(); rs.pop();
+                                std::cout << "\t\t\tFSMEncoder/_get_case_> previous_n = " << previous_n << "; n = " << n << std::endl;
                                 if( n > 0 && previous_n < 0 ) {
                                     return ECase::EC_PINT;
                                 } else if( n < 0 && previous_n > 0 ) {
@@ -1650,19 +1655,19 @@ namespace samg {
                         EState next( RelativeSequence &rs, const RiceRuns<Word,Length>::rseq_t previous_n, RiceRuns<Word,Length>::rseq_t &n ) {
                             // std::cout << "FSMEncoder/next> (1)" << std::endl;
                             if( this->is_init ) {
-                                // std::cout << "FSMEncoder/next> (1.1.1) --- previous_n = " << previous_n << "; n = " << n << std::endl;
+                                std::cout << "\t\t\tFSMEncoder/next> (1) previous_n = " << previous_n << "; n = " << n << std::endl;
                                 // this->current_state = fsm[this->current_state][ FSMEncoder::_get_case_( rs, i, previous_n, n ) ];
                                 this->current_state = fsm[this->current_state][ FSMEncoder::_get_case_( rs, previous_n, n ) ];
                                 // std::cout << "FSMEncoder/next> (1.1.2)" << std::endl;
                             } else {
-                                // std::cout << "FSMEncoder/next> (1.2.1)" << std::endl;
+                                std::cout << "\t\t\tFSMEncoder/next> (2 - init) previous_n = " << previous_n << "; n = " << n << std::endl;
                                 // this->_init_( rs, i, n );
                                 this->_init_( rs, n );
                                 // std::cout << "FSMEncoder/next> (1.2.2)" << std::endl;
                                 this->is_init = true;
                                 // std::cout << "FSMEncoder/next> (1.2.3)" << std::endl;
                             }
-                            // std::cout << "FSMEncoder/next> current_state = " << this->current_state << std::endl;
+                            std::cout << "\t\t\tFSMEncoder/next> current_state = " << this->current_state << "; previous_n = " << previous_n << "; n = " << n << std::endl;
                             return this->current_state;
                         }
 
@@ -1944,9 +1949,10 @@ namespace samg {
                     // std::cout << "\tRiceRuns/encode/do-while (4)" << std::endl;
                     this->encoding_fsm.next( this->encoding_buffer, this->encoding_previous_relative_n, relative_v );
                     // std::cout << "\tRiceRuns/encode/do-while (5)" << std::endl;
+                    std::cout << "\t\tRiceRuns / _encode_ --- pre> encoding_previous_relative_n = " << this->encoding_previous_relative_n<< "; relative_v = " << relative_v << "; encoding_r = " << this->encoding_r << "; |encoding_buffer| = " << this->encoding_buffer.size() << std::endl;
                     if( this->encoding_fsm.is_error_state() ) { std::runtime_error("Encoding error state!"); }
                     this->encoding_fsm.run( this->codec, this->encoding_previous_relative_n, relative_v, this->encoding_r );
-                    // std::cout << "\tRiceRuns/encode/do-while (6)" << std::endl;
+                    std::cout << "\t\tRiceRuns / _encode_ --- post> encoding_previous_relative_n = " << this->encoding_previous_relative_n<< "; relative_v = " << relative_v << "; encoding_r = " << this->encoding_r << "; |encoding_buffer| = " << this->encoding_buffer.size() << std::endl;
                     return !this->encoding_fsm.is_end_state();
                 }
 
@@ -2029,15 +2035,18 @@ namespace samg {
                         relative_v = RiceRuns<Word,Length>::transform_rval( v );
                         this->encoding_is_first = false;
                     } else {
+                        // this->encoding_buffer.push( this->encoding_previous_relative_n );
                         relative_v = RiceRuns<Word,Length>::_get_transformed_relative_sequence_( this->encoding_previous_n, v );
                     }
                     this->encoding_buffer.push( relative_v );
+                    std::cout << "\tRiceRuns / encode> v = " << v << "; relative_v = " << relative_v << "; |encoding_buffer| = " << this->encoding_buffer.size() << "; encoding_previous_n = " << this->encoding_previous_n << std::endl;
                     this->encoding_previous_n = v;
                     
                     return !this->_encode_();
                 }
 
                 bool finish_encode( ) {
+                    // this->encoding_buffer.pop();
                     return !this->_encode_();
                 }
 
@@ -2223,6 +2232,13 @@ namespace samg {
                     std::free( &(this->encoding_buffer) );
                     this->decoding_next_buffer = adapter::get_instance<Word>( adapter::QueueAdapterType::Q_QUEUEADAPTER );
                     this->encoding_buffer = adapter::get_instance<RiceRuns<Word,Length>::rseq_t>( adapter::QueueAdapterType::Q_QUEUEADAPTER );
+                    this->encoding_previous_n = 0;
+                    this->decoding_previous_n = 0;
+                    this->decoding_n = 0;
+                    this->encoding_r = 0;
+                    this->encoding_relative_n = 0;
+                    this->encoding_previous_relative_n = 0;
+                    this->decoding_previous_relative_value = 0;
                 }
 
                 /**

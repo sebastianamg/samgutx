@@ -230,10 +230,11 @@ namespace samg {
                 }
                 repr = char(digit) + repr;
             }
-
+            // std::cout << "to_base("<<number<<") = " << repr << std::endl;
             while( repr.length() < length ){
                 repr = "0" + repr;
             }
+            // std::cout << "to_base("<<number<<") = (with "<<length<<" 0s) " << repr << std::endl;
 
             return repr;
         }

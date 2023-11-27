@@ -238,6 +238,64 @@ namespace samg {
 
             return repr;
         }
+
+        /**
+         * @brief Converts from n-dimensional coordinates of order `base` to z-order. 
+         * 
+         * @param c 
+         * @param base 
+         * @param len is the number of bits to correctly represent each element in the coordinate. 
+         * @return std::size_t 
+         */
+        std::size_t to_zvalue( const std::vector<std::uint64_t>& c, const std::size_t base, const std::size_t len ) {
+
+            // For each element in `c`, convert to base `base`:
+            std::vector<std::string> p;
+            for ( std::uint64_t v : c ) {
+                p.push_back( samg::utils::to_base( v, base, len ) );
+            }
+
+            // Concatenate elements in `p` interleaving-wise:
+            std::string v = "";
+            for (size_t i = 0; i < len; i++) {
+                for( std::string s : p ) {
+                    v = v + s[i];
+                }
+            }
+
+            // Convert `v` from base `base` to base 10:
+            std::uint64_t zv_ans = samg::utils::from_base( v, base );
+
+            return zv_ans;
+        }
+
+        /**
+         * @brief Convert `z_value` into `dims`-dimensional coordinates:
+         * 
+         * @param zvalue 
+         * @param base 
+         * @param dims 
+         * @param len is the sum of number of bits that represent each element in the sought coordinate. The number of bits must be must be divisible by `dims`.
+         * @return std::vector<std::uint64_t> 
+         */
+        std::vector<std::uint64_t> from_zvalue( const std::size_t zvalue, const std::size_t base, const std::size_t dims, const std::size_t len ) {
+            // Convert zv from base 10 to base `base` and ensure length `len`: 
+            const std::string zv_k = samg::utils::to_base( zvalue, base, len );
+
+            // Separate components from zv_k:
+            std::vector<std::string> zv_k_components( dims );
+            for (std::size_t i = 0; i < zv_k.length(); i++) {
+                zv_k_components[i%dims] += zv_k[i];
+            }
+
+            // Convert each component back to create a coordinate:
+            std::vector<std::uint64_t> c;
+            for (std::string c_zv : zv_k_components) {
+                c.push_back( samg::utils::from_base( c_zv, base ) );
+            }
+            
+            return c;
+        }
         /***************************************************************/
         /**
          * @brief This function allows appending a string to and replace the extension of a file name. 

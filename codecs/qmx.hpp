@@ -869,13 +869,13 @@ namespace QMX
 		}
 
 		size_t encode2(void *into_as_void, size_t encoded_buffer_length,
-					  samg::matutx::reader::Reader& source ) {
+					  std::shared_ptr<samg::matutx::reader::Reader> source ) {
 			uint32_t *into = static_cast<uint32_t *>(into_as_void);
 			const uint32_t WASTAGE = 512;
 			uint8_t *current_length, *destination = (uint8_t *)into, *keys;
 			uint32_t *current, run_length, bits, wastage;
 			uint32_t block, largest;
-			const size_t source_integers = source.get_number_of_entries() * source.get_number_of_dimensions();
+			const size_t source_integers = source->get_number_of_entries() * source->get_number_of_dimensions();
 
 			/*
 					make sure we have enough room to store the lengths
@@ -1174,7 +1174,7 @@ namespace QMX
 			keys = length_buffer; // we're going to re-use the length_buffer because it
 								  // can't overlap and this saves a double malloc
 			// source = samg::matutx::reader::create_instance(input_file_name);
-			samg::matutx::streamer::IntStreamerAdapter<integer> source3 = samg::matutx::streamer::IntStreamerAdapter<integer>(samg::matutx::reader::create_instance(source.get_input_file_name()));
+			samg::matutx::streamer::IntStreamerAdapter<integer> source3 = samg::matutx::streamer::IntStreamerAdapter<integer>(samg::matutx::reader::create_instance(source->get_input_file_name()));
 			std::vector<uint32_t> tmp;
 			size_t length_buffer_index = 1;
 			while( source3.has_next() ) {

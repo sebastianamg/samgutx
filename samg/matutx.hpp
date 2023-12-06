@@ -490,16 +490,16 @@ namespace samg {
                     }
             };
 
-            Reader& create_instance(const std::string& input_file_name) {
+            std::shared_ptr<Reader> create_instance(const std::string& input_file_name) {
                 // std::cout << "get_instance> (1)" << std::endl;
                 switch (samg::matutx::identify_file_format(input_file_name)) {
                     case samg::matutx::FileFormat::GRAPH:
                         // std::cout << "get_instance> (2.1)" << std::endl;
                         // return *(std::make_unique<GraphReader>(input_file_name));
-                        return *(new GraphReader(input_file_name));
+                        return std::make_shared<GraphReader>(input_file_name);
                     case samg::matutx::FileFormat::MDX:
                         // std::cout << "get_instance> (2.2)" << std::endl;
-                        return *(new MDXReader(input_file_name));
+                        return std::make_shared<MDXReader>(input_file_name);
                     default:
                         throw std::runtime_error("Unrecognized file format!");
                 }
@@ -514,18 +514,18 @@ namespace samg {
             template<typename IntType> class IntStreamerAdapter {
                 private:
                     std::queue<IntType> buffer;
-                    reader::Reader & reader;
+                    std::shared_ptr<samg::matutx::reader::Reader> reader;
                 public:
-                    IntStreamerAdapter(reader::Reader& reader):
+                    IntStreamerAdapter(std::shared_ptr<samg::matutx::reader::Reader> reader):
                         reader(reader) {}
 
                     const bool has_next() {
-                        return !(this->buffer.empty()) || this->reader.has_next();
+                        return !(this->buffer.empty()) || this->reader->has_next();
                     } 
 
                     const IntType next() {
                         if( this->buffer.empty() ) {
-                            for (std::uint64_t v : this->reader.next()) {
+                            for (std::uint64_t v : this->reader->next()) {
                                 this->buffer.push((IntType) v);
                             }
                         }

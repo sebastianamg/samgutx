@@ -537,7 +537,8 @@ namespace samg {
         }
 
         /***************************************************************/
-
+    }
+    namespace serialization { 
         /**
          * @brief The class WordSequenceSerializer allows serializing and deserializing a sequence of integers defined through its template. 
          * 
@@ -1013,6 +1014,386 @@ namespace samg {
                         std::cout << v << " ";
                     }
                     std::cout << std::endl;
+                }
+        };
+
+        /**
+         * @brief The class OfflineWordSerializer allows direct offline integer sequence serialization directly to a file. 
+         * 
+         * @tparam Type 
+         */
+        template<typename Type> class OfflineWordSerializer {
+            private:
+                const std::size_t BITS_PER_BYTE = 8UL;
+                const std::size_t WORD_SIZE = sizeof(Type)  * BITS_PER_BYTE;
+                std::size_t word_counter;
+                const std::string file_name;
+                std::ofstream file;
+
+                /**
+                 * @brief This function allows converting a std::string into a std::vector<T> 
+                 * 
+                 * @tparam T is the output std::vector data type.
+                 * @param str 
+                 * @return std::vector<T> 
+                 */
+                template<typename T> static std::vector<T> _convert_string_to_vector_(const std::string str) {
+                    const T* T_ptr = reinterpret_cast<const T*>(str.data());
+                    std::vector<T> result(T_ptr, T_ptr + (std::size_t)std::ceil((double)str.length() / (double)sizeof(T)));
+                    return result;
+                }
+
+                /**
+                 * @brief Serializes a sequence of unsigned integers.
+                 * 
+                 * @tparam UINT_T 
+                 * @param data 
+                 * @param file_name 
+                 */
+                template<typename UINT_T = std::uint32_t> static void _write_(const std::vector<UINT_T> data, std::ofstream file) { 
+                    if ( file.is_open() ) {
+                        // Writing the vector's data to the file
+                        file.write(reinterpret_cast<const char*>(data.data()), data.size() * sizeof(UINT_T));
+                    } else {
+                        throw std::runtime_error("Failed to write to file!");
+                    }
+                }
+
+                /**
+                 * @brief This function allows parsing integer values stored in an input vector of type TypeSrc into type TypeTrg.
+                 * 
+                 * @tparam TypeSrc 
+                 * @tparam TypeTrg 
+                 * @param V 
+                 * @return std::vector<TypeTrg> 
+                 */
+                template<typename TypeSrc, typename TypeTrg = Type> static std::vector<TypeTrg> _parse_values_(std::vector<TypeSrc> V) {
+                    std::vector<TypeTrg> T;
+                    if( sizeof(TypeTrg) == sizeof(TypeSrc) ) {
+                        T.insert(T.end(),V.begin(),V.end());
+                    } else { // sizeof(TypeSrc) != sizeof(Type)
+                        const TypeTrg* x = reinterpret_cast<const TypeTrg*>(V.data());
+                        std::size_t l = (std::size_t)std::ceil((double)(V.size()*sizeof(TypeSrc)) / (double)sizeof(TypeTrg));
+                        T.insert(T.end(),x,x+l);
+                    }
+                    return T;
+                }
+
+            public:
+                /**
+                 * @brief Constructs a new offline word serializer object.
+                 * 
+                 * @param file_name
+                 */
+                OfflineWordSerializer(const std::string file_name): 
+                    file_name ( file_name ),
+                    file ( std::ofstream(file_name, std::ios::binary) ),
+                    word_counter (0ULL) {
+                    if ( !file.is_open() ) {
+                        throw std::runtime_error("Failed to open file \""+file_name+"\"!");
+                    }
+                }
+             
+                /**
+                 * @brief Adds an 8/16/32/64-bits value. 
+                 * @note It reduces any input to `Type` type. 
+                 * 
+                 * @tparam TypeSrc 
+                 * @param v 
+                 */
+                template<typename TypeSrc = Type> void add_value(TypeSrc v) {
+                    static_assert(
+                        std::is_same_v<TypeSrc, std::uint8_t> ||
+                        std::is_same_v<TypeSrc, std::uint16_t> ||
+                        std::is_same_v<TypeSrc, std::uint32_t> ||
+                        std::is_same_v<TypeSrc, std::uint64_t>,
+                        "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
+
+                    std::vector<TypeSrc> V = {v};
+                    std::vector<Type> X = OfflineWordSerializer<Type>::_parse_values_<TypeSrc>(V);
+                    OfflineWordSerializer<Type>::_write_<Type>( X, this->file );
+                    this->word_counter += X.size();
+                }
+
+                /**
+                 * @brief Adds a collection of l TypeSrc integer values. 
+                 * 
+                 * @tparam TypeSrc 
+                 * @param v 
+                 * @param l 
+                 */
+                template<typename TypeSrc = Type, typename TypeLength = std::size_t> void add_values(const TypeSrc *v, const TypeLength l) {
+                    std::vector<TypeSrc> V;
+                    V.insert(V.end(),v,v+l);
+                    this->add_values<TypeSrc>(V);
+                }
+
+                /**
+                 * @brief Adds a collection of unsigned integer values. 
+                 * 
+                 * @tparam TypeSrc 
+                 * @param V 
+                 */
+                template<typename TypeSrc = Type> void add_values(const std::vector<TypeSrc> V) {
+                    static_assert(
+                        std::is_same_v<TypeSrc, std::uint8_t> ||
+                        std::is_same_v<TypeSrc, std::uint16_t> ||
+                        std::is_same_v<TypeSrc, std::uint32_t> ||
+                        std::is_same_v<TypeSrc, std::uint64_t>,
+                        "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
+                    for (TypeSrc v : V) {
+                        this->add_value<TypeSrc>(v);
+                    }
+                }
+
+                /**
+                 * @brief Serializes a string.
+                 * 
+                 * @param v 
+                 */
+                void add_value(std::string v) {
+                    std::vector<Type> V = OfflineWordSerializer::_convert_string_to_vector_<Type>(v);
+                    this->add_value<std::size_t>(v.length()); // Storing the original length (number of characters/bytes) of the key. 
+                    this->add_value<std::size_t>(V.size()); // Storing the length (number of words<Type>) of the key. 
+                    this->sequence.insert(this->sequence.end(), V.begin(), V.end());
+                }
+
+                /**
+                 * @brief Adds a `std::map<std::string,std::string>` entry.
+                 * 
+                 * @param p map<std::string,std::string>'s entry
+                 */
+                void add_map_entry(const std::pair<std::string,std::string> p) {
+                    // Adding key:
+                    this->add_value(p.first);
+                    // Adding value:
+                    this->add_value(p.second);
+                }
+
+                /**
+                 * @brief Adds a `map<std::string,std::string>`.
+                 * 
+                 * @param m 
+                 */
+                void add_map(std::map<std::string,std::string> m) {
+                    this->add_value<std::size_t>(m.size());
+                    for (std::pair<std::string,std::string> p : m) {
+                        this->add_map_entry(p);
+                    }
+                }
+
+                /**
+                 * @brief Returns the number of written `Type` words. 
+                 * 
+                 * @return const std::size_t 
+                 */
+                const std::size_t size() const {
+                    return this->word_counter;
+                }
+
+                /**
+                 * @brief Closes binary file.
+                 * 
+                 */
+                void close() {
+                    this->file.close();
+                }
+        };
+
+        /**
+         * @brief Allows a direct integers sequence offline reading from a binary file. 
+         * 
+         * @tparam Type 
+         */
+        template<typename Type> class OfflineWordReader {
+            private:
+                const std::size_t   BITS_PER_BYTE = 8UL,
+                                    WORD_SIZE = sizeof(Type)  * BITS_PER_BYTE,
+                                    serialization_length;
+                const std::string file_name;
+                std::ifstream file;
+
+                /**
+                 * @brief Allows converting a std::vector<T> into a std::string.
+                 * 
+                 * @tparam T is the input std::vector data type.
+                 * @param vector 
+                 * @param length is the number of bytes of the original std::string stored in the input std::vector. 
+                 * @return std::string 
+                 */
+                template<typename T> static std::string _convert_vector_to_string_(const std::vector<T>& vector, std::size_t length) {
+                    const T* T_ptr = vector.data();
+                    // std::size_t length = vector.size() * sizeof(T);
+                    const char* char_ptr = reinterpret_cast<const char*>(T_ptr);
+                    return std::string(char_ptr, length);
+                }
+
+                /**
+                 * @brief This function allows parsing integer values stored in an input vector of type TypeSrc into type TypeTrg.
+                 * 
+                 * @tparam TypeSrc 
+                 * @tparam TypeTrg 
+                 * @param V 
+                 * @return std::vector<TypeTrg> 
+                 */
+                template<typename TypeSrc, typename TypeTrg = Type> static std::vector<TypeTrg> _parse_values_(std::vector<TypeSrc> V) {
+                    std::vector<TypeTrg> T;
+                    if( sizeof(TypeTrg) == sizeof(TypeSrc) ) {
+                        T.insert(T.end(),V.begin(),V.end());
+                    } else { // sizeof(TypeSrc) != sizeof(Type)
+                        const TypeTrg* x = reinterpret_cast<const TypeTrg*>(V.data());
+                        std::size_t l = (std::size_t)std::ceil((double)(V.size()*sizeof(TypeSrc)) / (double)sizeof(TypeTrg));
+                        T.insert(T.end(),x,x+l);
+                    }
+                    return T;
+                }
+
+                /**
+                 * @brief Allows retrieving a serialized unsigned integer from a binary file.
+                 * 
+                 * @tparam UINT_T 
+                 * @param file_name 
+                 * @return UINT_T
+                 */
+                template<typename UINT_T = std::uint32_t> UINT_T _read_( std::ifstream& file ) {
+                    if ( !file.is_open() ) {
+                        throw std::runtime_error("The file \""+file_name+"\" is closed!");
+                    }
+                    
+                    if ( file.eof() ) {
+                        throw std::runtime_error("The file \""+file_name+"\" has no more data!");
+                    }
+
+                    std::vector<UINT_T> data = std::vector<UINT_T>( 1ULL );
+                    
+                    // Read the data from the file into the vector
+                    file.read(reinterpret_cast<char*>(data.data()), sizeof(UINT_T));
+                    
+                    return data[0];
+                }
+
+            public:
+                /**
+                 * @brief Constructs a new offline word serializer object that either writes or retrieves data to or from a file.
+                 * 
+                 * @param file_name
+                 */
+                OfflineWordReader(const std::string file_name): 
+                file_name ( file_name ),
+                file ( std::ifstream(file_name, std::ios::binary) ) {
+                    if ( !file.is_open() ) {
+                        throw std::runtime_error("Failed to open file \""+file_name+"\"!");
+                    }
+                    
+                    // Computing input length:
+                    file.seekg(0, std::ios::end);
+                    this->serialization_length = file.tellg();
+                    file.seekg(0, std::ios::beg);
+                }
+
+                /**
+                 * @brief Allows retrieving the next value. 
+                 * 
+                 * @tparam TypeTrg 
+                 * @return const TypeTrg 
+                 */
+                template<typename TypeTrg = Type> const TypeTrg next() {
+                    return OfflineWordReader<Type>::_read_<TypeTrg>( this->file );
+                }
+
+                /**
+                 * @brief Allows getting all the remaining values from the serialization. 
+                 * 
+                 * @tparam TypeTrg 
+                 * @return const std::vector<TypeTrg> 
+                 */
+                template<typename TypeTrg = Type> const std::vector<TypeTrg> get_remaining_values() {
+                    std::vector<TypeTrg> V;
+                    while(this->has_more()) {
+                        V.push_back(this->next<TypeTrg>());
+                    }
+                    return V;
+                }
+
+                /**
+                 * @brief Allows retrieving the next `length` values.
+                 * 
+                 * @tparam TypeTrg 
+                 * @param length 
+                 * @return const std::vector<TypeTrg> 
+                 */
+                template<typename TypeTrg = Type> const std::vector<TypeTrg> get_next_values(std::uint64_t length) {
+                    std::vector<TypeTrg> V;
+                    for (std::uint64_t i = 0 ; i < length ; i++) {
+                        V.push_back(this->next<TypeTrg>());
+                    }
+                    return V;
+                }
+
+                /**
+                 * @brief Retrieves a serialized string. 
+                 * 
+                 * @return std::string 
+                 */
+                std::string get_string_value() {
+                    const std::size_t   bytes_length = this->next<std::size_t>(),
+                                        words_legnth = this->next<std::size_t>();
+                    std::vector<Type> V = this->get_next_values( words_legnth );
+                    std::string str = OfflineWordReader::_convert_vector_to_string_<Type>( V , bytes_length );
+                    return str;
+                }
+
+                /**
+                 * @brief Retrieves a serialized `std::map<std::string,std::string>`'s entry.
+                 * 
+                 * @return std::pair<std::string,std::string> 
+                 */
+                std::pair<std::string,std::string> get_map_entry() {
+                    std::string key = this->get_string_value();
+                    std::string value = this->get_string_value();
+                    // return std::pair<std::string,std::string>( key , value );
+                    return std::pair<std::string,std::string>( key , value );
+                }
+
+                /**
+                 * @brief Retrieves a serialized `std::map<std::string,std::string>`.
+                 * 
+                 * @return std::map<std::string,std::string> 
+                 */
+                std::map<std::string,std::string> get_map() {
+                    const std::size_t length = this->next<std::size_t>();
+                    std::map<std::string,std::string> map;
+                    for (std::uint64_t i = 0; i < length; i++) {
+                        map.insert( this->get_map_entry() );
+                    }
+                    return map;
+                }
+
+                /**
+                 * @brief Verifies whether the serialization has or not more elements. 
+                 * 
+                 * @return true 
+                 * @return false 
+                 */
+                const bool has_more() const {
+                    return !this->file.eof();
+                }
+
+                /**
+                 * @brief Returns the number of Type words that composes the serialization. 
+                 * 
+                 * @return const std::size_t 
+                 */
+                const std::size_t size() const {
+                    return this->serialization_length;
+                }
+
+                /**
+                 * @brief Closes binary file.
+                 * 
+                 */
+                void close() {
+                    this->file.close();
                 }
         };
     }

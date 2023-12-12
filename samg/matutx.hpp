@@ -1050,7 +1050,7 @@ namespace samg {
                  * @param data 
                  * @param file_name 
                  */
-                template<typename UINT_T = std::uint32_t> static void _write_(const std::vector<UINT_T> data, std::ofstream file) { 
+                template<typename UINT_T = std::uint32_t> static void _write_(const std::vector<UINT_T> data, std::ofstream& file) { 
                     if ( file.is_open() ) {
                         // Writing the vector's data to the file
                         file.write(reinterpret_cast<const char*>(data.data()), data.size() * sizeof(UINT_T));

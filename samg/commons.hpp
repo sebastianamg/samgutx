@@ -97,6 +97,17 @@ namespace samg {
                 std::cout << std::endl;
             }
         }
+
+        /**
+         * @brief Prints a queue<UINT_T>.
+         * 
+         * @tparam UINT_T 
+         * @param info 
+         * @param q 
+         * @param new_line 
+         * @param separator 
+         * @warning SIDE EFFECT!!! `q` is destroyed as the function goes through it!
+         */
         template<typename UINT_T = std::uint32_t> void print_queue(const std::string info, std::queue<UINT_T> q, bool new_line = true, std::string separator=" " ) {
             std::cout << info;
             while( !q.empty() ) {
@@ -107,10 +118,20 @@ namespace samg {
                 std::cout << std::endl;
             }
         }
-        template<typename UINT_T = std::uint32_t> void print_array( const std::string info, UINT_T *buff, std::size_t length, bool new_line = true, std::string separator=" " ) {
+        template<typename UINT_T = std::uint32_t> void print_array( const std::string info, const UINT_T *buff, std::size_t length, bool new_line = true, std::string separator=" " ) {
             std::cout << info;
             for (std::size_t i = 0; i < length; ++i) {
                 std::cout << buff[i] << separator; 
+            }
+            if( new_line ){
+                std::cout << std::endl;
+            }
+        }
+
+        template<typename TypeA,typename TypeB> void print_map( const std::string info, const std::map<TypeA,TypeB> map, bool new_line = true, std::string pair_separator=" = ", std::string separator="; " ) {
+            std::cout << info;
+            for (const std::pair<TypeA,TypeB>& p : map) {
+                std::cout << p.first << pair_separator << p.second << separator; 
             }
             if( new_line ){
                 std::cout << std::endl;
@@ -393,6 +414,54 @@ namespace samg {
 
     namespace serialization { 
         /**
+         * @brief This function allows parsing integer values stored in an input vector of type TypeSrc into type TypeTrg.
+         * 
+         * @tparam TypeSrc 
+         * @tparam TypeTrg 
+         * @param V 
+         * @return std::vector<TypeTrg> 
+         */
+        template<typename TypeSrc, typename TypeTrg> std::vector<TypeTrg> parse_values(const std::vector<TypeSrc>& V) {
+            std::vector<TypeTrg> T;
+            if( sizeof(TypeTrg) == sizeof(TypeSrc) ) {
+                T.insert(T.end(),V.begin(),V.end());
+            } else { // sizeof(TypeSrc) != sizeof(Type)
+                const TypeTrg* x = reinterpret_cast<const TypeTrg*>(V.data());
+                std::size_t l = (std::size_t)std::ceil((double)(V.size()*sizeof(TypeSrc)) / (double)sizeof(TypeTrg));
+                T.insert(T.end(),x,x+l);
+            }
+            return T;
+        }
+
+        /**
+         * @brief This function allows converting a std::string into a std::vector<T> 
+         * 
+         * @tparam T is the output std::vector data type.
+         * @param str 
+         * @return std::vector<T> 
+         */
+        template<typename T> static std::vector<T> convert_string_to_vector(const std::string& str) {
+            const T* T_ptr = reinterpret_cast<const T*>(str.data());
+            std::vector<T> result(T_ptr, T_ptr + (std::size_t)std::ceil((double)str.length() / (double)sizeof(T)));
+            return result;
+        }
+
+        /**
+         * @brief This function allows converting a std::vector<T> into a std::string.
+         * 
+         * @tparam T is the input std::vector data type.
+         * @param vector 
+         * @param length is the number of bytes of the original std::string stored in the input std::vector. 
+         * @return std::string 
+         */
+        template<typename T> static std::string convert_vector_to_string(const std::vector<T>& vector, std::size_t length) {
+            const T* T_ptr = vector.data();
+            // std::size_t length = vector.size() * sizeof(T);
+            const char* char_ptr = reinterpret_cast<const char*>(T_ptr);
+            return std::string(char_ptr, length);
+        }
+
+        /**
          * @brief The class WordSequenceSerializer allows serializing and deserializing a sequence of integers defined through its template. 
          * 
          * @tparam Type 
@@ -403,34 +472,6 @@ namespace samg {
                 const std::size_t BITS_PER_BYTE = 8UL;
                 const std::size_t WORD_SIZE = sizeof(Type)  * BITS_PER_BYTE;
                 std::uint64_t current_index;
-
-                /**
-                 * @brief This function allows converting a std::string into a std::vector<T> 
-                 * 
-                 * @tparam T is the output std::vector data type.
-                 * @param str 
-                 * @return std::vector<T> 
-                 */
-                template<typename T> static std::vector<T> convert_string_to_vector(const std::string str) {
-                    const T* T_ptr = reinterpret_cast<const T*>(str.data());
-                    std::vector<T> result(T_ptr, T_ptr + (std::size_t)std::ceil((double)str.length() / (double)sizeof(T)));
-                    return result;
-                }
-
-                /**
-                 * @brief This function allows converting a std::vector<T> into a std::string.
-                 * 
-                 * @tparam T is the input std::vector data type.
-                 * @param vector 
-                 * @param length is the number of bytes of the original std::string stored in the input std::vector. 
-                 * @return std::string 
-                 */
-                template<typename T> static std::string convert_vector_to_string(const std::vector<T>& vector, std::size_t length) {
-                    const T* T_ptr = vector.data();
-                    // std::size_t length = vector.size() * sizeof(T);
-                    const char* char_ptr = reinterpret_cast<const char*>(T_ptr);
-                    return std::string(char_ptr, length);
-                }
 
                 /**
                  * @brief This function allows serializing a sequence of unsigned integers.
@@ -507,43 +548,25 @@ namespace samg {
                     sequence(sequence),
                     current_index(0ULL) {}
 
-                /**
-                 * @brief This function allows parsing integer values stored in an input vector of type TypeSrc into type TypeTrg.
-                 * 
-                 * @tparam TypeSrc 
-                 * @tparam TypeTrg 
-                 * @param V 
-                 * @return std::vector<TypeTrg> 
-                 */
-                template<typename TypeSrc, typename TypeTrg = Type> std::vector<TypeTrg> parse_values(std::vector<TypeSrc> V) {
-                    std::vector<TypeTrg> T;
-                    if( sizeof(TypeTrg) == sizeof(TypeSrc) ) {
-                        T.insert(T.end(),V.begin(),V.end());
-                    } else { // sizeof(TypeSrc) != sizeof(Type)
-                        const TypeTrg* x = reinterpret_cast<const TypeTrg*>(V.data());
-                        std::size_t l = (std::size_t)std::ceil((double)(V.size()*sizeof(TypeSrc)) / (double)sizeof(TypeTrg));
-                        T.insert(T.end(),x,x+l);
-                    }
-                    return T;
-                }
-
                 // /**
-                //  * @brief This function allows parsing an integer value of type TypeSrc into type TypeTrg.
+                //  * @brief This function allows parsing integer values stored in an input vector of type TypeSrc into type TypeTrg.
                 //  * 
                 //  * @tparam TypeSrc 
                 //  * @tparam TypeTrg 
-                //  * @param v 
-                //  * @return TypeTrg 
+                //  * @param V 
+                //  * @return std::vector<TypeTrg> 
                 //  */
-                // template<typename TypeSrc, typename TypeTrg=Type> TypeTrg parse_value(TypeSrc v) {
-                //     std::vector<TypeSrc> V = {v};
-                //     return this->parse_values<TypeSrc>(V)[0];
+                // template<typename TypeSrc, typename TypeTrg = Type> std::vector<TypeTrg> parse_values(std::vector<TypeSrc> V) {
+                //     std::vector<TypeTrg> T;
+                //     if( sizeof(TypeTrg) == sizeof(TypeSrc) ) {
+                //         T.insert(T.end(),V.begin(),V.end());
+                //     } else { // sizeof(TypeSrc) != sizeof(Type)
+                //         const TypeTrg* x = reinterpret_cast<const TypeTrg*>(V.data());
+                //         std::size_t l = (std::size_t)std::ceil((double)(V.size()*sizeof(TypeSrc)) / (double)sizeof(TypeTrg));
+                //         T.insert(T.end(),x,x+l);
+                //     }
+                //     return T;
                 // }
-                // template<typename TypeSrc, typename TypeTrg=Type> std::vector<TypeTrg> parse_value(TypeSrc v) {
-                //     std::vector<TypeSrc> V = {v};
-                //     return this->parse_values<TypeSrc>(V);
-                // }
-
 
                 /**
                  * @brief This function allows adding an 8/16/32/64-bits value. 
@@ -562,54 +585,9 @@ namespace samg {
                     // std::cout << "add_value(v) = " << v << std::endl;
 
                     std::vector<TypeSrc> V = {v};
-                    std::vector<Type> X = this->parse_values<TypeSrc>(V);
+                    std::vector<Type> X = serialization::parse_values<TypeSrc,Type>(V);
                     this->sequence.insert(this->sequence.end(),X.begin(),X.end());
-                    // this->sequence.push_back(this->parse_values<TypeSrc>(v));
                 }
-
-                // /**
-                //  * @brief This function allows adding an 8-bits value. 
-                //  * 
-                //  * @param v 
-                //  */
-                // template<typename TypeSrc> void add_value(std::uint8_t v) {
-                //     // std::vector<Type> trg = this->parse_value<std::uint8_t>(v);
-                //     // this->sequence.insert(this->sequence.end(),trg.begin(),trg.end());
-                //     this->sequence.push_back(this->parse_value<std::uint8_t>(v));
-                // }
-
-                // /**
-                //  * @brief This function allows adding a 16-bits value. 
-                //  * 
-                //  * @param v 
-                //  */
-                // void add_value(std::uint16_t v) {
-                //     // std::vector<Type> trg = this->parse_value<std::uint16_t>(v);
-                //     // this->sequence.insert(this->sequence.end(),trg.begin(),trg.end());
-                //     this->sequence.push_back(this->parse_value<std::uint16_t>(v));
-                // }
-
-                // /**
-                //  * @brief This function allows adding a 32-bits value. 
-                //  * 
-                //  * @param v 
-                //  */
-                // void add_value(std::uint32_t v) {
-                //     // std::vector<Type> trg = this->parse_value<std::uint32_t>(v);
-                //     // this->sequence.insert(this->sequence.end(),trg.begin(),trg.end());
-                //     this->sequence.push_back(this->parse_value<std::uint32_t>(v));
-                // }
-
-                // /**
-                //  * @brief This function allows adding a 64-bits value. 
-                //  * 
-                //  * @param v 
-                //  */
-                // void add_value(std::uint64_t v) {
-                //     // std::vector<Type> trg = this->parse_value<std::uint64_t>(v);
-                //     // this->sequence.insert(this->sequence.end(),trg.begin(),trg.end());
-                //     this->sequence.push_back(this->parse_value<std::uint64_t>(v));
-                // }
 
                 /**
                  * @brief This function allows adding a collection of l TypeSrc integer values. 
@@ -640,8 +618,6 @@ namespace samg {
                     for (TypeSrc v : V) {
                         this->add_value<TypeSrc>(v);
                     }
-                    // std::vector<Type> X = this->parse_values<TypeSrc>(V);
-                    // this->sequence.insert(this->sequence.end(),X.begin(),X.end());
                 }
 
                 /**
@@ -650,7 +626,7 @@ namespace samg {
                  * @param v 
                  */
                 void add_value(std::string v) {
-                    std::vector<Type> V = WordSequenceSerializer::convert_string_to_vector<Type>(v);
+                    std::vector<Type> V = serialization::convert_string_to_vector<Type>(v);
                     this->add_value<std::size_t>(v.length()); // Storing the original length (number of characters/bytes) of the key. 
                     this->add_value<std::size_t>(V.size()); // Storing the length (number of words<Type>) of the key. 
                     this->sequence.insert(this->sequence.end(), V.begin(), V.end());
@@ -714,8 +690,7 @@ namespace samg {
                  */
                 template<typename TypeTrg = Type> const std::vector<TypeTrg> get_next_values(std::uint64_t length) {
                     std::vector<TypeTrg> V;
-                    // std::size_t n = std::ceil( (length * sizeof(TypeTrg)) / sizeof(Type) ); // Compute number of Type-words that contain the TypeTrg-words.
-                    for (std::uint64_t i = 0 ; i < length /*&& this->has_more()*/; i++) {
+                    for (std::uint64_t i = 0 ; i < length ; i++) {
                         V.push_back(this->get_value<TypeTrg>());
                     }
                     return V;
@@ -731,7 +706,6 @@ namespace samg {
                  */
                 template<typename TypeTrg = Type> const std::vector<TypeTrg> get_values(std::uint64_t beginning_index, std::uint64_t length) const {
                     std::vector<TypeTrg> V;
-                    // std::size_t n = std::ceil( (length * sizeof(TypeTrg)) / sizeof(Type) ); // Compute number of Type-words that contain the TypeTrg-words.
                     std::size_t step = ( sizeof(TypeTrg) <= sizeof(Type) ) ? 1 : ( sizeof(TypeTrg) / sizeof(Type) );
                     std::uint64_t limit = beginning_index + ( length * step );
                     for ( std::uint64_t i = beginning_index ; i < limit; i+=step ) {
@@ -748,17 +722,13 @@ namespace samg {
                  * @return const Type 
                  */
                 template<typename TypeTrg = Type> const Type get_value_at( std::uint64_t i ) const {
-                    // if( sizeof(TypeTrg) <= sizeof(Type) ) {
-                    //     return (TypeTrg) this->sequence[i];
-                    // } else {
-                        std::vector<Type> V;
-                        std::uint64_t limit = std::ceil( sizeof(TypeTrg) / sizeof(Type) );
-                        for ( ; i < limit; ++i ) {
-                            V.push_back( this->sequence[i] );
-                        }
-                        std::vector<TypeTrg> T = this->parse_values<Type,TypeTrg>(V);
-                        return T[0]; // Assuming T contains only one value.
-                    // }
+                    std::vector<Type> V;
+                    std::uint64_t limit = std::ceil( sizeof(TypeTrg) / sizeof(Type) );
+                    for ( ; i < limit; ++i ) {
+                        V.push_back( this->sequence[i] );
+                    }
+                    std::vector<TypeTrg> T = serialization::parse_values<Type,TypeTrg>(V);
+                    return T[0]; // Assuming T contains only one value.
                 }
 
                 /**
@@ -768,18 +738,13 @@ namespace samg {
                  * @return const TypeTrg 
                  */
                 template<typename TypeTrg = Type> const TypeTrg get_value() {
-                    // if( sizeof(TypeTrg) <= sizeof(Type) ) {
-                    //     return (TypeTrg) this->sequence[this->current_index++];
-                    // } else {
-                        std::vector<Type> V;
-                        std::uint64_t limit = std::ceil( (double)sizeof(TypeTrg) / (double)sizeof(Type) );
-                        for (std::size_t i = 0; i < limit; ++i ) {
-                            V.push_back( this->sequence[this->current_index++] );
-                        }
-                        std::vector<TypeTrg> T = this->parse_values<Type,TypeTrg>(V);
-                        // std::cout << "get_value (|TypeTrg|<"<< sizeof(TypeTrg) <<">) = " << T[0] << std::endl;
-                        return T[0]; // Assuming T contains only one value.
-                    // }
+                    std::vector<Type> V;
+                    std::uint64_t limit = std::ceil( (double)sizeof(TypeTrg) / (double)sizeof(Type) );
+                    for (std::size_t i = 0; i < limit; ++i ) {
+                        V.push_back( this->sequence[this->current_index++] );
+                    }
+                    std::vector<TypeTrg> T = serialization::parse_values<Type,TypeTrg>(V);
+                    return T[0]; // Assuming T contains only one value.
                 }
 
                 /**
@@ -791,7 +756,7 @@ namespace samg {
                     const std::size_t   bytes_length = this->get_value<std::size_t>(),
                                         words_legnth = this->get_value<std::size_t>();
                     std::vector<Type> V = this->get_next_values(words_legnth);
-                    std::string str = WordSequenceSerializer::convert_vector_to_string<Type>(V,bytes_length);
+                    std::string str = serialization::convert_vector_to_string<Type>(V,bytes_length);
                     return str;
                 }
 
@@ -876,25 +841,18 @@ namespace samg {
          * @tparam Type 
          */
         template<typename Type> class OfflineWordSerializer {
+            static_assert(
+                std::is_same_v<Type, std::uint8_t> ||
+                std::is_same_v<Type, std::uint16_t> ||
+                std::is_same_v<Type, std::uint32_t> ||
+                std::is_same_v<Type, std::uint64_t>,
+                "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
             private:
                 const std::size_t BITS_PER_BYTE = 8UL;
                 const std::size_t WORD_SIZE = sizeof(Type)  * BITS_PER_BYTE;
-                std::size_t word_counter;
+                std::size_t type_word_counter;
                 const std::string file_name;
                 std::ofstream file;
-
-                /**
-                 * @brief This function allows converting a std::string into a std::vector<T> 
-                 * 
-                 * @tparam T is the output std::vector data type.
-                 * @param str 
-                 * @return std::vector<T> 
-                 */
-                template<typename T> static std::vector<T> _convert_string_to_vector_(const std::string str) {
-                    const T* T_ptr = reinterpret_cast<const T*>(str.data());
-                    std::vector<T> result(T_ptr, T_ptr + (std::size_t)std::ceil((double)str.length() / (double)sizeof(T)));
-                    return result;
-                }
 
                 /**
                  * @brief Serializes a sequence of unsigned integers.
@@ -903,33 +861,13 @@ namespace samg {
                  * @param data 
                  * @param file_name 
                  */
-                template<typename UINT_T = std::uint32_t> static void _write_(const std::vector<UINT_T> data, std::ofstream& file) { 
+                template<typename UINT_T> static void _write_(const std::vector<UINT_T>& data, std::ofstream& file) { 
                     if ( file.is_open() ) {
                         // Writing the vector's data to the file
                         file.write(reinterpret_cast<const char*>(data.data()), data.size() * sizeof(UINT_T));
                     } else {
                         throw std::runtime_error("Failed to write to file!");
                     }
-                }
-
-                /**
-                 * @brief This function allows parsing integer values stored in an input vector of type TypeSrc into type TypeTrg.
-                 * 
-                 * @tparam TypeSrc 
-                 * @tparam TypeTrg 
-                 * @param V 
-                 * @return std::vector<TypeTrg> 
-                 */
-                template<typename TypeSrc, typename TypeTrg = Type> static std::vector<TypeTrg> _parse_values_(std::vector<TypeSrc> V) {
-                    std::vector<TypeTrg> T;
-                    if( sizeof(TypeTrg) == sizeof(TypeSrc) ) {
-                        T.insert(T.end(),V.begin(),V.end());
-                    } else { // sizeof(TypeSrc) != sizeof(Type)
-                        const TypeTrg* x = reinterpret_cast<const TypeTrg*>(V.data());
-                        std::size_t l = (std::size_t)std::ceil((double)(V.size()*sizeof(TypeSrc)) / (double)sizeof(TypeTrg));
-                        T.insert(T.end(),x,x+l);
-                    }
-                    return T;
                 }
 
             public:
@@ -941,7 +879,7 @@ namespace samg {
                 OfflineWordSerializer(const std::string file_name): 
                     file_name ( file_name ),
                     file ( std::ofstream(file_name, std::ios::binary) ),
-                    word_counter (0ULL) {
+                    type_word_counter (0ULL) {
                     if ( !file.is_open() ) {
                         throw std::runtime_error("Failed to open file \""+file_name+"\"!");
                     }
@@ -954,7 +892,7 @@ namespace samg {
                  * @tparam TypeSrc 
                  * @param v 
                  */
-                template<typename TypeSrc = Type> void add_value(TypeSrc v) {
+                template<typename TypeSrc> void add_value(TypeSrc v) {
                     static_assert(
                         std::is_same_v<TypeSrc, std::uint8_t> ||
                         std::is_same_v<TypeSrc, std::uint16_t> ||
@@ -963,9 +901,21 @@ namespace samg {
                         "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
 
                     std::vector<TypeSrc> V = {v};
-                    std::vector<Type> X = OfflineWordSerializer<Type>::_parse_values_<TypeSrc>(V);
+                    std::vector<Type> X = serialization::parse_values<TypeSrc,Type>(V);
                     OfflineWordSerializer<Type>::_write_<Type>( X, this->file );
-                    this->word_counter += X.size();
+                    this->type_word_counter += X.size();
+                }
+
+                /**
+                 * @brief Serializes a string.
+                 * 
+                 * @param v 
+                 */
+                void add_string(const std::string& v) {
+                    std::vector<Type> V = serialization::convert_string_to_vector<Type>( v );
+                    this->add_value<std::size_t>( v.length() ); // Storing the original length (number of characters/bytes) of the key. 
+                    this->add_value<std::size_t>( V.size() ); // Storing the length (number of words<Type>) of the key. 
+                    this->add_values<Type>( V );
                 }
 
                 /**
@@ -975,7 +925,7 @@ namespace samg {
                  * @param v 
                  * @param l 
                  */
-                template<typename TypeSrc = Type, typename TypeLength = std::size_t> void add_values(const TypeSrc *v, const TypeLength l) {
+                template<typename TypeSrc> void add_values(const TypeSrc *v, const std::size_t l) {
                     std::vector<TypeSrc> V;
                     V.insert(V.end(),v,v+l);
                     this->add_values<TypeSrc>(V);
@@ -987,28 +937,10 @@ namespace samg {
                  * @tparam TypeSrc 
                  * @param V 
                  */
-                template<typename TypeSrc = Type> void add_values(const std::vector<TypeSrc> V) {
-                    static_assert(
-                        std::is_same_v<TypeSrc, std::uint8_t> ||
-                        std::is_same_v<TypeSrc, std::uint16_t> ||
-                        std::is_same_v<TypeSrc, std::uint32_t> ||
-                        std::is_same_v<TypeSrc, std::uint64_t>,
-                        "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
+                template<typename TypeSrc> void add_values(const std::vector<TypeSrc>& V) {
                     for (TypeSrc v : V) {
                         this->add_value<TypeSrc>(v);
                     }
-                }
-
-                /**
-                 * @brief Serializes a string.
-                 * 
-                 * @param v 
-                 */
-                void add_value(std::string v) {
-                    std::vector<Type> V = OfflineWordSerializer::_convert_string_to_vector_<Type>(v);
-                    this->add_value<std::size_t>(v.length()); // Storing the original length (number of characters/bytes) of the key. 
-                    this->add_value<std::size_t>(V.size()); // Storing the length (number of words<Type>) of the key. 
-                    this->sequence.insert(this->sequence.end(), V.begin(), V.end());
                 }
 
                 /**
@@ -1016,17 +948,57 @@ namespace samg {
                  * 
                  * @param p map<std::string,std::string>'s entry
                  */
-                template<typename TypeA, typename TypeB> void add_map_entry(const std::pair<TypeA,TypeB> p) {
+                template<typename TypeA, typename TypeB> void add_map_entry(const std::pair<TypeA,TypeB>& p) {
+                    static_assert(std::is_integral<TypeA>::value, "TypeA must be an integral type.");
+                    static_assert(std::is_integral<TypeB>::value, "TypeB must be an integral type.");
                     // Adding key:
                     this->add_value<TypeA>(p.first);
                     // Adding value:
                     this->add_value<TypeB>(p.second);
                 }
-                // void add_map_entry(const std::pair<std::string,std::string> p) {
+                template<typename TypeA = std::string, typename TypeB> void add_map_entry(const std::pair<std::string,TypeB>& p) {
+                    static_assert(std::is_same_v<TypeA, std::string>, "TypeA must be std::string type.");
+                    static_assert(std::is_integral<TypeB>::value, "TypeB must be an integral type.");
+                    // Adding key:
+                    this->add_string(p.first);
+                    // Adding value:
+                    this->add_value<TypeB>(p.second);
+                }
+                template<typename TypeA, typename TypeB = std::string> void add_map_entry(const std::pair<TypeA,std::string>& p) {
+                    static_assert(std::is_integral<TypeA>::value, "TypeA must be an integral type.");
+                    static_assert(std::is_same_v<TypeB, std::string>, "TypeB must be std::string type.");
+                    
+                    // Adding key:
+                    this->add_value<TypeA>(p.first);
+                    // Adding value:
+                    this->add_string(p.second);
+                }
+                template<typename TypeA = std::string,typename TypeB = std::string> void add_map_entry(const std::pair<std::string,std::string>& p) {
+                    static_assert(std::is_same_v<TypeA, std::string>, "TypeA must be std::string type.");
+                    static_assert(std::is_same_v<TypeB, std::string>, "TypeB must be std::string type.");
+                    // Adding key:
+                    this->add_string(p.first);
+                    // Adding value:
+                    this->add_string(p.second);
+                }
+                // template<typename TypeA, typename TypeB> void add_map_entry(const std::pair<TypeA,TypeB>& p) {
                 //     // Adding key:
-                //     this->add_value(p.first);
+                //      if( std::is_same<TypeA,std::string>::value ) {
+                //         this->add_string(p.first);
+                //     } else /*if( std::is_integral<TypeA>::value ) */{
+                //         this->add_value<TypeA>(p.first);
+                //     } /*else {
+                //         throw std::runtime_error("\""+ std::string(typeid(TypeA).name()) +"\" is an unsuported datatype!");
+                //     }*/
+                    
                 //     // Adding value:
-                //     this->add_value(p.second);
+                //     if( std::is_same<TypeB,std::string>::value ) {
+                //         this->add_string(p.second);
+                //     } else /*if( std::is_integral<TypeB>::value ) */{
+                //         this->add_value<TypeB>(p.second);
+                //     } /*else {
+                //         throw std::runtime_error("\""+ std::string(typeid(TypeB).name()) +"\" is an unsuported datatype!");
+                //     }*/
                 // }
 
                 /**
@@ -1034,18 +1006,12 @@ namespace samg {
                  * 
                  * @param m 
                  */
-                template<typename TypeA, typename TypeB> void add_map(std::map<TypeA,TypeB> m) {
-                    this->add_value<std::size_t>(m.size());
-                    for (std::pair<TypeA,TypeB> p : m) {
+                template<typename TypeA, typename TypeB> void add_map(const std::map<TypeA,TypeB>& m) {
+                    this->add_value<std::size_t>( m.size() );
+                    for (const std::pair<TypeA,TypeB>& p : m) {
                         this->add_map_entry<TypeA,TypeB>(p);
                     }
                 }
-                // void add_map(std::map<std::string,std::string> m) {
-                //     this->add_value<std::size_t>(m.size());
-                //     for (std::pair<std::string,std::string> p : m) {
-                //         this->add_map_entry(p);
-                //     }
-                // }
 
                 /**
                  * @brief Returns the number of written `Type` words. 
@@ -1053,7 +1019,7 @@ namespace samg {
                  * @return const std::size_t 
                  */
                 const std::size_t size() const {
-                    return this->word_counter;
+                    return this->type_word_counter;
                 }
 
                 /**
@@ -1071,47 +1037,18 @@ namespace samg {
          * @tparam Type 
          */
         template<typename Type> class OfflineWordReader {
+            static_assert(
+                std::is_same_v<Type, std::uint8_t> ||
+                std::is_same_v<Type, std::uint16_t> ||
+                std::is_same_v<Type, std::uint32_t> ||
+                std::is_same_v<Type, std::uint64_t>,
+                "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
             private:
                 const std::size_t   BITS_PER_BYTE = 8UL,
-                                    WORD_SIZE = sizeof(Type)  * BITS_PER_BYTE,
-                                    serialization_length;
+                                    WORD_SIZE = sizeof(Type)  * BITS_PER_BYTE;
                 const std::string file_name;
                 std::ifstream file;
-
-                /**
-                 * @brief Allows converting a std::vector<T> into a std::string.
-                 * 
-                 * @tparam T is the input std::vector data type.
-                 * @param vector 
-                 * @param length is the number of bytes of the original std::string stored in the input std::vector. 
-                 * @return std::string 
-                 */
-                template<typename T> static std::string _convert_vector_to_string_(const std::vector<T>& vector, std::size_t length) {
-                    const T* T_ptr = vector.data();
-                    // std::size_t length = vector.size() * sizeof(T);
-                    const char* char_ptr = reinterpret_cast<const char*>(T_ptr);
-                    return std::string(char_ptr, length);
-                }
-
-                /**
-                 * @brief This function allows parsing integer values stored in an input vector of type TypeSrc into type TypeTrg.
-                 * 
-                 * @tparam TypeSrc 
-                 * @tparam TypeTrg 
-                 * @param V 
-                 * @return std::vector<TypeTrg> 
-                 */
-                template<typename TypeSrc, typename TypeTrg = Type> static std::vector<TypeTrg> _parse_values_(std::vector<TypeSrc> V) {
-                    std::vector<TypeTrg> T;
-                    if( sizeof(TypeTrg) == sizeof(TypeSrc) ) {
-                        T.insert(T.end(),V.begin(),V.end());
-                    } else { // sizeof(TypeSrc) != sizeof(Type)
-                        const TypeTrg* x = reinterpret_cast<const TypeTrg*>(V.data());
-                        std::size_t l = (std::size_t)std::ceil((double)(V.size()*sizeof(TypeSrc)) / (double)sizeof(TypeTrg));
-                        T.insert(T.end(),x,x+l);
-                    }
-                    return T;
-                }
+                std::size_t serialization_length;
 
                 /**
                  * @brief Allows retrieving a serialized unsigned integer from a binary file.
@@ -1120,7 +1057,7 @@ namespace samg {
                  * @param file_name 
                  * @return UINT_T
                  */
-                template<typename UINT_T = std::uint32_t> UINT_T _read_( std::ifstream& file ) {
+                template<typename UINT_T> UINT_T _read_( std::ifstream& file ) {
                     if ( !file.is_open() ) {
                         throw std::runtime_error("The file \""+file_name+"\" is closed!");
                     }
@@ -1162,22 +1099,8 @@ namespace samg {
                  * @tparam TypeTrg 
                  * @return const TypeTrg 
                  */
-                template<typename TypeTrg = Type> const TypeTrg next() {
+                template<typename TypeTrg> const TypeTrg next() {
                     return OfflineWordReader<Type>::_read_<TypeTrg>( this->file );
-                }
-
-                /**
-                 * @brief Allows getting all the remaining values from the serialization. 
-                 * 
-                 * @tparam TypeTrg 
-                 * @return const std::vector<TypeTrg> 
-                 */
-                template<typename TypeTrg = Type> const std::vector<TypeTrg> get_remaining_values() {
-                    std::vector<TypeTrg> V;
-                    while(this->has_more()) {
-                        V.push_back(this->next<TypeTrg>());
-                    }
-                    return V;
                 }
 
                 /**
@@ -1187,9 +1110,23 @@ namespace samg {
                  * @param length 
                  * @return const std::vector<TypeTrg> 
                  */
-                template<typename TypeTrg = Type> const std::vector<TypeTrg> get_next_values(std::uint64_t length) {
+                template<typename TypeTrg> const std::vector<TypeTrg> next(std::uint64_t length) {
                     std::vector<TypeTrg> V;
                     for (std::uint64_t i = 0 ; i < length ; i++) {
+                        V.push_back(this->next<TypeTrg>());
+                    }
+                    return V;
+                }
+
+                /**
+                 * @brief Allows getting all the remaining values from the serialization. 
+                 * 
+                 * @tparam TypeTrg 
+                 * @return const std::vector<TypeTrg> 
+                 */
+                template<typename TypeTrg> const std::vector<TypeTrg> next_remaining() {
+                    std::vector<TypeTrg> V;
+                    while( this->has_more() ) {
                         V.push_back(this->next<TypeTrg>());
                     }
                     return V;
@@ -1200,31 +1137,38 @@ namespace samg {
                  * 
                  * @return std::string 
                  */
-                std::string get_string_value() {
+                std::string next_string() {
                     const std::size_t   bytes_length = this->next<std::size_t>(),
                                         words_legnth = this->next<std::size_t>();
-                    std::vector<Type> V = this->get_next_values( words_legnth );
-                    std::string str = OfflineWordReader::_convert_vector_to_string_<Type>( V , bytes_length );
+                    std::vector<Type> V = this->next( words_legnth );
+                    std::string str = serialization::convert_vector_to_string<Type>( V , bytes_length );
                     return str;
                 }
 
                 /**
                  * @brief Retrieves a serialized `std::map<std::string,std::string>`'s entry.
                  * 
-                 * @return std::pair<std::string,std::string> 
+                 * @return std::pair<TypeA,TypeB> 
                  */
-                template<typename TypeA, typename TypeB> std::pair<TypeA,TypeB> get_map_entry() {
+                template<typename TypeA, typename TypeB> std::pair<TypeA,TypeB> next_map_entry() {
                     TypeA key;
-                    if( std::is_integral<TypeA>::value ) {
+                    if constexpr(std::is_integral_v<TypeA>) {
                         key = this->next<TypeA>();
-                    } else if( std::is_same<TypeA,std::string>::value ) {
-                        key = this->get_string_value();
+                    } else if constexpr(std::is_same_v<TypeA, std::string>) {
+                        key = this->next_string();
                     } else {
-                        throw std::runtime_error("\""+ typeid(TypeA).name() +"\" is an unsuported datatype!");
+                        throw std::runtime_error("\""+ std::string(typeid(TypeA).name()) +"\" is an unsuported datatype!");
                     }
-                    std::string value = this->get_string_value();
+                    TypeB value;
+                    if constexpr(std::is_integral_v<TypeB>) {
+                        value = this->next<TypeB>();
+                    } else if constexpr(std::is_same_v<TypeB, std::string>) {
+                        value = this->next_string();
+                    } else {
+                        throw std::runtime_error("\""+ std::string(typeid(TypeB).name()) +"\" is an unsuported datatype!");
+                    }
                     // return std::pair<std::string,std::string>( key , value );
-                    return std::pair<std::string,std::string>( key , value );
+                    return std::make_pair( key , value );
                 }
 
                 /**
@@ -1232,11 +1176,11 @@ namespace samg {
                  * 
                  * @return std::map<std::string,std::string> 
                  */
-                std::map<std::string,std::string> get_map() {
+                template<typename TypeA, typename TypeB> std::map<TypeA,TypeB> get_map() {
                     const std::size_t length = this->next<std::size_t>();
-                    std::map<std::string,std::string> map;
+                    std::map<TypeA,TypeB> map;
                     for (std::uint64_t i = 0; i < length; i++) {
-                        map.insert( this->get_map_entry() );
+                        map.insert( this->next_map_entry<TypeA,TypeB>() );
                     }
                     return map;
                 }

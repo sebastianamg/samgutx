@@ -520,7 +520,7 @@ namespace samg {
                     {
                         // TODO Test it!
                         // std::cout << "BinarySequence --- (1)" << std::endl;
-                        samg::matutx::WordSequenceSerializer<Word> serializer = samg::matutx::WordSequenceSerializer<Word>( file_name );
+                        samg::serialization::WordSequenceSerializer<Word> serializer = samg::serialization::WordSequenceSerializer<Word>( file_name );
                         // std::cout << "BinarySequence --- (2)" << std::endl;
                         this->k = serializer.template get_value<std::size_t>();
                         // std::cout << "BinarySequence --- (3): k = " << this->k << std::endl;
@@ -551,7 +551,7 @@ namespace samg {
                     {
                         // TODO Test it!
                         // std::cout << "BinarySequence --- (1)" << std::endl;
-                        samg::matutx::WordSequenceSerializer<Word> serializer = samg::matutx::WordSequenceSerializer<Word>( serialization );
+                        samg::serialization::WordSequenceSerializer<Word> serializer = samg::serialization::WordSequenceSerializer<Word>( serialization );
                         // std::cout << "BinarySequence --- (2)" << std::endl;
                         this->k = serializer.template get_value<std::size_t>();
                         // std::cout << "BinarySequence --- (3): k = " << this->k << std::endl;
@@ -719,7 +719,7 @@ namespace samg {
                     void save( std::string file_name ) {
                         // TODO Test it!
                         // std::cout << "save --- (1)" << std::endl;
-                        samg::matutx::WordSequenceSerializer<Word> serializer = samg::matutx::WordSequenceSerializer<Word>();
+                        samg::serialization::WordSequenceSerializer<Word> serializer = samg::serialization::WordSequenceSerializer<Word>();
                         // std::cout << "save --- (2)" << std::endl;
                         serializer.template add_value<std::size_t>( this->k );
                         // std::cout << "save --- (3)" << std::endl;
@@ -746,7 +746,7 @@ namespace samg {
                     std::vector<Word> get_serialization( ) {
                         // TODO Test it!
                         // std::cout << "save --- (1)" << std::endl;
-                        samg::matutx::WordSequenceSerializer<Word> serializer = samg::matutx::WordSequenceSerializer<Word>();
+                        samg::serialization::WordSequenceSerializer<Word> serializer = samg::serialization::WordSequenceSerializer<Word>();
                         // std::cout << "save --- (2)" << std::endl;
                         serializer.template add_value<std::size_t>( this->k );
                         // std::cout << "save --- (3) this->k = " << this->k << std::endl;

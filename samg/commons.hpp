@@ -338,7 +338,7 @@ namespace samg {
             std::string new_file_name = file_name;
             position = new_file_name.find_last_of(".");
             if (position != std::string::npos) {
-                new_file_name = new_file_name.substr(0,position) + "-" + to_append + "." + new_ext;
+                new_file_name = new_file_name.substr(0,position) + to_append + new_ext;
             } else {
                 new_file_name += + "-" + to_append + "." + new_ext;
             }
@@ -899,6 +899,7 @@ namespace samg {
                         std::is_same_v<TypeSrc, std::uint32_t> ||
                         std::is_same_v<TypeSrc, std::uint64_t>,
                         "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
+                    // std::cout << "OfflineWordSerializer / add_value> v = " << v << std::endl;
 
                     std::vector<TypeSrc> V = {v};
                     std::vector<Type> X = serialization::parse_values<TypeSrc,Type>(V);
@@ -926,9 +927,16 @@ namespace samg {
                  * @param l 
                  */
                 template<typename TypeSrc> void add_values(const TypeSrc *v, const std::size_t l) {
-                    std::vector<TypeSrc> V;
-                    V.insert(V.end(),v,v+l);
-                    this->add_values<TypeSrc>(V);
+                    // std::cout << "OfflineWordSerializer/add_values> v = " << v << "; l = " << l << std::endl;
+                    for (std::size_t i = 0; i < l; ++i) {
+                        // std::cout << "OfflineWordSerializer/add_values> (2) v[" << i << " / " << l << " ] = " << v[i] << std::endl;
+                        this->add_value<TypeSrc>(v[i]);
+                    }
+                    // std::vector<TypeSrc> V;
+                    // V.insert(V.begin(),v,v+l);
+                    // std::cout << "OfflineWordSerializer/add_values> (3)" << std::endl;
+                    // this->add_values<TypeSrc>(V);
+                    // std::cout << "OfflineWordSerializer/add_values> (4)" << std::endl;
                 }
 
                 /**
@@ -1058,20 +1066,24 @@ namespace samg {
                  * @return UINT_T
                  */
                 template<typename UINT_T> UINT_T _read_( std::ifstream& file ) {
+                    return OfflineWordReader<Type>::_read_<UINT_T>( file, 1ULL )[0];
+                }
+
+                template<typename UINT_T> std::vector<UINT_T> _read_( std::ifstream& file, const std::size_t nwords ) {
                     if ( !file.is_open() ) {
-                        throw std::runtime_error("The file \""+file_name+"\" is closed!");
+                        throw std::runtime_error("The file is closed!");
                     }
                     
                     if ( file.eof() ) {
-                        throw std::runtime_error("The file \""+file_name+"\" has no more data!");
+                        throw std::runtime_error("The file has no more data!");
                     }
 
-                    std::vector<UINT_T> data = std::vector<UINT_T>( 1ULL );
+                    std::vector<UINT_T> data = std::vector<UINT_T>( nwords );
                     
                     // Read the data from the file into the vector
-                    file.read(reinterpret_cast<char*>(data.data()), sizeof(UINT_T));
+                    file.read( reinterpret_cast<char*>(data.data()), sizeof( UINT_T ) * nwords );
                     
-                    return data[0];
+                    return data;
                 }
 
             public:
@@ -1110,12 +1122,13 @@ namespace samg {
                  * @param length 
                  * @return const std::vector<TypeTrg> 
                  */
-                template<typename TypeTrg> const std::vector<TypeTrg> next(std::uint64_t length) {
-                    std::vector<TypeTrg> V;
-                    for (std::uint64_t i = 0 ; i < length ; i++) {
-                        V.push_back(this->next<TypeTrg>());
-                    }
-                    return V;
+                template<typename TypeTrg> const std::vector<TypeTrg> next(std::size_t length) {
+                    // std::vector<TypeTrg> V;
+                    // for (std::uint64_t i = 0 ; i < length ; i++) {
+                    //     V.push_back(this->next<TypeTrg>());
+                    // }
+                    // return V;
+                    return OfflineWordReader<Type>::_read_<TypeTrg>( this->file, length );
                 }
 
                 /**
@@ -1140,7 +1153,7 @@ namespace samg {
                 std::string next_string() {
                     const std::size_t   bytes_length = this->next<std::size_t>(),
                                         words_legnth = this->next<std::size_t>();
-                    std::vector<Type> V = this->next( words_legnth );
+                    std::vector<Type> V = this->next<Type>( words_legnth );
                     std::string str = serialization::convert_vector_to_string<Type>( V , bytes_length );
                     return str;
                 }

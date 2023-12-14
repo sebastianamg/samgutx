@@ -616,6 +616,8 @@ namespace samg {
                      * 
                      * @param n 
                      * @param n_bits 
+                     * 
+                     * TODO! Here I have to work to optimize!!! The idea is that the array-pointer of Words is written as `add` adds a new Rice-code.
                      */
                     void add( Word n, std::size_t n_bits ) {
                         // std::cout << "RCodec/BinarySequence/add --- n = " << n << "; |n| = " << n_bits << "[b]; length = " << this->length << "; max_length [B] = " << (this->max_length * sizeof(Word)) << std::endl;

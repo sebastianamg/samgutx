@@ -155,7 +155,8 @@ namespace samg {
          */
         std::string number_to_comma_separated_string( const double n, const std::size_t precision = 0 ) {
             std::stringstream ss;
-            ss.imbue(std::locale("en_US.UTF-8"));  // Use the appropriate locale for your system
+            // ss.imbue(std::locale("en_US.UTF-8"));  // Use the appropriate locale for your system
+            ss.imbue(std::locale("C"));  // Use the appropriate locale for your system
             ss << std::fixed << std::setprecision(precision) << n;
             return ss.str();
         }

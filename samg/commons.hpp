@@ -10,6 +10,7 @@
 #include <map>
 #include <type_traits>
 #include <typeinfo>
+#include <cmath>
 // #include <set>
 #include <boost/algorithm/string.hpp>
 // #include <boost/range.hpp>

@@ -838,11 +838,11 @@ namespace samg {
         };
 
         /**
-         * @brief The class OfflineWordSerializer allows direct offline unsigned integer sequence serialization directly to a file. 
+         * @brief The class OfflineWordWriter allows direct offline unsigned integer sequence serialization directly to a file. 
          * 
          * @tparam Type 
          */
-        template<typename Type> class OfflineWordSerializer {
+        template<typename Type> class OfflineWordWriter {
             static_assert(
                 std::is_same_v<Type, std::uint8_t> ||
                 std::is_same_v<Type, std::uint16_t> ||
@@ -878,7 +878,7 @@ namespace samg {
                  * 
                  * @param file_name
                  */
-                OfflineWordSerializer(const std::string file_name): 
+                OfflineWordWriter(const std::string file_name): 
                     file_name ( file_name ),
                     file ( std::ofstream(file_name, std::ios::binary) ),
                     type_word_counter (0ULL) {
@@ -901,11 +901,11 @@ namespace samg {
                         std::is_same_v<TypeSrc, std::uint32_t> ||
                         std::is_same_v<TypeSrc, std::uint64_t>,
                         "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
-                    // std::cout << "OfflineWordSerializer / add_value> v = " << v << std::endl;
+                    // std::cout << "OfflineWordWriter / add_value> v = " << v << std::endl;
 
                     std::vector<TypeSrc> V = {v};
                     std::vector<Type> X = serialization::parse_values<TypeSrc,Type>(V);
-                    OfflineWordSerializer<Type>::_write_<Type>( X, this->file );
+                    OfflineWordWriter<Type>::_write_<Type>( X, this->file );
                     this->type_word_counter += X.size();
                 }
 
@@ -929,16 +929,16 @@ namespace samg {
                  * @param l 
                  */
                 template<typename TypeSrc> void add_values(const TypeSrc *v, const std::size_t l) {
-                    // std::cout << "OfflineWordSerializer/add_values> v = " << v << "; l = " << l << std::endl;
+                    // std::cout << "OfflineWordWriter/add_values> v = " << v << "; l = " << l << std::endl;
                     for (std::size_t i = 0; i < l; ++i) {
-                        // std::cout << "OfflineWordSerializer/add_values> (2) v[" << i << " / " << l << " ] = " << v[i] << std::endl;
+                        // std::cout << "OfflineWordWriter/add_values> (2) v[" << i << " / " << l << " ] = " << v[i] << std::endl;
                         this->add_value<TypeSrc>(v[i]);
                     }
                     // std::vector<TypeSrc> V;
                     // V.insert(V.begin(),v,v+l);
-                    // std::cout << "OfflineWordSerializer/add_values> (3)" << std::endl;
+                    // std::cout << "OfflineWordWriter/add_values> (3)" << std::endl;
                     // this->add_values<TypeSrc>(V);
-                    // std::cout << "OfflineWordSerializer/add_values> (4)" << std::endl;
+                    // std::cout << "OfflineWordWriter/add_values> (4)" << std::endl;
                 }
 
                 /**

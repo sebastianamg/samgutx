@@ -599,9 +599,11 @@ namespace samg {
                  * @param l 
                  */
                 template<typename TypeSrc = Type, typename TypeLength = std::size_t> void add_values(const TypeSrc *v, const TypeLength l) {
-                    std::vector<TypeSrc> V;
-                    V.insert(V.end(),v,v+l);
-                    this->add_values<TypeSrc>(V);
+                    if( l > 0 ) {
+                        std::vector<TypeSrc> V;
+                        V.insert(V.end(),v,v+l);
+                        this->add_values<TypeSrc>(V);
+                    }
                 }
 
                 /**

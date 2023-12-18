@@ -141,7 +141,7 @@ namespace samg {
                  * @param len 
                  * @param s 
                  */
-                static inline void _bitwrite_(register Word *e, register Length p, register std::size_t len, const register Word s) {
+                static inline void _bitwrite_(register Word *e, register std::size_t p, register std::size_t len, const register Word s) {
                     e += p / GolombRiceToolKit<Word>::WORD_bits;
                     p %= GolombRiceToolKit<Word>::WORD_bits;
                     if (len == GolombRiceToolKit<Word>::WORD_bits) {
@@ -170,7 +170,7 @@ namespace samg {
                  * @param len 
                  * @return Word 
                  */
-                static Word _bitread_(Word *e, Length p, const std::size_t len) {
+                static Word _bitread_(Word *e, std::size_t p, const std::size_t len) {
                     Word answ;
                     e += p / GolombRiceToolKit<Word>::WORD_bits;
                     p %= GolombRiceToolKit<Word>::WORD_bits;
@@ -186,7 +186,7 @@ namespace samg {
                     return answ;
                 }
 
-                static Word _bitget_(Word* e, const Length p) {
+                static Word _bitget_(Word* e, const std::size_t p) {
                     return (((e)[(p) / GolombRiceToolKit<Word>::WORD_bits] >> ((p) % GolombRiceToolKit<Word>::WORD_bits)) & 1);
                 }
 
@@ -215,7 +215,7 @@ namespace samg {
                  * 
                  * @param val 
                  * @param nbits 
-                 * @return Length 
+                 * @return std::size_t 
                  */
                 static inline std::size_t _value_size_( Word val, std::size_t nbits ) {
                     return std::floor( val / std::pow(2,nbits) ) + 1 + nbits; // unary encoding length + 1 (the 0 ending unary encoding) + remainder length.
@@ -229,16 +229,16 @@ namespace samg {
                  * @param nbits 
                  * @return Word 
                  */
-                static inline Word _rice_encode_(Word *buf, Length pos, Word val, std::size_t nbits) {
+                static inline Word _rice_encode_(Word *buf, std::size_t pos, Word val, std::size_t nbits) {
                     // val-=OFFSET_LOWEST_VALUE;  //0 is never encoded. So encoding 1 as 0, 2 as 1, ... v as v-1
                     std::size_t w;
-                    RCodec<Word, Length>::_bitwrite_ (buf, pos, nbits, val); 
+                    GolombRiceToolKit<Word>::_bitwrite_ (buf, pos, nbits, val); 
                     pos+=nbits;
                     
                     for (w = (val>>nbits); w > 0; w--) {
-                        RCodec<Word, Length>::_bitwrite_ (buf, pos, 1, 1); pos++;
+                        GolombRiceToolKit<Word>::_bitwrite_ (buf, pos, 1, 1); pos++;
                     }
-                    RCodec<Word, Length>::_bitwrite_ (buf, pos, 1, 0); pos++;
+                    GolombRiceToolKit<Word>::_bitwrite_ (buf, pos, 1, 0); pos++;
                     return pos;
                 }
                 
@@ -249,13 +249,11 @@ namespace samg {
                  * @param nbits 
                  * @return Word 
                  */
-                static Word _rice_decode_(Word *buf, Length *pos, std::size_t nbits) {
-                    Word v;
-                    v = _bitread_(buf, *pos, nbits);
+                static Word _rice_decode_(Word *buf, std::size_t *pos, std::size_t nbits) {
+                    Word v = _bitread_(buf, *pos, nbits);
                     *pos+=nbits;
                     //printf("\n\t [decoding] v del bitread vale = %d",v);
-                    while (RCodec<Word, Length>::_bitget_(buf,*pos))
-                    {
+                    while ( GolombRiceToolKit<Word>::_bitget_(buf,*pos) ) {
                         v += (1<<nbits);
                         (*pos)++;
                     }
@@ -273,7 +271,7 @@ namespace samg {
                  */
                 static std::size_t compute_GR_parameter_for_list( std::vector<Word> sequence ) {
                     Word total =0;
-                    register Length i;
+                    register std::size_t i;
                     for ( i = 0; i < sequence.size(); i++ ) total += sequence[i];
                     total /= sequence.size();
                     std::size_t val;
@@ -291,7 +289,7 @@ namespace samg {
                  */
                 static std::size_t compute_GR_parameter_for_list( adapter::QueueAdapter<Word>& sequence ) {
                     Word total =0;
-                    register Length i;
+                    register std::size_t i;
                     while( !(sequence.empty()) ) {
                         total += sequence.front(); sequence.pop();
                     }
@@ -477,14 +475,15 @@ namespace samg {
                  * 
                  * @tparam Word used to encode bits.
                  */
-                template<typename Word> class OfflineBinarySequenceWriter : public BinarySequenceWriter<Word> {
+                template<typename Word> class OfflineRiceBinarySequenceWriter : public BinarySequenceWriter<Word> {
                     private:
                         static const std::size_t WORD_GROWING_SPAN = 1ULL; // Space in number of Word-type that the bitmap must grow. 
                         Word *sequence; // It is the bitmap.
                         const std::size_t   k, // Rice-code order.
                                             Words_bits;
                         std::size_t bit_index, // Index of current bit within the bitmap `sequence`.
-                                    counter, // Number of encoded words,
+                                    word_counter, // Number of encoded words.
+                                    bit_counter, // Number of encoded bits.
                                     words_max_capacity; // Max capacity of `sequence` in words.
                         samg::serialization::OfflineWordWriter<Word> serializer;
                     public:
@@ -494,14 +493,15 @@ namespace samg {
                          * @param file_name 
                          * @param k 
                          */
-                        OfflineBinarySequenceWriter( const std::string file_name, const std::size_t k ):
+                        OfflineRiceBinarySequenceWriter( const std::string file_name, const std::size_t k ):
                             k ( k ),
-                            Words_bits ( size(Word) * BITS_PER_BYTE ),
-                            counter ( 0ULL ) {
+                            Words_bits ( sizeof(Word) * BITS_PER_BYTE ),
+                            word_counter ( 0ULL ),
+                            bit_counter ( 0ULL ) {
                             this->serializer = samg::serialization::OfflineWordWriter<Word>( file_name );
                             this->serializer.add_value<std::size_t>( k );
-                            this->sequence = GolombRiceToolKit<Word>::rmalloc( OfflineBinarySequenceWriter::WORD_GROWING_SPAN );
-                            this->words_max_capacity = OfflineBinarySequenceWriter::WORD_GROWING_SPAN;
+                            this->sequence = GolombRiceToolKit<Word>::rmalloc( OfflineRiceBinarySequenceWriter::WORD_GROWING_SPAN );
+                            this->words_max_capacity = OfflineRiceBinarySequenceWriter::WORD_GROWING_SPAN;
                         }
 
                         // ~BinarySequence() {
@@ -520,20 +520,25 @@ namespace samg {
                         }
 
                         const std::size_t get_word_counter() const {
-                            return this->counter;
+                            return this->word_counter;
                         }
 
-                        void add( Word n, std::size_t n_bits ) override {
+                        const std::size_t get_bit_counter() const {
+                            return this->bit_counter;
+                        }
+
+                        void add( const Word n ) override {
                             // std::cout << "RCodec/BinarySequence/add --- n = " << n << "; |n| = " << n_bits << "[b]; length = " << this->length << "; max_length [B] = " << (this->max_length * sizeof(Word)) << std::endl;
                             if( std::ceil( (double)(this->bit_index + n_bits ) / (double) this->Words_bits ) >= this->words_max_capacity ) {
                                 // std::cout << "RCodec/BinarySequence/add --- growing bitmap from " << this->max_length << "[W]";
-                                this->words_max_capacity += ( std::ceil( (double)n_bits / (double)this->Words_bits ) + OfflineBinarySequenceWriter::WORD_GROWING_SPAN );
+                                this->words_max_capacity += ( std::ceil( (double)n_bits / (double)this->Words_bits ) + OfflineRiceBinarySequenceWriter::WORD_GROWING_SPAN );
                                 // std::cout << " to " << this->max_length << " [W]" << std::endl;
                                 this->sequence = GolombRiceToolKit<Word>::rrealloc( this->sequence, this->words_max_capacity );
                             }
-
-                            this->bit_index = GolombRiceToolKit<Word>::_rice_encode_(this->sequence, this->bit_index, n, this->k); // !FIXME _rice_encode_ must be outside of this class!!! It is supposed to be in RCodec class >:-(
-                            ++(this->counter);
+                            const std::size_t n_bits = GolombRiceToolKit<Word>::_value_size_( n, this->k );
+                            this->bit_index = GolombRiceToolKit<Word>::_rice_encode_(this->sequence, this->bit_index, n, this->k);
+                            this->bit_counter += n_bits;
+                            ++(this->word_counter);
 
                             // Checking if sequence is ready to be written on secondary memory:
                             const double words_in_sequence = (double) this->bit_index  / (double) this->Words_bits;
@@ -541,7 +546,7 @@ namespace samg {
                             if( words > 0 ) { // Flush to secondary memory:
                                 const std::size_t delta_words = std::ceil( words_in_sequence ) - words
                                 this->serializer.add_values<Word>( this->sequence, words );
-                                this->words_max_capacity = delta_words > 0 ? delta_words : OfflineBinarySequenceWriter::WORD_GROWING_SPAN;
+                                this->words_max_capacity = delta_words > 0 ? delta_words : OfflineRiceBinarySequenceWriter::WORD_GROWING_SPAN;
                                 Word* tmp_sequence = GolombRiceToolKit<Word>::rmalloc( this->words_max_capacity );
                                 for (size_t i = 0; i < delta_words; i++) {
                                     tmp_sequence[i] = this->sequence[ words + i ];
@@ -561,6 +566,7 @@ namespace samg {
                             }
                             this->serializer.close();
                         }
+
                 };
             }
 
@@ -600,7 +606,7 @@ namespace samg {
                  * 
                  * @tparam Word used to encode bits.
                  */
-                template<typename Word> class OfflineBinarySequenceReader : public BinarySequenceReader {
+                template<typename Word> class OfflineRiceBinarySequenceReader : public BinarySequenceReader {
                     private:
                         const std::size_t k;
                         samg::serialization::OfflineWordReader<Word> serializer;
@@ -611,7 +617,7 @@ namespace samg {
                          * 
                          * @param file_name 
                          */
-                        OfflineBinarySequenceReader( const std::string file_name ) {
+                        OfflineRiceBinarySequenceReader( const std::string file_name ) {
                             this->serializer = samg::serialization::OfflineWordReader<Word>( file_name );
                             this->k = this->serializer.next<std::size_t>();
                         }
@@ -626,7 +632,8 @@ namespace samg {
                         }
 
                         const Word next( ) override {
-                            return this->serializer.next<Word>();
+                            RCodec<Word, Length>::_rice_decode_( this->sequence, &position, bs.k )
+                            return this->serializer.next<Word>(); // !FIXME Retrieve the Rice-encoded value!!!
                         }
 
                         const bool has_more( ) const override {
@@ -639,8 +646,9 @@ namespace samg {
                 };
             }
         }
-
-
+        /***************************************************************/
+        /***************************************************************/
+        /***************************************************************/
         /**
          * @brief Represents a Golomb-Rice offline encoder of integer sequence based on the [https://github.com/migumar2/uiHRDC uiuiHRDC] library.
          * 
@@ -656,11 +664,11 @@ namespace samg {
                     std::is_same_v<Word, std::uint64_t>,
                     "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t"); 
             private:
-                sequence::OfflineBinarySequenceWriter<Word> sequence;
+                sequence::OfflineRiceBinarySequenceWriter<Word> sequence;
 
             public:
                 
-                RCodec( sequence::OfflineBinarySequenceWriter<Word> bs ): 
+                RCodec( sequence::OfflineRiceBinarySequenceWriter<Word>& bs ): 
                     sequence( bs )
                 { this->restart(); }
 
@@ -671,43 +679,12 @@ namespace samg {
                  * @param k 
                  * @return BinarySequence
                  */
-                static std::shared_ptr<sequence::OfflineBinarySequenceWriter<Word>> encode( const std::vector<Word>& sequence, const std::string file_name, const std::size_t k ) {
-                    // std::cout << "encode (1)" << std::endl;
-                    std::shared_ptr<sequence::OfflineBinarySequenceWriter<Word>> bs = std::shared_ptr<sequence::OfflineBinarySequenceWriter<Word>>( file_name, k );
-                    // std::cout << "encode (2) --- bitmap_length = " << bs.bitmap_length << std::endl;
-
-                    // std::size_t MAX_N_BITS = 0; // !NOTE For testing/debugging purposes!
-                    // Length n_length; // !NOTE For testing/debugging purposes!
+                static std::shared_ptr<sequence::OfflineRiceBinarySequenceWriter<Word>> encode( const std::vector<Word>& sequence, const std::string file_name, const std::size_t k ) {
+                    std::shared_ptr<sequence::OfflineRiceBinarySequenceWriter<Word>> bs = std::shared_ptr<sequence::OfflineRiceBinarySequenceWriter<Word>>( file_name, k );
                     for ( std::size_t i = 0; i < sequence.size(); ++i ) {
-                        // n_length = RCodec<Word,Length>::_value_size_( sequence[i], k ); // !NOTE For testing/debugging purposes!
-                        // MAX_N_BITS = ( n_length > MAX_N_BITS ) ? n_length : MAX_N_BITS; // !NOTE For testing/debugging purposes!
-
-                        // bs.length = RCodec<Word, Length>::_rice_encode_(bs.sequence, bs.length, sequence[i], k);
-                        // ++(bs.src_length);
-
-                        bs->add( sequence[i], RCodec<Word,Length>::_value_size_( sequence[i], bs->get_k() ) );
+                        bs->add( sequence[i] );
                     }
-                    // std::cout << "encode> MAX_N_BITS = " << MAX_N_BITS << std::endl;
-                    // std::cout << "encode (3)" << std::endl;
-
                     return bs;
-                }
-                
-                /**
-                 * @brief This function allows decoding an integer encoded as a bitmap.
-                 * 
-                 * @param bs 
-                 * @return std::vector<Word>
-                 */
-                static std::vector<Word> decode( OfflineBinarySequenceReader<Word> &bs ) {
-                    std::size_t position = 0;
-                    std::vector<Word> sequence;
-
-                    while( bs.has_more( ) ) {
-                        Word v = GolombRiceToolKit<Word>::_rice_decode_( &(bs.next()), &position, bs.get_k() );
-                        sequence.push_back(v);
-                    }
-                    return sequence;
                 }
 
                 /**
@@ -717,24 +694,79 @@ namespace samg {
                  * 
                  * @warning This implementation is O(n), where n is the number of bits in the internal bitmap.
                  */
-                // std::size_t MAX_N_BITS = 0; // !NOTE For testing/debugging purposes!
                 void append(const Word n) {
-                    // Length n_length = RCodec<Word,Length>::_value_size_( n, this->sequence.k );
-                    // // MAX_N_BITS = ( n_length > MAX_N_BITS ) ? n_length : MAX_N_BITS;// !NOTE For testing/debugging purposes!
-                    // // std::cout << "RiceRuns/append --- n = " << n << "; |n| = " << n_length << "[b]" << std::endl;
-                    // if( std::ceil( (double)(this->sequence.length + n_length) / (double) RCodec<Word,Length>::BITS_PER_BYTE ) >= ( this->sequence.max_length * sizeof(Word) ) ) {
-                    //     // this->sequence.bitmap_length *= 2;
-                    //     this->sequence.max_length += BinarySequence/*<Word,Length>*/::WORD_GROWING_SPAN;
-                    //     this->sequence.sequence = BinarySequence/*<Word,Length>*/::rrealloc( this->sequence.sequence, this->sequence.max_length );
-                    //     // std::cout << "RiceRuns/append --- n = " << n << "\tgrowing BinarySequence bitmap!" << std::endl;
-                    // }
-                    // this->sequence.length = RCodec<Word, Length>::_rice_encode_( this->sequence.sequence, this->sequence.length, n, this->sequence.k );
-                    // ++(this->sequence.src_length);
+                    this->sequence.add( n );
+                }
 
-                    this->sequence.add( n, RCodec<Word,Length>::_value_size_( n, this->sequence.k ) );
+                /**
+                 * @brief This function returns a copy of the internal bitmap.
+                 * 
+                 * @return BinarySequence 
+                 */
+                BinarySequenceWriter<Word> get_binary_sequence() const {
+                    return this->sequence;
+                }
 
-                    // RCodec<Word,Length>::display_binary_sequence(this->sequence);
-                    // ++(this->iterator);
+                /**
+                 * @brief Returns the number of stored bits.
+                 * 
+                 * @return const std::size_t
+                 */
+                const std::size_t length() const {
+                    return this->sequence.get_bit_counter();
+                }
+
+                /**
+                 * @brief This function returns the number of encoded integers.
+                 * 
+                 * @return const std::size_t
+                 */
+                const std::size_t size() const {
+                    return this->sequence.get_word_counter();
+                }
+        };
+        /***************************************************************/
+        /***************************************************************/
+        /***************************************************************/
+        /**
+         * @brief This class represents a Golomb-Rice encoding of a sequence of integers based on the [https://github.com/migumar2/uiHRDC uiuiHRDC] library.
+         * 
+         * @tparam Word 
+         * 
+         * @note It requires [https://github.com/simongog/sdsl-lite sdsl] library.
+         */
+        template<typename Word> class OfflineRCodecReader {
+            static_assert(
+                    std::is_same_v<Word, std::uint8_t> ||
+                    std::is_same_v<Word, std::uint16_t> ||
+                    std::is_same_v<Word, std::uint32_t> ||
+                    std::is_same_v<Word, std::uint64_t>,
+                    "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
+            
+            private:
+                sequence::OfflineRiceBinarySequenceReader<Word> sequence;
+
+            public:
+                OfflineRCodecReader( OfflineRiceBinarySequenceReader<Word>& bs ): 
+                    sequence( bs )
+                { this->restart(); }
+            
+                /**
+                 * @brief This function allows decoding an integer encoded as a bitmap.
+                 * 
+                 * @param bs 
+                 * @return std::vector<Word>
+                 */
+                static std::vector<Word> decode(  const std::string file_name ) {
+                    sequence::OfflineRiceBinarySequenceReader<Word> bs =  sequence::OfflineRiceBinarySequenceReader<Word>( file_name );
+                    std::size_t position = 0ULL;
+                    std::vector<Word> ans;
+
+                    while( bs.has_more() ) {
+                        Word v = bs.next(); //RCodec<Word, Length>::_rice_decode_( bs.sequence, &position, bs.k );
+                        ans.push_back(v);
+                    }
+                    return ans;
                 }
 
                 /**
@@ -743,7 +775,7 @@ namespace samg {
                  * @return const Word 
                  */
                 const Word next() {
-                    return RCodec<Word, Length>::_rice_decode_( this->sequence.sequence, &(this->iterator), this->sequence.k );
+                    return this->sequence.next(); //RCodec<Word, Length>::_rice_decode_( this->sequence.sequence, &(this->iterator), this->sequence.k );
                 } 
 
                 /**
@@ -753,100 +785,7 @@ namespace samg {
                  * @return false 
                  */
                 const bool has_more() const {
-                    return this->iterator < this->sequence.length;
-                }
-
-                /**
-                 * @brief This function restarts the iteration on the internal bitmap.
-                 * 
-                 */
-                void restart() {
-                    this->iterator = 0;
-                }
-
-                /**
-                 * @brief This function returns a copy of the internal bitmap.
-                 * 
-                 * @return BinarySequence 
-                 */
-                BinarySequence/*<Word, Length>*/ get_binary_sequence() const {
-                    return this->sequence;
-                }
-
-                /**
-                 * @brief This function returns the number of stored bits.
-                 * 
-                 * @return const Length
-                 */
-                const Length length() const {
-                    return this->sequence.length;
-                }
-
-                /**
-                 * @brief This function returns the number of encoded integers.
-                 * 
-                 * @return const Length
-                 */
-                const Length size() const {
-                    return this->sequence.src_length;
-                }
-
-                /**
-                 * @brief This function returns the current iterator index.
-                 * 
-                 * @return Length
-                 */
-                const Length get_current_iterator_index() const {
-                    return this->iterator;
-                }
-
-                /**
-                 * @brief This function displays the bitmap and the metadata of a BinarySequence.
-                 * 
-                 * @param info 
-                 * @param bs 
-                 * @param show_bitmap 
-                 */
-                static void display_binary_sequence( std::string info, BinarySequence bs, bool show_bitmap = true ) {
-                    std::cout << info << std::endl;
-                    std::cout << "\tStored integers in "<<samg::utils::number_to_comma_separated_string(bs.max_length)<<"[W]: "<< samg::utils::number_to_comma_separated_string(bs.src_length) << std::endl;
-                    std::cout << "\t|Bitmap| in bytes: " << samg::utils::number_to_comma_separated_string( std::ceil( (double)bs.length / (double)BITS_PER_BYTE) ) << "[B] / " << samg::utils::number_to_comma_separated_string( bs.max_length * sizeof(Word) ) << "[B]" << std::endl;
-                    std::cout << "\t|Bitmap| in bits: " << samg::utils::number_to_comma_separated_string( bs.length ) << "[b] / " << samg::utils::number_to_comma_separated_string( bs.max_length * sizeof(Word) * BITS_PER_BYTE ) << "[b]" << std::endl;
-                    std::cout << "\tCompression rate: Potential size<" << samg::utils::number_to_comma_separated_string( bs.src_length * sizeof(Word) * BITS_PER_BYTE ) << "[b]>; Actual size<"<< samg::utils::number_to_comma_separated_string( bs.length ) << "[b]>; rate = " << samg::utils::number_to_comma_separated_string( ((double)bs.length / (double)(bs.src_length * sizeof(Word) * BITS_PER_BYTE)) * 100 , 2 ) << "%" << std::endl;
-                    std::cout << "\tBitmap index @ " << samg::utils::number_to_comma_separated_string(bs.length) << std::endl;
-                    std::cout << "\tk: "<< samg::utils::number_to_comma_separated_string(bs.k) << std::endl;
-
-                    if( show_bitmap ) {
-                        std::cout << "\tBitmap: ";
-                        for (Length i = 0; i < bs.length; i++) {
-                            if ( RCodec<Word, Length>::_bitget_( bs.sequence, i ) )
-                                std::cout << "1";
-                            else 
-                                std::cout << "0";
-                        }
-                    }
-                    std::cout << std::endl;
-                }
-
-                friend std::ostream & operator<<(std::ostream & strm, const RCodec<Word,Length> &codec) {
-                    BinarySequence/*<Word, Length>*/ bs = codec.get_binary_sequence();
-                    Word    *buff = bs.sequence,
-                            n = bs.length;
-                    bool printer_prompt = false;
-                    for ( Length i = 0; i < n ; i++ ) {
-                        if( i == codec.get_current_iterator_index() ) {
-                            strm << "|";
-                            printer_prompt = true;
-                        }
-                        if ( RCodec<Word, Length>::_bitget_( buff, i ) )
-                            strm << "1";
-                        else 
-                            strm << "0";
-                    }
-                    if( !printer_prompt ) {
-                        strm << "|";
-                    }
-                    return strm;
+                    return this->sequence.has_more();
                 }
         };
 

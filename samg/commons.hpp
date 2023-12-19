@@ -54,6 +54,11 @@
  */
 
 namespace samg {
+
+    namespace constants {
+        static const std::size_t BITS_PER_BYTE = 8UL;
+    }
+
     namespace utils {
         /***************************************************************/
         /**
@@ -852,10 +857,9 @@ namespace samg {
                 std::is_same_v<Type, std::uint64_t>,
                 "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
             private:
-                const std::size_t BITS_PER_BYTE = 8UL;
-                const std::size_t WORD_SIZE = sizeof(Type)  * BITS_PER_BYTE;
-                std::size_t type_word_counter;
+                const std::size_t WORD_SIZE;
                 const std::string file_name;
+                std::size_t type_word_counter;
                 std::ofstream file;
 
                 /**
@@ -880,9 +884,10 @@ namespace samg {
                  * 
                  * @param file_name
                  */
-                OfflineWordWriter(const std::string file_name): 
-                    file_name ( file_name ),
-                    file ( std::ofstream(file_name, std::ios::binary) ),
+                OfflineWordWriter( const std::string file_name ): 
+                    file_name ( std::string(file_name) ),
+                    WORD_SIZE ( sizeof(Type)  * samg::constants::BITS_PER_BYTE ),
+                    file ( std::ofstream(file_name, std::ios::binary | std::ios::trunc) ),
                     type_word_counter (0ULL) {
                     if ( !file.is_open() ) {
                         throw std::runtime_error("Failed to open file \""+file_name+"\"!");
@@ -1056,8 +1061,7 @@ namespace samg {
                 std::is_same_v<Type, std::uint64_t>,
                 "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
             private:
-                const std::size_t   BITS_PER_BYTE = 8UL,
-                                    WORD_SIZE = sizeof(Type)  * BITS_PER_BYTE;
+                // const std::size_t WORD_SIZE = sizeof(Type)  * samg::constants::BITS_PER_BYTE;
                 const std::string file_name;
                 std::ifstream file;
                 std::size_t serialization_length;
@@ -1098,7 +1102,7 @@ namespace samg {
                  */
                 OfflineWordReader(const std::string file_name): 
                 file_name ( file_name ),
-                file ( std::ifstream(file_name, std::ios::binary) ) {
+                file ( std::ifstream(file_name, std::ios::binary | std::ios::in) ) {
                     if ( !file.is_open() ) {
                         throw std::runtime_error("Failed to open file \""+file_name+"\"!");
                     }

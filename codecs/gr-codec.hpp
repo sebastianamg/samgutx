@@ -482,7 +482,7 @@ namespace samg {
                         const std::size_t   k, // Rice-code order.
                                             Words_bits;
                         std::size_t bit_index, // Index of current bit within the bitmap `sequence`.
-                                    word_counter, // Number of encoded words.
+                                    value_counter, // Number of encoded words.
                                     bit_counter, // Number of encoded bits.
                                     words_max_capacity; // Max capacity of `sequence` in words.
                         samg::serialization::OfflineWordWriter<Word> serializer;
@@ -496,7 +496,7 @@ namespace samg {
                         OfflineRiceBinarySequenceWriter( const std::string file_name, const std::size_t k ):
                             k ( k ),
                             Words_bits ( sizeof(Word) * BITS_PER_BYTE ),
-                            word_counter ( 0ULL ),
+                            value_counter ( 0ULL ),
                             bit_counter ( 0ULL ) {
                             this->serializer = samg::serialization::OfflineWordWriter<Word>( file_name );
                             this->serializer.add_value<std::size_t>( k );
@@ -519,8 +519,8 @@ namespace samg {
                             return this->k;
                         }
 
-                        const std::size_t get_word_counter() const {
-                            return this->word_counter;
+                        const std::size_t get_value_counter() const {
+                            return this->value_counter;
                         }
 
                         const std::size_t get_bit_counter() const {
@@ -538,7 +538,7 @@ namespace samg {
                             const std::size_t n_bits = GolombRiceToolKit<Word>::_value_size_( n, this->k );
                             this->bit_index = GolombRiceToolKit<Word>::_rice_encode_(this->sequence, this->bit_index, n, this->k);
                             this->bit_counter += n_bits;
-                            ++(this->word_counter);
+                            ++(this->value_counter);
 
                             // Checking if sequence is ready to be written on secondary memory:
                             const double words_in_sequence = (double) this->bit_index  / (double) this->Words_bits;
@@ -722,14 +722,14 @@ namespace samg {
                  * @return const std::size_t
                  */
                 const std::size_t size() const {
-                    return this->sequence.get_word_counter();
+                    return this->sequence.get_value_counter();
                 }
         };
         /***************************************************************/
         /***************************************************************/
         /***************************************************************/
         /**
-         * @brief This class represents a Golomb-Rice encoding of a sequence of integers based on the [https://github.com/migumar2/uiHRDC uiuiHRDC] library.
+         * @brief This class represents a Golomb-Rice encoding of a sequence of integers based on the [https://github.com/migumar2/uiHRDC uiuiHRDC] library.*
          * 
          * @tparam Word 
          * 

@@ -468,388 +468,7 @@ namespace samg {
             return std::string(char_ptr, length);
         }
 
-        /**
-         * @brief The class WordSequenceSerializer allows serializing and deserializing a sequence of integers defined through its template. 
-         * 
-         * @tparam Type 
-         */
-        template<typename Type> class WordSequenceSerializer {
-            private:
-                std::vector<Type> sequence;
-                const std::size_t BITS_PER_BYTE = 8UL;
-                const std::size_t WORD_SIZE = sizeof(Type)  * BITS_PER_BYTE;
-                std::uint64_t current_index;
-
-                /**
-                 * @brief This function allows serializing a sequence of unsigned integers.
-                 * 
-                 * @tparam UINT_T 
-                 * @param data 
-                 * @param file_name 
-                 */
-                template<typename UINT_T = std::uint32_t> static void store_binary_sequence(const std::vector<UINT_T> data, const std::string file_name) { 
-                    std::ofstream file = std::ofstream(file_name, std::ios::binary);
-                    if ( file.is_open() ) {
-                        // Writing the vector's data to the file
-                        file.write(reinterpret_cast<const char*>(data.data()), data.size() * sizeof(UINT_T));
-                        file.close();
-                        // std::cout << "Data written to file." << std::endl;
-                    } else {
-                        throw std::runtime_error("Failed to open file \""+file_name+"\"!");
-                    }
-                }
-
-                /**
-                 * @brief This function allows retrieving a serialized sequence of unsigned integers from a binary file.
-                 * 
-                 * @tparam UINT_T 
-                 * @param file_name 
-                 * @return std::vector<UINT_T> 
-                 */
-                template<typename UINT_T = std::uint32_t> static std::vector<UINT_T> retrieve_binary_sequence(const std::string file_name) {
-                    std::vector<UINT_T> data;
-
-                    std::ifstream file(file_name, std::ios::binary);
-                    if (file) {
-                        // Determine the size of the file
-                        file.seekg(0, std::ios::end);
-                        std::streamsize fileSize = file.tellg();
-                        file.seekg(0, std::ios::beg);
-
-                        // Resize the vector to hold the data
-                        data.resize(fileSize / sizeof(UINT_T));
-
-                        // Read the data from the file into the vector
-                        file.read(reinterpret_cast<char*>(data.data()), fileSize);
-
-                        file.close();
-                        // std::cout << "Data retrieved from file." << std::endl;
-
-                        return data;
-                    } else {
-                        throw std::runtime_error("Failed to open file \""+file_name+"\"!");
-                    }
-                }
-
-
-            public:
-                /**
-                 * @brief Construct a new word sequence serializer object to start a new serialization.
-                 */
-                WordSequenceSerializer(): current_index(0ULL) {}
-                
-                /**
-                 * @brief Construct a new word sequence serializer object that retrieves data from an input file.
-                 * 
-                 * @param file_name
-                 */
-                WordSequenceSerializer(const std::string file_name): current_index(0ULL) {
-                    this->sequence = WordSequenceSerializer::retrieve_binary_sequence<Type>(file_name);
-                }
-                /**
-                 * @brief Construct a new Word Sequence Serializer object from a serialized sequence.
-                 * 
-                 * @param sequence 
-                 */
-                WordSequenceSerializer( std::vector<Type> sequence ): 
-                    sequence(sequence),
-                    current_index(0ULL) {}
-
-                // /**
-                //  * @brief This function allows parsing integer values stored in an input vector of type TypeSrc into type TypeTrg.
-                //  * 
-                //  * @tparam TypeSrc 
-                //  * @tparam TypeTrg 
-                //  * @param V 
-                //  * @return std::vector<TypeTrg> 
-                //  */
-                // template<typename TypeSrc, typename TypeTrg = Type> std::vector<TypeTrg> parse_values(std::vector<TypeSrc> V) {
-                //     std::vector<TypeTrg> T;
-                //     if( sizeof(TypeTrg) == sizeof(TypeSrc) ) {
-                //         T.insert(T.end(),V.begin(),V.end());
-                //     } else { // sizeof(TypeSrc) != sizeof(Type)
-                //         const TypeTrg* x = reinterpret_cast<const TypeTrg*>(V.data());
-                //         std::size_t l = (std::size_t)std::ceil((double)(V.size()*sizeof(TypeSrc)) / (double)sizeof(TypeTrg));
-                //         T.insert(T.end(),x,x+l);
-                //     }
-                //     return T;
-                // }
-
-                /**
-                 * @brief This function allows adding an 8/16/32/64-bits value. 
-                 * 
-                 * @tparam TypeSrc 
-                 * @param v 
-                 */
-                template<typename TypeSrc = Type> void add_value(TypeSrc v) {
-                    static_assert(
-                        std::is_same_v<TypeSrc, std::uint8_t> ||
-                        std::is_same_v<TypeSrc, std::uint16_t> ||
-                        std::is_same_v<TypeSrc, std::uint32_t> ||
-                        std::is_same_v<TypeSrc, std::uint64_t>,
-                        "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
-
-                    // std::cout << "add_value(v) = " << v << std::endl;
-
-                    std::vector<TypeSrc> V = {v};
-                    std::vector<Type> X = serialization::parse_values<TypeSrc,Type>(V);
-                    this->sequence.insert(this->sequence.end(),X.begin(),X.end());
-                }
-
-                /**
-                 * @brief This function allows adding a collection of l TypeSrc integer values. 
-                 * 
-                 * @tparam TypeSrc 
-                 * @param v 
-                 * @param l 
-                 */
-                template<typename TypeSrc = Type, typename TypeLength = std::size_t> void add_values(const TypeSrc *v, const TypeLength l) {
-                    if( l > 0 ) {
-                        std::vector<TypeSrc> V;
-                        V.insert(V.end(),v,v+l);
-                        this->add_values<TypeSrc>(V);
-                    }
-                }
-
-                /**
-                 * @brief This function allows adding a collection of unsigned integer values. 
-                 * 
-                 * @tparam TypeSrc 
-                 * @param V 
-                 */
-                template<typename TypeSrc = Type> void add_values(const std::vector<TypeSrc> V) {
-                    static_assert(
-                        std::is_same_v<TypeSrc, std::uint8_t> ||
-                        std::is_same_v<TypeSrc, std::uint16_t> ||
-                        std::is_same_v<TypeSrc, std::uint32_t> ||
-                        std::is_same_v<TypeSrc, std::uint64_t>,
-                        "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
-                    for (TypeSrc v : V) {
-                        this->add_value<TypeSrc>(v);
-                    }
-                }
-
-                /**
-                 * @brief This function allows serializing a string.
-                 * 
-                 * @param v 
-                 */
-                void add_value(std::string v) {
-                    std::vector<Type> V = serialization::convert_string_to_vector<Type>(v);
-                    this->add_value<std::size_t>(v.length()); // Storing the original length (number of characters/bytes) of the key. 
-                    this->add_value<std::size_t>(V.size()); // Storing the length (number of words<Type>) of the key. 
-                    this->sequence.insert(this->sequence.end(), V.begin(), V.end());
-                }
-
-                /**
-                 * @brief This function allows adding a std::map<std::string,std::string> entry.
-                 * 
-                 * @param p map<std::string,std::string>'s entry
-                 */
-                void add_map_entry(const std::pair<std::string,std::string> p) {
-                    // Adding key:
-                    this->add_value(p.first);
-                    // Adding value:
-                    this->add_value(p.second);
-                }
-
-                /**
-                 * @brief This function allows adding a map<std::string,std::string>.
-                 * 
-                 * @param m 
-                 */
-                void add_map(std::map<std::string,std::string> m) {
-                    this->add_value<std::size_t>(m.size());
-                    for (std::pair<std::string,std::string> p : m) {
-                        this->add_map_entry(p);
-                    }
-                }
-
-                /**
-                 * @brief This function allows saving the serialization into a given file. 
-                 * 
-                 * @param file_name 
-                 */
-                void save(const std::string file_name) {
-                    WordSequenceSerializer::store_binary_sequence<Type>(this->sequence,file_name);
-                }
-
-                // ***************************************************************
-
-                /**
-                 * @brief This function allows getting remaining values from the serialization starting from where an internal index is. 
-                 * 
-                 * @tparam TypeTrg 
-                 * @return const std::vector<TypeTrg> 
-                 */
-                template<typename TypeTrg = Type> const std::vector<TypeTrg> get_remaining_values() {
-                    std::vector<TypeTrg> V;
-                    while(this->has_more()) {
-                        V.push_back(this->get_value<TypeTrg>());
-                    }
-                    return V;
-                }
-
-                /**
-                 * @brief This function allows retrieving the next `length` values of type TypeTrg.
-                 * 
-                 * @tparam TypeTrg 
-                 * @param length 
-                 * @return const std::vector<TypeTrg> 
-                 */
-                template<typename TypeTrg = Type> const std::vector<TypeTrg> get_next_values(std::uint64_t length) {
-                    std::vector<TypeTrg> V;
-                    for (std::uint64_t i = 0 ; i < length ; i++) {
-                        V.push_back(this->get_value<TypeTrg>());
-                    }
-                    return V;
-                }
-
-                /**
-                 * @brief This function allows retrieving the next `length` values of type TypeTrg starting at `beginning_index`.
-                 * 
-                 * @tparam TypeTrg 
-                 * @param beginning_index 
-                 * @param length 
-                 * @return const std::vector<TypeTrg> 
-                 */
-                template<typename TypeTrg = Type> const std::vector<TypeTrg> get_values(std::uint64_t beginning_index, std::uint64_t length) const {
-                    std::vector<TypeTrg> V;
-                    std::size_t step = ( sizeof(TypeTrg) <= sizeof(Type) ) ? 1 : ( sizeof(TypeTrg) / sizeof(Type) );
-                    std::uint64_t limit = beginning_index + ( length * step );
-                    for ( std::uint64_t i = beginning_index ; i < limit; i+=step ) {
-                        V.push_back(this->get_value_at<TypeTrg>(i));
-                    }
-                    return V;
-                }
-
-                /**
-                 * @brief This function allows getting the `i`-th TypeTrg type value from the serialization. 
-                 * 
-                 * @tparam TypeTrg 
-                 * @param i 
-                 * @return const Type 
-                 */
-                template<typename TypeTrg = Type> const Type get_value_at( std::uint64_t i ) const {
-                    std::vector<Type> V;
-                    std::uint64_t limit = std::ceil( sizeof(TypeTrg) / sizeof(Type) );
-                    for ( ; i < limit; ++i ) {
-                        V.push_back( this->sequence[i] );
-                    }
-                    std::vector<TypeTrg> T = serialization::parse_values<Type,TypeTrg>(V);
-                    return T[0]; // Assuming T contains only one value.
-                }
-
-                /**
-                 * @brief This function allows retrieving the next value, based on an internal index. 
-                 * 
-                 * @tparam TypeTrg 
-                 * @return const TypeTrg 
-                 */
-                template<typename TypeTrg = Type> const TypeTrg get_value() {
-                    std::vector<Type> V;
-                    std::uint64_t limit = std::ceil( (double)sizeof(TypeTrg) / (double)sizeof(Type) );
-                    for (std::size_t i = 0; i < limit; ++i ) {
-                        V.push_back( this->sequence[this->current_index++] );
-                    }
-                    std::vector<TypeTrg> T = serialization::parse_values<Type,TypeTrg>(V);
-                    return T[0]; // Assuming T contains only one value.
-                }
-
-                /**
-                 * @brief This function allows retrieving a serialized string. 
-                 * 
-                 * @return std::string 
-                 */
-                std::string get_string_value() {
-                    const std::size_t   bytes_length = this->get_value<std::size_t>(),
-                                        words_legnth = this->get_value<std::size_t>();
-                    std::vector<Type> V = this->get_next_values(words_legnth);
-                    std::string str = serialization::convert_vector_to_string<Type>(V,bytes_length);
-                    return str;
-                }
-
-                /**
-                 * @brief This function allows retrieving a serialized `std::map<std::string,std::string>`'s entry.
-                 * 
-                 * @return std::pair<std::string,std::string> 
-                 */
-                std::pair<std::string,std::string> get_map_entry() {
-                    std::string key = this->get_string_value();
-                    std::string value = this->get_string_value();
-                    return std::pair<std::string,std::string>(key,value);
-                }
-
-                /**
-                 * @brief This function allows retrieving a serialized `std::map<std::string,std::string>`.
-                 * 
-                 * @return std::map<std::string,std::string> 
-                 */
-                std::map<std::string,std::string> get_map() {
-                    const std::size_t length = this->get_value<std::size_t>();
-                    std::map<std::string,std::string> map;
-                    for (std::uint64_t i = 0; i < length; i++) {
-                        map.insert(this->get_map_entry());
-                    }
-                    return map;
-                }
-
-                /**
-                 * @brief This method allows verifying whether the serialization has or not more elements. 
-                 * 
-                 * @return true 
-                 * @return false 
-                 */
-                const bool has_more() const {
-                    return this->current_index < this->sequence.size();
-                }
-
-                /**
-                 * @brief This methods returns the current internal index.
-                 * 
-                 * @return const std::uint64_t 
-                 */
-                const std::uint64_t get_current_index() const {
-                    return this->current_index;
-                }
-
-                /**
-                 * @brief This method returns the number of Type words that composes the serialization. 
-                 * 
-                 * @return const std::uint64_t 
-                 */
-                const std::uint64_t size() const {
-                    return this->sequence.size();
-                }
-
-                /**
-                 * @brief This function returns the internal serialized sequence.
-                 * 
-                 * @return std::vector<Type> 
-                 */
-                std::vector<Type> get_serialized_sequence() const {
-                    return this->sequence;
-                }
-
-                /**
-                 * @brief This method displays the sequence of Type words that compose the serialization. 
-                 * 
-                 */
-                const void print() {
-                    std::cout << "WordSequenceSerializer --- sequence: " << std::endl;
-                    for (Type v : this->sequence) {
-                        std::cout << v << " ";
-                    }
-                    std::cout << std::endl;
-                }
-        };
-
-        /**
-         * @brief The class OfflineWordWriter allows direct offline unsigned integer sequence serialization directly to a file. 
-         * 
-         * @tparam Type 
-         */
-        template<typename Type> class OfflineWordWriter {
+        template<typename Type> class Serializer {
             static_assert(
                 std::is_same_v<Type, std::uint8_t> ||
                 std::is_same_v<Type, std::uint16_t> ||
@@ -857,8 +476,30 @@ namespace samg {
                 std::is_same_v<Type, std::uint64_t>,
                 "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
             private:
-                const std::size_t WORD_SIZE;
                 const std::string file_name;
+            public:
+                Serializer( const std::string file_name ):
+                    file_name ( file_name ) {}
+
+                virtual const std::size_t size() const = 0;
+
+                virtual void close() = 0;
+
+                const std::string get_file_name() const {
+                    return this->file_name;
+                }
+        };
+
+
+
+        /**
+         * @brief The class OfflineWordWriter allows direct offline unsigned integer sequence serialization directly to a file. 
+         * 
+         * @tparam Type 
+         */
+        template<typename Type> class OfflineWordWriter : public samg::serialization::Serializer<Type> {
+            private:
+                const std::size_t WORD_SIZE;
                 std::size_t type_word_counter;
                 std::ofstream file;
 
@@ -885,7 +526,7 @@ namespace samg {
                  * @param file_name
                  */
                 OfflineWordWriter( const std::string file_name ): 
-                    file_name ( std::string(file_name) ),
+                    samg::serialization::Serializer<Type> ( file_name ),
                     WORD_SIZE ( sizeof(Type)  * samg::constants::BITS_PER_BYTE ),
                     file ( std::ofstream(file_name, std::ios::binary | std::ios::trunc) ),
                     type_word_counter (0ULL) {
@@ -1035,7 +676,7 @@ namespace samg {
                  * 
                  * @return const std::size_t 
                  */
-                const std::size_t size() const {
+                const std::size_t size() const override {
                     return this->type_word_counter;
                 }
 
@@ -1043,7 +684,7 @@ namespace samg {
                  * @brief Closes binary file.
                  * 
                  */
-                void close() {
+                void close() override {
                     this->file.close();
                 }
         };
@@ -1053,16 +694,9 @@ namespace samg {
          * 
          * @tparam Type 
          */
-        template<typename Type> class OfflineWordReader {
-            static_assert(
-                std::is_same_v<Type, std::uint8_t> ||
-                std::is_same_v<Type, std::uint16_t> ||
-                std::is_same_v<Type, std::uint32_t> ||
-                std::is_same_v<Type, std::uint64_t>,
-                "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
+        template<typename Type> class OfflineWordReader : public samg::serialization::Serializer<Type> {
             private:
                 // const std::size_t WORD_SIZE = sizeof(Type)  * samg::constants::BITS_PER_BYTE;
-                const std::string file_name;
                 std::ifstream file;
                 std::size_t serialization_length;
 
@@ -1101,7 +735,7 @@ namespace samg {
                  * @param file_name
                  */
                 OfflineWordReader(const std::string file_name): 
-                file_name ( file_name ),
+                samg::serialization::Serializer<Type> ( file_name ),
                 file ( std::ifstream(file_name, std::ios::binary | std::ios::in) ) {
                     if ( !file.is_open() ) {
                         throw std::runtime_error("Failed to open file \""+file_name+"\"!");
@@ -1221,7 +855,7 @@ namespace samg {
                  * 
                  * @return const std::size_t 
                  */
-                const std::size_t size() const {
+                const std::size_t size() const override {
                     return this->serialization_length;
                 }
 
@@ -1229,7 +863,7 @@ namespace samg {
                  * @brief Closes binary file.
                  * 
                  */
-                void close() {
+                void close() override {
                     this->file.close();
                 }
         };

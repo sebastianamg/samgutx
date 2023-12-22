@@ -8,6 +8,7 @@
 #include <vector>
 #include <queue>
 #include <map>
+#include <array>
 #include <type_traits>
 #include <typeinfo>
 #include <cmath>

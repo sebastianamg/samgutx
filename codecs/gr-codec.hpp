@@ -63,18 +63,24 @@
     for (; _B_x>1 ; _B_x>>=1, (v)++);       \
 }   
 
-
 namespace samg {
     namespace grcodec {
         namespace adapter {
             enum QueueAdapterType {
                 Q_QUEUEADAPTER,
+                // QUINT_QUEUEADAPTER,
+                // QINT_QUEUEADAPTER,
                 ITERATOR_QUEUEADAPTER
             };
             template<typename Type> class QueueAdapter {
                 protected:
                     virtual void _swap_( QueueAdapter<Type>& other ) = 0;
                 public:
+                    // explicit QueueAdapter();
+                    // QueueAdapter(const QueueAdapter&) = delete;
+                    // QueueAdapter& operator=(const QueueAdapter&) = delete;
+                    // ~QueueAdapter() = default;
+                    
                     virtual Type front() = 0;
                     virtual Type back() = 0;
                     virtual void push( Type v ) = 0;
@@ -87,6 +93,7 @@ namespace samg {
             };
             template<typename Type> class QQueueAdapter : public QueueAdapter<Type> {
                 private:
+                    // std::queue<Type,std::deque<Type>> queue;
                     std::vector<Type> queue;
 
                     void _swap_( QueueAdapter<Type>& other ) override {
@@ -96,10 +103,12 @@ namespace samg {
 
                 public:
                     QQueueAdapter() :
+                        // queue ( std::queue<Type>() ) {}
                         queue ( std::vector<Type>() ) {}
 
                     Type front() override {
                         Type tmp = this->queue.front();
+                      //  std::cout << "QQueueAdapter / front> Type = " << typeid(Type).name() << " front (" << typeid(tmp).name() << ") = " << tmp << std::endl;
                         return tmp;
                     }
 
@@ -108,6 +117,8 @@ namespace samg {
                     }
 
                     void push( Type v ) override {
+                      //  std::cout << "QQueueAdapter / push> Type = " << typeid(Type).name() << " push (" << v << ") --- " << typeid(v).name() << std::endl;
+                        // this->queue.push( v );
                         this->queue.push_back(v);
                     }
 
@@ -120,6 +131,7 @@ namespace samg {
                     }
 
                     void pop() override {
+                        // this->queue.pop();
                         this->queue.erase(this->queue.begin());
                     }
             };
@@ -195,6 +207,7 @@ namespace samg {
         }
 
         namespace toolkits {/***************************************************************/
+
             /**
              * @brief Represents a toolkit for Golomb-Rice encoding.
              * 
@@ -416,29 +429,29 @@ namespace samg {
                     return val;
                 }
 
-                // /**
-                //  * @brief Given a list of (n) integers (buff) [typically gap values from an inverted list], computes the optimal b parameter, that is, the number of bits that will be coded binary-wise from a given encoded value.
-                //  * @note $$ val = \lfloor (\log_2( \sum_{i=0}^{n-1} (diff[i])) / n )) \rfloor $$
-                //  * 
-                //  * @param sequence 
-                //  * @return std::size_t 
-                //  */
-                // static std::size_t compute_GR_parameter_for_list( adapter::QueueAdapter<Word>& sequence ) {
-                //     Word total =0;
-                //      std::size_t i;
-                //     while( !(sequence.empty()) ) {
-                //         total += sequence.front(); sequence.pop();
-                //     }
-                //     total /= sequence.size();
-                //     std::size_t val;
-                //     FLOORLOG_2(((uint)total),val);
+                /**
+                 * @brief Given a list of (n) integers (buff) [typically gap values from an inverted list], computes the optimal b parameter, that is, the number of bits that will be coded binary-wise from a given encoded value.
+                 * @note $$ val = \lfloor (\log_2( \sum_{i=0}^{n-1} (diff[i])) / n )) \rfloor $$
+                 * 
+                 * @param sequence 
+                 * @return std::size_t 
+                 */
+                static std::size_t compute_GR_parameter_for_list( adapter::QueueAdapter<Word>& sequence ) {
+                    Word total =0;
+                     std::size_t i;
+                    while( !(sequence.empty()) ) {
+                        total += sequence.front(); sequence.pop();
+                    }
+                    total /= sequence.size();
+                    std::size_t val;
+                    FLOORLOG_2(((uint)total),val);
                     
-                //     return val;
-                // }
+                    return val;
+                }
             };
 
             template<typename Word> struct RunLengthCommon {
-                using rseq_t = std::int64_t; // Data type internally used by the relative sequence. It can be changed here to reduce memory footprint in case numbers in a relative sequence are small enough to fit in fewer bits.  
+                using rseq_t = std::int64_t; //typedef unsigned long long int rseq_t; // Data type internally used by the relative sequence. It can be changed here to reduce memory footprint in case numbers in a relative sequence are small enough to fit in fewer bits.  
                 
                 template<typename TypeInt = rseq_t> using RelativeSequence = std::shared_ptr<samg::grcodec::adapter::QueueAdapter<TypeInt>>;
                 
@@ -481,6 +494,8 @@ namespace samg {
                  */
                 static RelativeSequence<> get_transformed_relative_sequence( AbsoluteSequence<> sequence ) {
                     RelativeSequence<> ans = adapter::get_instance<rseq_t>( adapter::QueueAdapterType::Q_QUEUEADAPTER );
+                    // std::cout << sequence.size() << std::endl;
+                    // if( sequence.size() > 0 ) {
                     if( !sequence.empty() ) {
                         /* NOTE
                             1 3 3 6  5  0 0 5
@@ -493,11 +508,17 @@ namespace samg {
                         sequence.pop();
 
                         ans->push( transform_rval( previous ));
+                        // ans.push_back( transform_rval( sequence[0] ) );
                         while( !sequence->empty() ) {
                             current = sequence.front(); sequence.pop();
+                            // std::cout << current << std::endl;
+                            // ans.push( transform_rval( ((rseq_t)(current)) - ((rseq_t)(previous)) ) );
                             ans->push( RunLengthCommon<Word>::get_transformed_relative_sequence( current, previous ));
                             previous = current;
                         }
+                        // for (std::size_t i = 1; i < sequence.size(); ++i) {
+                        //     ans.push_back( transform_rval( ((rseq_t)(sequence[i])) - ((rseq_t)(sequence[i-1])) ) );
+                        // }
                     }
                     return ans;
                 }
@@ -510,6 +531,7 @@ namespace samg {
                  */
                 static rseq_t get_transformed_relative_sequence( rseq_t relativa_previous, rseq_t relativa_current ) {
                     rseq_t ans = transform_rval( relativa_current - relativa_previous );
+                //  std::cout << "\t\tRiceRuns / get_transformed_relative_sequence> relativa_previous = " << relativa_previous << "; relativa_current = " << relativa_current << "; ans = " << ans << std::endl;
                     return ans;
                 }
 
@@ -524,6 +546,7 @@ namespace samg {
                 static AbsoluteSequence<> get_transformed_absolute_sequence( RelativeSequence<>& sequence ) {
                     AbsoluteSequence<> ans = adapter::get_instance<Word>( adapter::QueueAdapterType::Q_QUEUEADAPTER );
 
+                    // if( relative_sequence.size() > 0 ) {
                     if( !sequence->empty() ) {
                         /* NOTE
                             1 3 3 6  5  0 0 5 <--- Original absolute values.
@@ -535,6 +558,8 @@ namespace samg {
                         */
                         ans->push( recover_rval( sequence->front() ));
                         sequence->pop();
+                        // ans.push_back( recover_rval( relative_sequence[0] ) );
+                        // for (std::size_t i = 1; i < sequence.size(); ++i) {
                         while( !sequence->empty() ){
                             ans->push( ((rseq_t)ans->back()) + recover_rval( sequence->front() ) );
                             sequence->pop();
@@ -544,9 +569,72 @@ namespace samg {
                 }
 
             };
+        
+            // template<typename Word> struct Batch {
+            //     /**
+            //      * @brief Encodes in a batch the content of a QueueAdapter.
+            //      * 
+            //      * @param codec 
+            //      * @param queue 
+            //      */
+            //     static void batch_encode( samg::grcodec::base::writer::CodecFileWriter<Word>& codec, samg::grcodec::adapter::QueueAdapter<Word>& queue ) {
+            //         while( !queue.empty() ) {
+            //             codec.add( queue.front() );
+            //             queue.pop();
+            //         }
+            //     }
+            // };
         }
 
         namespace base {
+
+            /**
+             * @brief Interface for classes that handle metadata.
+             * 
+             */
+            class MetadataKeeper { 
+                public:
+                    /**
+                     * @brief Returnst the metadata.
+                     * 
+                     * @return const std::vector<std::size_t> 
+                     */
+                    virtual const std::vector<std::size_t> get_metadata() const = 0;
+
+                    /**
+                     * @brief Adds a new metadata at the end of the metadata list.
+                     * 
+                     * @param v 
+                     */
+                    virtual void add_metadata( std::size_t v ) = 0;
+
+                    /**
+                     * @brief Adds a new metadata at the beginning of the metadata list.
+                     * 
+                     * @param v 
+                     */
+                    virtual void push_metadata( std::size_t v ) = 0;
+            };
+
+            /**
+             * @brief Partial implementation of MetadataKeeper.
+             * 
+             */
+            class MetadataSaver : public MetadataKeeper {
+                protected:
+                    std::vector<std::size_t> metadata;
+                public:
+                    void add_metadata( std::size_t v ) override {
+                        this->metadata.push_back( v );
+                        // std::cout << "Codec/add_metadata> v = " << v << "; |metadata| = " << this->metadata.size() << "; @ " << (&(this->metadata)) << std::endl;
+                    }
+
+                    void push_metadata( std::size_t v ) override {
+                        this->metadata.insert( this->metadata.begin(), v );
+                        // this->push_metadata(v);
+                        // std::cout << "Codec/push_metadata> v = " << v << "; |metadata| = " << this->metadata.size() << "; @ " << (&(this->metadata)) << std::endl;
+                    }
+            };
 
             template<typename Word> class Codec {
                 static_assert(
@@ -618,6 +706,24 @@ namespace samg {
         /***************************************************************/
         /***************************************************************/
         /***************************************************************/
+
+        namespace toolkits {
+            template<typename Word> struct Batch {
+                /**
+                 * @brief Encodes in a batch the content of a QueueAdapter.
+                 * 
+                 * @param codec 
+                 * @param queue 
+                 */
+                static void batch_encode( samg::grcodec::base::writer::CodecFileWriter<Word>& codec, samg::grcodec::adapter::QueueAdapter<Word>& queue ) {
+                    while( !queue.empty() ) {
+                        codec.add( queue.front() );
+                        queue.pop();
+                    }
+                }
+            };
+        }
+
         namespace rice {
             
             namespace writer {
@@ -626,7 +732,7 @@ namespace samg {
                  * 
                  * @tparam Word used to encode bits.
                  */
-                template<typename Word> class OfflineRCodecWriter : public samg::grcodec::base::writer::CodecFileWriter<Word> {
+                template<typename Word> class OfflineRCodecWriter : public samg::grcodec::base::writer::CodecFileWriter<Word>, public samg::grcodec::base::MetadataSaver {
                     private:
                         static const std::size_t WORD_GROWING_SPAN = 1ULL; // Space in number of Word-type that the bitmap must grow. 
                         Word *sequence; // It is the bitmap.
@@ -641,23 +747,13 @@ namespace samg {
                         /**
                          * @brief Prepends metadata to output file.
                          * 
-                         * @param metadata 
                          */
-                        void _preprend_metadata_( std::vector<std::size_t> metadata) {
-                            const std::string new_file_name = samg::utils::change_extension(this->serializer->get_file_name(), "tmp" );
-                            samg::serialization::OfflineWordWriter<Word> metadata_serializer = samg::serialization::OfflineWordWriter<Word>( new_file_name );
-                            for (std::size_t v : metadata) {
-                                metadata_serializer.template add_value<std::size_t>( v );
+                        void _save_metadata_() {
+                            std::vector<std::size_t> met = this->get_metadata();
+                            for (std::size_t v : this->get_metadata()) {
+                                this->serializer->template add_value<std::size_t>( v );
                             }
-                            metadata_serializer.close();
-                            
-                            if( std::system( ("dd if="+this->serializer->get_file_name()+" of="+new_file_name+" bs=4 seek=4 conv=notrunc").c_str() ) != 0 ) {
-                                throw std::runtime_error("Error in metadata prepeding metadata to source file!");
-                            } else if( std::system( ("rm "+this->serializer->get_file_name()).c_str() ) != 0 ) {
-                                throw std::runtime_error("Error in removing source file \""+this->serializer->get_file_name()+"\"!");
-                            } else if( std::system( ("mv "+new_file_name+" "+this->serializer->get_file_name()).c_str() ) != 0 ) {
-                                throw std::runtime_error("Error in renaming the new file \""+new_file_name+"\" to \""+this->serializer->get_file_name()+"\"!");
-                            }
+                            this->serializer->template add_value<std::size_t>( this->metadata.size() );
                         } 
 
                     public:
@@ -676,6 +772,7 @@ namespace samg {
                             sequence ( samg::grcodec::toolkits::GolombRiceCommon<Word>::rmalloc( 0ULL ) ) //( samg::grcodec::toolkits::GolombRiceCommon<Word>::rmalloc( OfflineRCodecWriter<Word>::WORD_GROWING_SPAN ) ) 
                         {
                             this->serializer = std::make_unique<samg::serialization::OfflineWordWriter<Word>>( file_name );
+                            // this->serializer->template add_value<std::size_t>( k );
                         }
 
                         /**
@@ -697,10 +794,15 @@ namespace samg {
 
                         const bool add( const Word n ) override {
                             const std::size_t n_bits = samg::grcodec::toolkits::GolombRiceCommon<Word>::_value_size_( n, this->k );
+                            // std::cout << "OfflineRCodecWriter/add> [BEGIN] k = " << this->k << "; n = " << n << "; |n| = " << n_bits << "[b]; bit_index = " << this->bit_index << "; bit_counter = " << this->bit_counter << "; value_counter = " << this->value_counter << "; word_max_capacity = " << this->words_max_capacity << "; word_counter = " << this->word_counter << std::endl;
                             if( std::ceil( (double)(this->bit_index + n_bits ) / (double) samg::grcodec::toolkits::GolombRiceCommon<Word>::get_word_bits() ) > this->words_max_capacity ) {
+                            // if( std::floor( (double)(this->bit_index + n_bits ) / (double) samg::grcodec::toolkits::GolombRiceCommon<Word>::get_word_bits() ) >= this->words_max_capacity ) {
+                                // std::cout << "RCodec/BinarySequence/add --- growing bitmap from " << this->max_length << "[W]";
                                 const std::size_t new_word_capacity = std::ceil( (double)n_bits / (double)samg::grcodec::toolkits::GolombRiceCommon<Word>::get_word_bits() ); //+ OfflineRCodecWriter::WORD_GROWING_SPAN );
+                                // std::cout << "OfflineRCodecWriter/add>\t\tGrowing in "<< new_word_capacity <<"[W]..." << std::endl;
                                 this->word_counter += new_word_capacity;
                                 this->words_max_capacity += new_word_capacity;
+                                // std::cout << " to " << this->max_length << " [W]" << std::endl;
                                 this->sequence = samg::grcodec::toolkits::GolombRiceCommon<Word>::rrealloc( this->sequence, this->words_max_capacity );
                             }
                             this->bit_index = samg::grcodec::toolkits::GolombRiceCommon<Word>::_rice_encode_(this->sequence, this->bit_index, n, this->k);
@@ -711,8 +813,10 @@ namespace samg {
                             const double words_in_sequence = (double) this->bit_index  / (double) samg::grcodec::toolkits::GolombRiceCommon<Word>::get_word_bits();
                             const std::size_t words = std::floor( words_in_sequence );
                             if( words > 0 ) { // Flush to secondary memory:
+                                // std::cout << "OfflineRCodecWriter/add>\t\tFlushing..." << std::endl;
                                 const std::size_t delta_words = std::ceil( words_in_sequence ) - words;
                                 this->serializer->template add_values<Word>( this->sequence, words );
+                                // this->word_counter += ( this->words_max_capacity - delta_words );
                                 this->words_max_capacity = delta_words > 0 ? delta_words : OfflineRCodecWriter::WORD_GROWING_SPAN;
                                 Word* tmp_sequence = samg::grcodec::toolkits::GolombRiceCommon<Word>::rmalloc( this->words_max_capacity );
                                 for (size_t i = 0; i < delta_words; i++) {
@@ -723,18 +827,34 @@ namespace samg {
                                 this->bit_index -= ( words * samg::grcodec::toolkits::GolombRiceCommon<Word>::get_word_bits() );
                             }
                             return true; // To fulfill inheritance requirements.
+                            // std::cout << "OfflineRCodecWriter/add>   [END] k = " << this->k << "; n = " << n << "; |n| = " << n_bits << "[b]; bit_index = " << this->bit_index << "; bit_counter = " << this->bit_counter << "; value_counter = " << this->value_counter << "; word_max_capacity = " << this->words_max_capacity << "; word_counter = " << this->word_counter << std::endl;
+                        }
+
+                        const std::vector<std::size_t> get_metadata() const override {
+                            return this->metadata;
                         }
 
                         void close( ) override {
+                            // std::cout << "OfflineRCodecWriter/close> [BEGIN] k = " << this->k << "[b]; bit_index = " << this->bit_index << "; bit_counter = " << this->bit_counter << "; value_counter = " << this->value_counter << "; word_max_capacity = " << this->words_max_capacity << "; word_counter = " << this->word_counter << std::endl;
                             // Write pending words in the sequence:
                             const std::size_t pending_words = std::ceil( (double)this->bit_index  / (double) samg::grcodec::toolkits::GolombRiceCommon<Word>::get_word_bits() );
+                            // std::cout << "OfflineRCodecWriter/close> \t\tpending_words = " << pending_words << std::endl;
                             if( pending_words > 0 ) { // Flush to secondary memory:
+                                // std::cout << "OfflineRCodecWriter/close> \t\tFlusing..." << std::endl;
                                 this->serializer->template add_values<Word>( this->sequence, pending_words );
+                                // std::cout << "OfflineRCodecWriter/close> \t\tPrepending ---> k = " << this->k << "; bit_counter = " << this->bit_counter << std::endl;
                             }
+                            // this->serializer->close();
+                            // Appending metadata:
+                            // std::cout << "OfflineRCodecWriter/close> |metadata| = " << this->get_metadata().size() << std::endl;
+                            this->push_metadata( this->bit_counter );
+                            this->push_metadata( this->k );
+                            // std::cout << "OfflineRCodecWriter/close> |metadata| = " << this->get_metadata().size() << std::endl;
+                            // this->metadata.insert(this->metadata.begin(), this->bit_counter );
+                            // this->metadata.insert(this->metadata.begin(), this->k );
+                            this->_save_metadata_();
+                            // std::cout << "OfflineRCodecWriter/close> [END]" << std::endl;
                             this->serializer->close();
-                            // Prepending metadata:
-                            std::vector<std::size_t> metadata = { this->k, this->bit_counter };
-                            this->_preprend_metadata_( metadata );
                         }
 
                 };
@@ -742,123 +862,170 @@ namespace samg {
 
             namespace reader {
                 /**
-             * @brief Represents an offline binary sequence reader.
-             * 
-             * @tparam Word used to encode bits.
-             */
-            template<typename Word> class OfflineRCodecReader : public samg::grcodec::base::reader::CodecFileReader<Word> {
-                private:
-                    const Word MAX;
-                    Word R_MASK;
-                    std::unique_ptr<samg::serialization::OfflineWordReader<Word>> serializer;
-                    std::vector<Word> buffer;
-                    std::size_t k,
-                                position,
-                                bit_limit,
-                                bit_counter;
-                    bool is_open;
-                    const std::string file_name;
+                 * @brief Represents an offline binary sequence reader.
+                 * 
+                 * @tparam Word used to encode bits.
+                 */
+                template<typename Word> class OfflineRCodecReader : public samg::grcodec::base::reader::CodecFileReader<Word>, public samg::grcodec::base::MetadataSaver {
+                    private:
+                        const Word MAX;
+                        Word R_MASK;
+                        std::unique_ptr<samg::serialization::OfflineWordReader<Word>> serializer;
+                        std::vector<Word> buffer;
+                        std::size_t k,
+                                    position,
+                                    bit_limit,
+                                    bit_counter;
+                        bool is_open;
+                        const std::string file_name;
 
-                    const std::size_t _get_buffer_length_() {
-                        return this->buffer.size() * samg::grcodec::toolkits::GolombRiceCommon<Word>::get_word_bits();
-                    }
-
-                    const bool _fecth_() {
-                        static std::size_t counter = 0;
-                        if( this->has_more() ) {
-                            this->buffer.push_back( this->serializer->template next<Word>() );
-                            counter++;
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    }
-
-                    void _update_() {
-                        // Relief buffer:
-                        while( this->position >= samg::grcodec::toolkits::GolombRiceCommon<Word>::get_word_bits() ) {
-                            this->buffer.erase(this->buffer.begin());
-                            this->position -= samg::grcodec::toolkits::GolombRiceCommon<Word>::get_word_bits();
-                        }
-                        // Fill up buffer:
-                        while( this->position >= this->_get_buffer_length_() && this->_fecth_());
-                    }
-
-                public:
-                    /**
-                     * @brief Construct a new Binary Sequence object
-                     * 
-                     * @param file_name 
-                     */
-                    OfflineRCodecReader( const std::string file_name ) :
-                        MAX ( ~( (Word) 0 ) ),
-                        file_name ( file_name ),
-                        is_open ( false ) {
-                        
-                        this->restart();
-                        
-                        // Loading metadata:
-                        this->k = this->serializer->template next<std::size_t>();
-                        this->bit_limit = this->serializer->template next<std::size_t>();
-
-                        // Seting environment:
-                        this->R_MASK = MAX << this->k;
-                    }
-
-                    /**
-                     * @brief Returns the k constant
-                     * 
-                     * @return const std::size_t 
-                     */
-                    const std::size_t get_k() const {
-                        return this->k;
-                    }
-
-                    const Word next( ) override { 
-                        // NOTE: Based on `samg::grcodec::toolkits::GolombRiceCommon<Word>::_rice_decode_`.
-                        while( ( this->_get_buffer_length_() - this->position ) < this->k ) {
-                            this->_fecth_();
+                        const std::size_t _get_buffer_length_() {
+                            return this->buffer.size() * samg::grcodec::toolkits::GolombRiceCommon<Word>::get_word_bits();
                         }
 
-                        // Retrieve reminder:
-                        Word v = samg::grcodec::toolkits::GolombRiceCommon<Word>::_bitread_( buffer.data(), this->position, this->k );
-                        this->position += this->k;
-                        this->bit_counter += this->k;
+                        const bool _fecth_() {
+                            static std::size_t counter = 0;
+                            if( this->has_more() ) {
+                                this->buffer.push_back( this->serializer->template next<Word>() );
+                                counter++;
+                                // std::cout << "OfflineRCodecReader/_fetch_> counter = " << counter << std::endl;
+                                return true;
+                            } else {
+                                // std::cout << "OfflineRCodecReader/_fetch_> NO MORE ENTRIES!!! --- counter = " << counter << std::endl;
+                                return false;
+                            }
+                        }
 
-                        // Retrieve quotient:
-                        this->_update_();
-                        while ( samg::grcodec::toolkits::GolombRiceCommon<Word>::_bitget_( buffer.data() , this->position ) ) {
-                            v += ( 1 << this->k );
+                        void _update_() {
+                            // Relief buffer:
+                            while( this->position >= samg::grcodec::toolkits::GolombRiceCommon<Word>::get_word_bits() ) {
+                                this->buffer.erase(this->buffer.begin());
+                                this->position -= samg::grcodec::toolkits::GolombRiceCommon<Word>::get_word_bits();
+                            }
+                            // Fill up buffer:
+                            while( this->position >= this->_get_buffer_length_() && this->_fecth_());
+                        }
+
+                        void _retrieve_metadata_() {
+                            // k, bit_counter, metadata_size
+                            if( this->is_open ) {
+                                // std::cout << "OfflineRCodecReader/_retrieve_metadata_> (0) serializer size = " << this->serializer->size() << std::endl;
+                                std::size_t nbytes = this->serializer->size();
+                                this->serializer->seek( nbytes - sizeof(std::size_t) , std::ios_base::beg );
+
+
+                                std::size_t metadata_size = this->serializer->template next<std::size_t>();
+                                // std::cout << "OfflineRCodecReader/_retrieve_metadata_> (1) tellg = " << this->serializer->tell() << "; metadata_size = " << metadata_size << std::endl;
+
+                                this->serializer->seek( nbytes - ((metadata_size + 1) * sizeof(std::size_t)), std::ios_base::beg );
+
+                                // std::cout << "OfflineRCodecReader/_retrieve_metadata_> (2) tellg = " << this->serializer->tell() << std::endl;
+
+                                for (std::size_t i = 0; i < metadata_size; i++) {
+                                    std::size_t v = this->serializer->template next<std::size_t>();
+                                    this->add_metadata( v );
+                                    // std::cout << "OfflineRCodecReader/_retrieve_metadata_> (2) \t\ttellg = " << this->serializer->tell() << "; v = " << v << std::endl;
+                                }
+                                
+                                this->serializer->seek( 0, std::ios::beg );
+                                // std::cout << "OfflineRCodecReader/_retrieve_metadata_> (3) tellg = " << this->serializer->tell() << std::endl;
+                            }
+                        }
+
+                    public:
+                        /**
+                         * @brief Construct a new Binary Sequence object
+                         * 
+                         * @param file_name 
+                         */
+                        OfflineRCodecReader( const std::string file_name, const std::size_t offset = 0ULL ) :
+                            MAX ( ~( (Word) 0 ) ),
+                            file_name ( file_name ),
+                            is_open ( false ) {
+                            
+                            this->restart();
+                            
+                            // Loading metadata:
+                            this->_retrieve_metadata_();
+                            // std::vector<std::size_t>metadata = this->get_metadata();
+                            // this->k = this->serializer->template next<std::size_t>();
+                            // this->bit_limit = this->serializer->template next<std::size_t>();
+                            this->k = this->metadata[0];
+                            this->bit_limit = this->metadata[1];
+                            this->metadata.erase( this->metadata.begine() ); // Erasing k from metadata.
+                            this->metadata.erase( this->metadata.begine() ); // Erasing bit_limit from metadata.
+
+                            // std::cout << "OfflineRCodecReader/init> k = " << this->k << "; bit_limit = " << this->bit_limit << std::endl;
+
+                            // Seting environment:
+                            this->R_MASK = MAX << this->k;
+
+                            this->serializer->seek( offset, std::ios::beg );
+                        }
+
+                        /**
+                         * @brief Returns the k constant
+                         * 
+                         * @return const std::size_t 
+                         */
+                        const std::size_t get_k() const {
+                            return this->k;
+                        }
+
+                        const Word next( ) override { 
+                            // std::cout << "OfflineRCodecReader/next> [BEGIN] k = " << this->k << "; bit_limit = " << this->bit_limit << "; position = " << this->position << "; bit_counter = " << this->bit_counter << std::endl;
+                            // NOTE: Based on `samg::grcodec::toolkits::GolombRiceCommon<Word>::_rice_decode_`.
+                            while( ( this->_get_buffer_length_() - this->position ) < this->k ) {
+                                this->_fecth_();
+                            }
+
+                            // Retrieve reminder:
+                            Word v = samg::grcodec::toolkits::GolombRiceCommon<Word>::_bitread_( buffer.data(), this->position, this->k );
+                            this->position += this->k;
+                            this->bit_counter += this->k;
+
+                            // Retrieve quotient:
+                            this->_update_();
+                            while ( samg::grcodec::toolkits::GolombRiceCommon<Word>::_bitget_( buffer.data() , this->position ) ) {
+                                v += ( 1 << this->k );
+                                ++(this->position);
+                                ++(this->bit_counter);
+                                this->_update_();
+                            }
                             ++(this->position);
                             ++(this->bit_counter);
-                            this->_update_();
+                            // std::cout << "OfflineRCodecReader/next> \t\t[END] k = " << this->k << "; bit_limit = " << this->bit_limit << "; position = " << this->position << "; bit_counter = " << this->bit_counter << std::endl;
+                            return v;
                         }
-                        ++(this->position);
-                        ++(this->bit_counter);
-                        return v;
-                    }
 
-                    const bool has_more( ) const override {
-                        return this->bit_counter < this->bit_limit; //this->serializer->has_more();
-                    }
-
-                    void restart() override {
-                        this->close();
-                        this->serializer = std::make_unique<samg::serialization::OfflineWordReader<Word>>( this->file_name );
-                        this->position = 0ULL;
-                        this->bit_counter = 0ULL;
-                        this->is_open = true;
-
-                    }
-
-                    void close( ) override {
-                        if( this->is_open ) {
-                            this->serializer->close();
-                            this->serializer.reset();
-                            this->is_open = false;
+                        const bool has_more( ) const override {
+                            return this->bit_counter < this->bit_limit; //this->serializer->has_more();
                         }
-                    }
-            };
+
+                        void restart() override {
+                            this->close();
+                            this->serializer = std::make_unique<samg::serialization::OfflineWordReader<Word>>( this->file_name );
+                            this->position = 0ULL;
+                            this->bit_counter = 0ULL;
+                            this->is_open = true;
+
+                        }
+
+                        const std::vector<std::size_t> get_metadata() const override {
+                            // Take out k and bit_counter entries in the metadata list:
+                            // std::vector<std::size_t> tmp = std::vector<std::size_t>( this->metadata.begin() + 2, this->metadata.end() );
+                            // return tmp;
+                            return this->metadata;
+                        }
+
+                        void close( ) override {
+                            if( this->is_open ) {
+                                this->serializer->close();
+                                this->serializer.reset();
+                                this->is_open = false;
+                            }
+                        }
+                };
             }
         }
         
@@ -1108,9 +1275,15 @@ namespace samg {
                      * @return Type 
                      */
                     static Type _rice_decode_(sdsl::bit_vector &v, const std::size_t A, const std::size_t m) {
+                        // auto start = std::chrono::high_resolution_clock::now();
                         Type R = v.get_int( 0, sizeof(Type) * BITS_PER_BYTE ),
                             ans = ( m * A ) + R;
+                        // auto end = std::chrono::high_resolution_clock::now();
+                        // double time_taken = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+                        // printf("*** Rice decoding time %.2f[ns]\n",time_taken);
+
                         return ans;
+                        // return ( m * A ) + R;
                     }
 
                     /**
@@ -1310,7 +1483,7 @@ namespace samg {
                  * @tparam Word 
                  * @tparam std::size_t 
                  */
-                template<typename Word> class OfflineRiceRunsWriter : public samg::grcodec::base::writer::CodecFileWriter<Word> {
+                template<typename Word> class OfflineRiceRunsWriter : public samg::grcodec::base::writer::CodecFileWriter<Word>, samg::grcodec::base::MetadataKeeper {
                     private:
                         /**
                          * @brief This class represents a FSM for encoding. 
@@ -1432,11 +1605,14 @@ namespace samg {
                                             if( is_negative ) { codec->add(samg::grcodec::toolkits::RunLengthCommon<Word>::NEGATIVE_FLAG); }
                                             codec->add(n);
                                         }
+                                        // std::cout << " Write ---> r<" << r << "> x (" << (is_negative ? " NEG<00>":"") << " n<" << n << "> )" << std::endl;
                                     } else {
                                         codec->add(samg::grcodec::toolkits::RunLengthCommon<Word>::REPETITION_FLAG);
                                         if( is_negative ) { codec->add(samg::grcodec::toolkits::RunLengthCommon<Word>::NEGATIVE_FLAG); }
                                         codec->add(n);
                                         codec->add(r);
+
+                                        // std::cout << " Write ---> REP<01>" << (is_negative ? " NEG<00>":"") << " n<" << n << "> r<" << r << ">" << std::endl;
                                     }
                                 }
 
@@ -1449,11 +1625,15 @@ namespace samg {
                                  * @param n 
                                  * @return const ECase 
                                  */
+                                // static const ECase _get_case_( const RelativeSequence rs, std::size_t &i, const typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t previous_n, typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t &n ) {
                                 static const ECase _get_case_( typename samg::grcodec::toolkits::RunLengthCommon<Word>::RelativeSequence<> rs, const typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t previous_n, typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t &n ) {
+                                    // if( i == rs.size() ) {
                                     if( rs->empty() ) {
                                         return ECase::EC_EOS;
                                     }else {
+                                        // n = rs[i++];
                                         n = rs->front(); rs->pop();
+                                    //  std::cout << "\t\t\tFSMEncoder/_get_case_> previous_n = " << previous_n << "; n = " << n << std::endl;
                                         if( n > 0 && previous_n < 0 ) {
                                             return ECase::EC_PINT;
                                         } else if( n < 0 && previous_n > 0 ) {
@@ -1480,6 +1660,8 @@ namespace samg {
                                  * @param n 
                                  */
                                 void _init_( typename samg::grcodec::toolkits::RunLengthCommon<Word>::RelativeSequence<> rs, typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t &n ) {
+                                    // i = 0;
+                                    // n = rs[i++];
                                     n = rs->front(); rs->pop();
                                     this->current_state = EState::ES_Q0;
                                 }
@@ -1497,12 +1679,21 @@ namespace samg {
                                  */
                                 // EState next( const RelativeSequence rs, std::size_t &i, const typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t previous_n, typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t &n ) {
                                 EState next( typename samg::grcodec::toolkits::RunLengthCommon<Word>::RelativeSequence<> rs, const typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t previous_n, typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t &n ) {
+                                    // std::cout << "FSMEncoder/next> (1)" << std::endl;
                                     if( this->is_init ) {
+                                    //  std::cout << "\t\t\tFSMEncoder/next> (1) previous_n = " << previous_n << "; n = " << n << std::endl;
+                                        // this->current_state = fsm[this->current_state][ FSMEncoder::_get_case_( rs, i, previous_n, n ) ];
                                         this->current_state = fsm[this->current_state][ FSMEncoder::_get_case_( rs, previous_n, n ) ];
+                                        // std::cout << "FSMEncoder/next> (1.1.2)" << std::endl;
                                     } else {
+                                    //  std::cout << "\t\t\tFSMEncoder/next> (2 - init) previous_n = " << previous_n << "; n = " << n << std::endl;
+                                        // this->_init_( rs, i, n );
                                         this->_init_( rs, n );
+                                        // std::cout << "FSMEncoder/next> (1.2.2)" << std::endl;
                                         this->is_init = true;
+                                        // std::cout << "FSMEncoder/next> (1.2.3)" << std::endl;
                                     }
+                                //  std::cout << "\t\t\tFSMEncoder/next> current_state = " << this->current_state << "; previous_n = " << previous_n << "; n = " << n << std::endl;
                                     return this->current_state;
                                 }
 
@@ -1552,9 +1743,13 @@ namespace samg {
                         bool _encode_( ) {
                             // Encode:
                             typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t relative_v;
+                            // std::cout << "\tRiceRuns/encode/do-while (4)" << std::endl;
                             this->encoding_fsm.next( this->encoding_buffer, this->encoding_previous_relative_n, relative_v );
+                            // std::cout << "\tRiceRuns/encode/do-while (5)" << std::endl;
+                        //  std::cout << "\t\tOfflineRiceRunsWriter/_encode_ --- pre> encoding_previous_relative_n = " << this->encoding_previous_relative_n<< "; relative_v = " << relative_v << "; encoding_r = " << this->encoding_r << "; |encoding_buffer| = " << this->encoding_buffer->size() << std::endl;
                             if( this->encoding_fsm.is_error_state() ) { std::runtime_error("Encoding error state!"); }
                             this->encoding_fsm.run( this->codec, this->encoding_previous_relative_n, relative_v, this->encoding_r );
+                        //  std::cout << "\t\tOfflineRiceRunsWriter/_encode_ --- post> encoding_previous_relative_n = " << this->encoding_previous_relative_n<< "; relative_v = " << relative_v << "; encoding_r = " << this->encoding_r << "; |encoding_buffer| = " << this->encoding_buffer->size() << std::endl;
                             return !this->encoding_fsm.is_end_state();
                         }
 
@@ -1569,8 +1764,10 @@ namespace samg {
                         typename samg::grcodec::toolkits::RunLengthCommon<Word>::RelativeSequence<> encoding_buffer;
 
                     public:
-                        OfflineRiceRunsWriter( const std::string file_name, const std::size_t k ) { 
-                            this->codec = std::make_shared<samg::grcodec::rice::writer::OfflineRCodecWriter<Word>>( file_name, k );
+                        // OfflineRiceRunsWriter( const std::string file_name, const std::size_t k ) { 
+                        OfflineRiceRunsWriter( std::shared_ptr<samg::grcodec::rice::writer::OfflineRCodecWriter<Word>> codec ) { 
+                            // this->codec = std::make_shared<samg::grcodec::rice::writer::OfflineRCodecWriter<Word>>( file_name, k );
+                            this->codec = codec;
                             this->encoding_buffer = adapter::get_instance<typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t>( adapter::QueueAdapterType::Q_QUEUEADAPTER );
                             this->encoding_is_first = true;
                             this->encoding_previous_n = 0;
@@ -1580,21 +1777,26 @@ namespace samg {
                         }
 
                         const bool add( Word v ) override {
+                            // std::cout << "OfflineRiceRunsWriter/add(v = " << v << ")" << std::endl;
                             // Relativize:
                             typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t relative_v;
                             if( this->encoding_is_first ) {
                                 relative_v = samg::grcodec::toolkits::RunLengthCommon<Word>::transform_rval( v );
                                 this->encoding_is_first = false;
                             } else {
+                                // this->encoding_buffer.push( this->encoding_previous_relative_n );
                                 relative_v = samg::grcodec::toolkits::RunLengthCommon<Word>::get_transformed_relative_sequence( this->encoding_previous_n, v );
                             }
+                        //  std::cout << "\tOfflineRiceRunsWriter/add> (*)" << std::endl;
                             this->encoding_buffer->push( relative_v );
+                            // std::cout << "\tOfflineRiceRunsWriter/add> v = " << v << "; relative_v (" << typeid(relative_v).name() << ") = " << relative_v << "; |encoding_buffer| = " << this->encoding_buffer->size() << "; encoding_previous_n = " << this->encoding_previous_n << std::endl;
                             this->encoding_previous_n = v;
                             
                             return !this->_encode_();
                         }
 
                         void close( ) override {
+                            // this->encoding_buffer.pop();
                             if( this->_encode_() ){
                                 throw std::runtime_error("Ending encoding error!");
                             }
@@ -1602,6 +1804,19 @@ namespace samg {
                             this->codec.reset();
                             this->encoding_buffer.reset();
                         }
+
+                        const std::vector<std::size_t> get_metadata() const {
+                            return this->codec->get_metadata();
+                        }
+
+                        void add_metadata( std::size_t v ) {
+                            this->codec->add_metadata( v );
+                        }
+
+                        void push_metadata( std::size_t v ) {
+                            this->codec->push_metadata( v );
+                        }
+
                 };
             }
             namespace reader {
@@ -1610,7 +1825,7 @@ namespace samg {
                  * 
                  * @tparam Word 
                  */
-                template<typename Word> class OfflineRiceRunsReader : public samg::grcodec::base::reader::CodecFileReader<Word> {
+                template<typename Word> class OfflineRiceRunsReader : public samg::grcodec::base::reader::CodecFileReader<Word>, samg::grcodec::base::MetadataKeeper {
                     private:
                         /**
                          * @brief This class represents a FSM for decoding. 
@@ -1725,6 +1940,7 @@ namespace samg {
                                 static void _write_integer_( typename samg::grcodec::toolkits::RunLengthCommon<Word>::RelativeSequence<> rs, const Word n, const std::size_t r, const bool is_negative = false ) {
                                     typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t x = is_negative ? ((typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t)n) * -1 : n;
                                     for (std::size_t j = 0; j < r; ++j) {
+                                        // rs.push_back(x);
                                         rs->push(x);
                                     }
                                 }
@@ -1778,6 +1994,10 @@ namespace samg {
                                         this->_init_( n );
                                         this->is_init = true;
                                     }
+                                    // DCase c = FSMDecoder::_get_case_( codec, n );
+                                    // this->current_state = fsm[this->current_state][ c ];
+                                    // std::cout << "\t\t\tOfflineRiceRunsReader/FSMDecoder/next> current_state = "<< this->current_state << "; case = " << c << std::endl;
+                                    // return this->current_state;
                                     return this->current_state = fsm[this->current_state][ FSMDecoder::_get_case_( codec, n ) ];
                                 }
 
@@ -1835,12 +2055,14 @@ namespace samg {
                                                         decoding_n;
                         typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t decoding_previous_relative_value;
                         typename samg::grcodec::toolkits::RunLengthCommon<Word>::AbsoluteSequence<> decoding_next_buffer;
+                        // typename samg::grcodec::toolkits::RunLengthCommon<Word>::RelativeSequence<> encoding_buffer;
                         bool    is_open,
                                 decoding_is_first;
                         std::string file_name;
 
                     public:
                         OfflineRiceRunsReader( const std::string file_name ) { 
+                            // this->encoding_is_first = true;
                             this->file_name = file_name;
                             this->is_open = false;
                             this->restart(); 
@@ -1850,13 +2072,16 @@ namespace samg {
                             if( !this->is_open ) {
                                 throw std::runtime_error("Stream from file \""+this->file_name+"\" is not openned!");
                             }
+                            // std::cout << "OfflineRiceRunsReader/next> decoding_previous_n = " << this->decoding_previous_n << "; decoding_n = " << this->decoding_n << std::endl;
                             if( this->decoding_next_buffer->empty() ) {
                                 std::uint8_t s;
                                 typename samg::grcodec::toolkits::RunLengthCommon<Word>::RelativeSequence<> relative_sequence  = adapter::get_instance<typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t>( adapter::QueueAdapterType::Q_QUEUEADAPTER );
                                 do { 
                                     s = this->decoding_fsm.next( this->codec, this->decoding_previous_n, this->decoding_n);
                                     if( this->decoding_fsm.is_error_state() ) { break; }
+                                    // std::cout << "\t\tOfflineRiceRunsReader/next> pre-run --- decoding_previous_n = " << this->decoding_previous_n << "; decoding_n = " << this->decoding_n << "; |relative_sequence| = " << relative_sequence->size() << std::endl;
                                     this->decoding_fsm.run( relative_sequence, this->decoding_previous_n, this->decoding_n );
+                                    // std::cout << "\t\tOfflineRiceRunsReader/next> post-run --- decoding_previous_n = " << this->decoding_previous_n << "; decoding_n = " << this->decoding_n << "; |relative_sequence| = " << relative_sequence->size() << std::endl;
                                 }while( !this->decoding_fsm.is_output_state() );
 
                                 // If it is not the first time executing `next`, then insert the previous relativized absolute value to the beginning of the just retrieved relative sequence:
@@ -1867,6 +2092,7 @@ namespace samg {
                                         tmp->push( relative_sequence->front() );
                                         relative_sequence->pop();
                                     }
+                                    // std::swap( tmp, relative_sequence );
                                     adapter::QueueAdapter<typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t>::swap( *tmp, *relative_sequence );
                                 }
 
@@ -1876,6 +2102,7 @@ namespace samg {
                                 
                                 // Back up the last relativized (transformed) absolute value:
                                 this->decoding_previous_relative_value = samg::grcodec::toolkits::RunLengthCommon<Word>::transform_rval( this->decoding_next_buffer->back() );
+                                // std::cout << "\t\tOfflineRiceRunsReader/next> decoding_previous_relative_value = " << this->decoding_previous_relative_value << std::endl;
                                 
                                 // It it is not the first time executing `next`, then remove the previously added last relativized absolute value:
                                 // (it was already used to compute the next absolute value(s))
@@ -1888,6 +2115,7 @@ namespace samg {
 
                             Word v = this->decoding_next_buffer->front();
                             this->decoding_next_buffer->pop();
+                            // std::cout << "\t\tOfflineRiceRunsReader/next> v = " << v << "; |decoding_next_buffer| = " << this->decoding_next_buffer->size() << std::endl;
                             return v;
                         }
 
@@ -1910,9 +2138,15 @@ namespace samg {
                                 this->decoding_next_buffer.reset();
                             }
                             this->decoding_next_buffer = adapter::get_instance<Word>( adapter::QueueAdapterType::Q_QUEUEADAPTER );
+
+                            // if( this->encoding_buffer ){
+                            //     this->encoding_buffer.reset();
+                            // }
+                            // this->encoding_buffer = adapter::get_instance<typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t>( adapter::QueueAdapterType::Q_QUEUEADAPTER );
                         }
                         
                         const bool has_more() const override {
+                            // return this->codec.has_more();
                             return  this->is_open && (
                                         this->codec->has_more() || 
                                         !(this->decoding_next_buffer->empty())
@@ -1924,8 +2158,22 @@ namespace samg {
                                 this->codec->close();
                                 this->codec.reset();
                                 this->decoding_next_buffer.reset();
+                                // this->encoding_buffer.reset();
                                 this->is_open = false;
                             }
+                        }
+
+
+                        const std::vector<std::size_t> get_metadata() const {
+                            return this->codec->get_metadata();
+                        }
+
+                        void add_metadata( std::size_t v ) {
+                            throw std::runtime_error("Non-implemented method!");
+                        }
+
+                        void push_metadata( std::size_t v ) {
+                            throw std::runtime_error("Non-implemented method!");
                         }
                 };
             }

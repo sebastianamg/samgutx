@@ -742,10 +742,24 @@ namespace samg {
                         throw std::runtime_error("Failed to open file \""+file_name+"\"!");
                     }
                     
-                    // Computing input length:
-                    file.seekg(0, std::ios::end);
-                    this->serialization_length = file.tellg();
-                    file.seekg(0, std::ios::beg);
+                    // Computing input length in bytes:
+                    this->serialization_length = samg::utils::get_file_size( file_name );
+                    // file.seekg(0, file.end);
+                    // this->serialization_length = file.tellg();
+                    // file.seekg(0, file.beg);
+                }
+
+                void seek( const std::streampos index, const std::ios_base::seekdir pos ) {
+                    // if( index < this->serialization_length ) {
+                        this->file.seekg( index, pos );
+                    // } else {
+                    //     throw std::runtime_error("Index \""+std::to_string(index)+"\" is out of bounds!");
+                    // }
+                }
+
+                const std::size_t tell( ) {
+                    std::size_t ans = this->file.tellg();
+                    return  ans;
                 }
 
                 /**
@@ -852,7 +866,7 @@ namespace samg {
                 }
 
                 /**
-                 * @brief Returns the number of Type words that composes the serialization. 
+                 * @brief Returns the number of bytes that composes the serialization. 
                  * 
                  * @return const std::size_t 
                  */

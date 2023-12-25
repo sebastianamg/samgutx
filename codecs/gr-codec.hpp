@@ -938,7 +938,7 @@ namespace samg {
                          * 
                          * @param file_name 
                          */
-                        OfflineRCodecReader( const std::string file_name, const std::size_t offset = 0ULL ) :
+                        OfflineRCodecReader( const std::string file_name, const std::size_t offset = 0ULL, const std::size_t limit = 0ULL ) :
                             MAX ( ~( (Word) 0 ) ),
                             file_name ( file_name ),
                             is_open ( false ) {
@@ -951,7 +951,7 @@ namespace samg {
                             // this->k = this->serializer->template next<std::size_t>();
                             // this->bit_limit = this->serializer->template next<std::size_t>();
                             this->k = this->metadata[0];
-                            this->bit_limit = this->metadata[1];
+                            this->bit_limit = ( limit == 0 ) ? this->metadata[1] : limit;
                             this->metadata.erase( this->metadata.begine() ); // Erasing k from metadata.
                             this->metadata.erase( this->metadata.begine() ); // Erasing bit_limit from metadata.
 
@@ -1740,19 +1740,6 @@ namespace samg {
                                 
                         };
 
-                        bool _encode_( ) {
-                            // Encode:
-                            typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t relative_v;
-                            // std::cout << "\tRiceRuns/encode/do-while (4)" << std::endl;
-                            this->encoding_fsm.next( this->encoding_buffer, this->encoding_previous_relative_n, relative_v );
-                            // std::cout << "\tRiceRuns/encode/do-while (5)" << std::endl;
-                        //  std::cout << "\t\tOfflineRiceRunsWriter/_encode_ --- pre> encoding_previous_relative_n = " << this->encoding_previous_relative_n<< "; relative_v = " << relative_v << "; encoding_r = " << this->encoding_r << "; |encoding_buffer| = " << this->encoding_buffer->size() << std::endl;
-                            if( this->encoding_fsm.is_error_state() ) { std::runtime_error("Encoding error state!"); }
-                            this->encoding_fsm.run( this->codec, this->encoding_previous_relative_n, relative_v, this->encoding_r );
-                        //  std::cout << "\t\tOfflineRiceRunsWriter/_encode_ --- post> encoding_previous_relative_n = " << this->encoding_previous_relative_n<< "; relative_v = " << relative_v << "; encoding_r = " << this->encoding_r << "; |encoding_buffer| = " << this->encoding_buffer->size() << std::endl;
-                            return !this->encoding_fsm.is_end_state();
-                        }
-
                         // Attributes for relative-sequence traversal:
                         std::shared_ptr<samg::grcodec::rice::writer::OfflineRCodecWriter<Word>> codec;
                         FSMEncoder                      encoding_fsm;
@@ -1762,6 +1749,33 @@ namespace samg {
                                                         encoding_previous_relative_n;
                         bool                            encoding_is_first;
                         typename samg::grcodec::toolkits::RunLengthCommon<Word>::RelativeSequence<> encoding_buffer;
+                    
+                    protected:
+                        std::shared_ptr<samg::grcodec::rice::writer::OfflineRCodecWriter<Word>> get_codec() const {
+                            return this->codec;
+                        }
+
+                        void restart() {
+                            this->encoding_fsm.restart();
+                            this->encoding_is_first = true;
+                            this->encoding_previous_n = 0;
+                            this->encoding_r = 0;
+                            this->encoding_relative_n = 0;
+                            this->encoding_previous_relative_n = 0;
+                        }
+
+                        bool encode( ) {
+                            // Encode:
+                            typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t relative_v;
+                            // std::cout << "\tRiceRuns/encode/do-while (4)" << std::endl;
+                            this->encoding_fsm.next( this->encoding_buffer, this->encoding_previous_relative_n, relative_v );
+                            // std::cout << "\tRiceRuns/encode/do-while (5)" << std::endl;
+                        //  std::cout << "\t\tOfflineRiceRunsWriter/_encode_ --- pre> encoding_previous_relative_n = " << this->encoding_previous_relative_n<< "; relative_v = " << relative_v << "; encoding_r = " << this->encoding_r << "; |encoding_buffer| = " << this->encoding_buffer->size() << std::endl;
+                            if( this->encoding_fsm.is_error_state() ) { std::runtime_error("Encoding error state!"); }
+                            this->encoding_fsm.run( this->codec, this->encoding_previous_relative_n, relative_v, this->encoding_r );
+                        //  std::cout << "\t\tOfflineRiceRunsWriter/_encode_ --- post> encoding_previous_relative_n = " << this->encoding_previous_relative_n<< "; relative_v = " << relative_v << "; encoding_r = " << this->encoding_r << "; |encoding_buffer| = " << this->encoding_buffer->size() << std::endl;
+                            return this->encoding_fsm.is_end_state();
+                        }
 
                     public:
                         // OfflineRiceRunsWriter( const std::string file_name, const std::size_t k ) { 
@@ -1769,11 +1783,7 @@ namespace samg {
                             // this->codec = std::make_shared<samg::grcodec::rice::writer::OfflineRCodecWriter<Word>>( file_name, k );
                             this->codec = codec;
                             this->encoding_buffer = adapter::get_instance<typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t>( adapter::QueueAdapterType::Q_QUEUEADAPTER );
-                            this->encoding_is_first = true;
-                            this->encoding_previous_n = 0;
-                            this->encoding_r = 0;
-                            this->encoding_relative_n = 0;
-                            this->encoding_previous_relative_n = 0;
+                            this->restart();
                         }
 
                         const bool add( Word v ) override {
@@ -1792,12 +1802,12 @@ namespace samg {
                             // std::cout << "\tOfflineRiceRunsWriter/add> v = " << v << "; relative_v (" << typeid(relative_v).name() << ") = " << relative_v << "; |encoding_buffer| = " << this->encoding_buffer->size() << "; encoding_previous_n = " << this->encoding_previous_n << std::endl;
                             this->encoding_previous_n = v;
                             
-                            return !this->_encode_();
+                            return this->encode();
                         }
 
                         void close( ) override {
                             // this->encoding_buffer.pop();
-                            if( this->_encode_() ){
+                            if( !this->encode() ){
                                 throw std::runtime_error("Ending encoding error!");
                             }
                             this->codec->close();

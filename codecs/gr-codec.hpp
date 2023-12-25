@@ -646,6 +646,18 @@ namespace samg {
 
             };
 
+            class FileHandler {
+                private:
+                    const std::string file_name;
+                public:
+                    FileHandler( const std::string file_name ) :
+                        file_name (file_name) {}
+
+                    const std::string get_file_name() const {
+                        return this->file_name;
+                    }
+            };
+
             namespace writer {
                 template<typename Word> class CodecWriter : public Codec<Word> {
                     public:
@@ -657,8 +669,10 @@ namespace samg {
                         virtual const bool add(const Word n) = 0;
                 };
 
-                template<typename Word> class CodecFileWriter : public CodecWriter<Word> {
+                template<typename Word> class CodecFileWriter : public CodecWriter<Word>, public FileHandler  {
                     public:
+                        CodecFileWriter( const std::string file_name ) :
+                            FileHandler(file_name) {}
                         /**
                          * @brief Closes serialization.
                          * 
@@ -692,8 +706,10 @@ namespace samg {
                         virtual void restart() = 0;
                 };
 
-                template<typename Word> class CodecFileReader : public CodecReader<Word> {
+                template<typename Word> class CodecFileReader : public CodecReader<Word>, public FileHandler {
                     public:
+                        CodecFileReader( const std::string file_name ) :
+                            FileHandler(file_name) {}
                         /**
                          * @brief Closes serialization source.
                          * 
@@ -764,6 +780,7 @@ namespace samg {
                          * @param k 
                          */
                         OfflineRCodecWriter( const std::string file_name, const std::size_t k ):
+                            CodecFileWriter( file_name ),
                             k ( k ),
                             value_counter ( 0ULL ),
                             bit_counter ( 0ULL ),
@@ -875,9 +892,9 @@ namespace samg {
                         std::size_t k,
                                     position,
                                     bit_limit,
-                                    bit_counter;
+                                    bit_counter,
+                                    offset;
                         bool is_open;
-                        const std::string file_name;
 
                         const std::size_t _get_buffer_length_() {
                             return this->buffer.size() * samg::grcodec::toolkits::GolombRiceCommon<Word>::get_word_bits();
@@ -937,11 +954,14 @@ namespace samg {
                          * @brief Construct a new Binary Sequence object
                          * 
                          * @param file_name 
+                         * @param offset in bits
+                         * @param limit in bits
                          */
                         OfflineRCodecReader( const std::string file_name, const std::size_t offset = 0ULL, const std::size_t limit = 0ULL ) :
+                            CodecFileReader( file_name ),
                             MAX ( ~( (Word) 0 ) ),
-                            file_name ( file_name ),
-                            is_open ( false ) {
+                            is_open ( false ),
+                            offset ( offset ) {
                             
                             this->restart();
                             
@@ -960,7 +980,8 @@ namespace samg {
                             // Seting environment:
                             this->R_MASK = MAX << this->k;
 
-                            this->serializer->seek( offset, std::ios::beg );
+                            // // Set the starting byte within the serialization based on the input offset:
+                            // this->serializer->seek( std::ceil((std::double_t)offset/(std::double_t)BITS_PER_BYTE), std::ios::beg );
                         }
 
                         /**
@@ -1004,9 +1025,12 @@ namespace samg {
 
                         void restart() override {
                             this->close();
-                            this->serializer = std::make_unique<samg::serialization::OfflineWordReader<Word>>( this->file_name );
+                            this->serializer = std::make_unique<samg::serialization::OfflineWordReader<Word>>( this->get_file_name() );
                             this->position = 0ULL;
                             this->bit_counter = 0ULL;
+                            // Set the starting byte within the serialization based on the input offset:
+                            this->serializer->seek( std::ceil((std::double_t)this->offset/(std::double_t)BITS_PER_BYTE), std::ios::beg );
+
                             this->is_open = true;
 
                         }
@@ -1755,13 +1779,21 @@ namespace samg {
                             return this->codec;
                         }
 
-                        void restart() {
+                        void restart( ) {
+                            if( !this->encode() ){
+                                throw std::runtime_error("Ending encoding error!");
+                            }
                             this->encoding_fsm.restart();
                             this->encoding_is_first = true;
                             this->encoding_previous_n = 0;
                             this->encoding_r = 0;
                             this->encoding_relative_n = 0;
                             this->encoding_previous_relative_n = 0;
+                            if( this->encoding_buffer ) {
+                                this->encoding_buffer.reset();
+                            }
+                            this->encoding_buffer = adapter::get_instance<typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t>( adapter::QueueAdapterType::Q_QUEUEADAPTER );
+
                         }
 
                         bool encode( ) {
@@ -1779,10 +1811,11 @@ namespace samg {
 
                     public:
                         // OfflineRiceRunsWriter( const std::string file_name, const std::size_t k ) { 
-                        OfflineRiceRunsWriter( std::shared_ptr<samg::grcodec::rice::writer::OfflineRCodecWriter<Word>> codec ) { 
+                        OfflineRiceRunsWriter( std::shared_ptr<samg::grcodec::rice::writer::OfflineRCodecWriter<Word>> codec ) :
+                            CodecFileWriter( codec->get_file_name() ) { 
                             // this->codec = std::make_shared<samg::grcodec::rice::writer::OfflineRCodecWriter<Word>>( file_name, k );
                             this->codec = codec;
-                            this->encoding_buffer = adapter::get_instance<typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t>( adapter::QueueAdapterType::Q_QUEUEADAPTER );
+                            // this->encoding_buffer = adapter::get_instance<typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t>( adapter::QueueAdapterType::Q_QUEUEADAPTER );
                             this->restart();
                         }
 
@@ -2066,22 +2099,21 @@ namespace samg {
                         typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t decoding_previous_relative_value;
                         typename samg::grcodec::toolkits::RunLengthCommon<Word>::AbsoluteSequence<> decoding_next_buffer;
                         // typename samg::grcodec::toolkits::RunLengthCommon<Word>::RelativeSequence<> encoding_buffer;
-                        bool    is_open,
-                                decoding_is_first;
-                        std::string file_name;
+                        // bool    is_open,
+                        bool decoding_is_first;
 
                     public:
-                        OfflineRiceRunsReader( const std::string file_name ) { 
+                        OfflineRiceRunsReader( std::shared_ptr<samg::grcodec::rice::reader::OfflineRCodecReader<Word>> codec ):
+                            CodecFileReader( codec->get_file_name() )  { 
                             // this->encoding_is_first = true;
-                            this->file_name = file_name;
-                            this->is_open = false;
+                            // this->is_open = false;
                             this->restart(); 
                         }
 
                         const Word next() override {
-                            if( !this->is_open ) {
-                                throw std::runtime_error("Stream from file \""+this->file_name+"\" is not openned!");
-                            }
+                            // if( !this->is_open ) {
+                            //     throw std::runtime_error("Stream from file \""+this->get_file_name()+"\" is not openned!");
+                            // }
                             // std::cout << "OfflineRiceRunsReader/next> decoding_previous_n = " << this->decoding_previous_n << "; decoding_n = " << this->decoding_n << std::endl;
                             if( this->decoding_next_buffer->empty() ) {
                                 std::uint8_t s;
@@ -2129,18 +2161,22 @@ namespace samg {
                             return v;
                         }
 
-                        void restart() override {
+                        void restart( ) override {
                             this->decoding_previous_n = 0;
                             this->decoding_n = 0;
                             this->decoding_previous_relative_value = 0;
                             this->decoding_is_first = true;
 
-                            if( this->is_open ) {
-                                this->codec->restart();
-                            } else {
-                                this->codec = std::make_shared<samg::grcodec::rice::reader::OfflineRCodecReader<Word>>( this->file_name );
-                                this->is_open = true;
-                            }
+                            // if( !(this->is_open) ) {
+                            //     this->codec = std::make_shared<samg::grcodec::rice::reader::OfflineRCodecReader<Word>>( this->get_file_name() );
+                            //     this->is_open = true;
+                            // } else if( !soft_restart ) {
+                            //         this->codec->restart();
+                            // }
+                            // if( !soft_restart ) {
+                            this->codec->restart();
+                            // }
+
                             this->decoding_fsm.restart();
 
                         
@@ -2157,20 +2193,20 @@ namespace samg {
                         
                         const bool has_more() const override {
                             // return this->codec.has_more();
-                            return  this->is_open && (
+                            return  //this->is_open && (
                                         this->codec->has_more() || 
-                                        !(this->decoding_next_buffer->empty())
-                                    );
+                                        !(this->decoding_next_buffer->empty());
+                                    //);
                         }
 
                         void close() override {
-                            if( this->is_open ) {
+                            // if( this->is_open ) {
                                 this->codec->close();
                                 this->codec.reset();
                                 this->decoding_next_buffer.reset();
                                 // this->encoding_buffer.reset();
-                                this->is_open = false;
-                            }
+                                // this->is_open = false;
+                            // }
                         }
 
 

@@ -789,10 +789,10 @@ namespace samg {
                             words_max_capacity ( 0ULL ),// ( OfflineRCodecWriter<Word>::WORD_GROWING_SPAN ),
                             sequence ( samg::grcodec::toolkits::GolombRiceCommon<Word>::rmalloc( 0ULL ) ) //( samg::grcodec::toolkits::GolombRiceCommon<Word>::rmalloc( OfflineRCodecWriter<Word>::WORD_GROWING_SPAN ) ) 
                         {
-                            std::cout << "OfflineRCodecWriter/init> (1)" << std::endl;
+                            // std::cout << "OfflineRCodecWriter/init> (1)" << std::endl;
                             this->serializer = std::make_unique<samg::serialization::OfflineWordWriter<Word>>( file_name );
                             // this->serializer->template add_value<std::size_t>( k );
-                            std::cout << "OfflineRCodecWriter/init> (2)" << std::endl;
+                            // std::cout << "OfflineRCodecWriter/init> (2)" << std::endl;
                         }
 
                         /**
@@ -814,12 +814,12 @@ namespace samg {
 
                         const bool add( const Word n ) override {
                             const std::size_t n_bits = samg::grcodec::toolkits::GolombRiceCommon<Word>::_value_size_( n, this->k );
-                            std::cout << "OfflineRCodecWriter/add> [BEGIN] k = " << this->k << "; n = " << n << "; |n| = " << n_bits << "[b]; bit_index = " << this->bit_index << "; bit_counter = " << this->bit_counter << "; value_counter = " << this->value_counter << "; word_max_capacity = " << this->words_max_capacity << "; word_counter = " << this->word_counter << std::endl;
+                            // std::cout << "OfflineRCodecWriter/add> [BEGIN] k = " << this->k << "; n = " << n << "; |n| = " << n_bits << "[b]; bit_index = " << this->bit_index << "; bit_counter = " << this->bit_counter << "; value_counter = " << this->value_counter << "; word_max_capacity = " << this->words_max_capacity << "; word_counter = " << this->word_counter << std::endl;
                             if( std::ceil( (double)(this->bit_index + n_bits ) / (double) samg::grcodec::toolkits::GolombRiceCommon<Word>::get_word_bits() ) > this->words_max_capacity ) {
                             // if( std::floor( (double)(this->bit_index + n_bits ) / (double) samg::grcodec::toolkits::GolombRiceCommon<Word>::get_word_bits() ) >= this->words_max_capacity ) {
                                 // std::cout << "RCodec/BinarySequence/add --- growing bitmap from " << this->max_length << "[W]";
                                 const std::size_t new_word_capacity = std::ceil( (double)n_bits / (double)samg::grcodec::toolkits::GolombRiceCommon<Word>::get_word_bits() ); //+ OfflineRCodecWriter::WORD_GROWING_SPAN );
-                                std::cout << "OfflineRCodecWriter/add>\t\tGrowing in "<< new_word_capacity <<"[W]..." << std::endl;
+                                // std::cout << "OfflineRCodecWriter/add>\t\tGrowing in "<< new_word_capacity <<"[W]..." << std::endl;
                                 this->word_counter += new_word_capacity;
                                 this->words_max_capacity += new_word_capacity;
                                 // std::cout << " to " << this->max_length << " [W]" << std::endl;
@@ -833,7 +833,7 @@ namespace samg {
                             const double words_in_sequence = (double) this->bit_index  / (double) samg::grcodec::toolkits::GolombRiceCommon<Word>::get_word_bits();
                             const std::size_t words = std::floor( words_in_sequence );
                             if( words > 0 ) { // Flush to secondary memory:
-                                std::cout << "OfflineRCodecWriter/add>\t\tFlushing..." << std::endl;
+                                // std::cout << "OfflineRCodecWriter/add>\t\tFlushing..." << std::endl;
                                 const std::size_t delta_words = std::ceil( words_in_sequence ) - words;
                                 this->serializer->template add_values<Word>( this->sequence, words );
                                 // this->word_counter += ( this->words_max_capacity - delta_words );
@@ -847,7 +847,7 @@ namespace samg {
                                 this->bit_index -= ( words * samg::grcodec::toolkits::GolombRiceCommon<Word>::get_word_bits() );
                             }
                             return true; // To fulfill inheritance requirements.
-                            std::cout << "OfflineRCodecWriter/add>   [END] k = " << this->k << "; n = " << n << "; |n| = " << n_bits << "[b]; bit_index = " << this->bit_index << "; bit_counter = " << this->bit_counter << "; value_counter = " << this->value_counter << "; word_max_capacity = " << this->words_max_capacity << "; word_counter = " << this->word_counter << std::endl;
+                            // std::cout << "OfflineRCodecWriter/add>   [END] k = " << this->k << "; n = " << n << "; |n| = " << n_bits << "[b]; bit_index = " << this->bit_index << "; bit_counter = " << this->bit_counter << "; value_counter = " << this->value_counter << "; word_max_capacity = " << this->words_max_capacity << "; word_counter = " << this->word_counter << std::endl;
                         }
 
                         const std::vector<std::size_t> get_metadata() const override {
@@ -966,16 +966,16 @@ namespace samg {
                             is_open ( false ),
                             offset ( offset ) {
                             
-                            std::cout << "OfflineRCodecReader/init> (1)" << std::endl;
+                            // std::cout << "OfflineRCodecReader/init> (1)" << std::endl;
 
                             this->restart();
 
-                            std::cout << "OfflineRCodecReader/init> (2)" << std::endl;
+                            // std::cout << "OfflineRCodecReader/init> (2)" << std::endl;
                             
                             // Loading metadata:
                             this->_retrieve_metadata_();
 
-                            std::cout << "OfflineRCodecReader/init> (3)" << std::endl;
+                            // std::cout << "OfflineRCodecReader/init> (3)" << std::endl;
                             // std::vector<std::size_t>metadata = this->get_metadata();
                             // this->k = this->serializer->template next<std::size_t>();
                             // this->bit_limit = this->serializer->template next<std::size_t>();
@@ -984,7 +984,7 @@ namespace samg {
                             this->metadata.erase( this->metadata.begin() ); // Erasing k from metadata.
                             this->metadata.erase( this->metadata.begin() ); // Erasing bit_limit from metadata.
 
-                            std::cout << "OfflineRCodecReader/init> (4) k = " << this->k << "; bit_limit = " << this->bit_limit << std::endl;
+                            // std::cout << "OfflineRCodecReader/init> (4) k = " << this->k << "; bit_limit = " << this->bit_limit << std::endl;
                             // std::cout << "OfflineRCodecReader/init> k = " << this->k << "; bit_limit = " << this->bit_limit << std::endl;
 
                             // Seting environment:
@@ -992,7 +992,7 @@ namespace samg {
 
                             // // Set the starting byte within the serialization based on the input offset:
                             // this->serializer->seek( std::ceil((std::double_t)offset/(std::double_t)BITS_PER_BYTE), std::ios::beg );
-                            std::cout << "OfflineRCodecReader/init> (5)" << std::endl;
+                            // std::cout << "OfflineRCodecReader/init> (5)" << std::endl;
                         }
 
                         /**
@@ -1634,29 +1634,29 @@ namespace samg {
                                  * @param is_negative 
                                  */
                                 static void _write_integer_( std::shared_ptr<samg::grcodec::base::writer::CodecWriter<Word>>codec, typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t n, const std::size_t r, const bool is_negative = false ) {
-                                    std::cout << "\t\t\tOfflineRiceRunsWriter/FSMEncoder/_write_integer_> n = " << n << "; r = " << r << "; is_negative = " << is_negative << std::endl;
+                                    // std::cout << "\t\t\tOfflineRiceRunsWriter/FSMEncoder/_write_integer_> n = " << n << "; r = " << r << "; is_negative = " << is_negative << std::endl;
                                     n = ( is_negative ) ? n * -1 : n;
                                     if( r < samg::grcodec::toolkits::RunLengthCommon<Word>::RLE_THRESHOLD ) {
-                                        std::cout << "\t\t\tOfflineRiceRunsWriter/FSMEncoder/_write_integer_> (1)" << std::endl;
+                                        // std::cout << "\t\t\tOfflineRiceRunsWriter/FSMEncoder/_write_integer_> (1)" << std::endl;
                                         for (std::size_t j = 0; j < r; ++j) {
                                             if( is_negative ) { codec->add(samg::grcodec::toolkits::RunLengthCommon<Word>::NEGATIVE_FLAG); }
                                             codec->add(n);
-                                            std::cout << "\t\t\tOfflineRiceRunsWriter/FSMEncoder/_write_integer_> (1.1)" << std::endl;
+                                            // std::cout << "\t\t\tOfflineRiceRunsWriter/FSMEncoder/_write_integer_> (1.1)" << std::endl;
                                         }
-                                        std::cout << "\t\t\tOfflineRiceRunsWriter/FSMEncoder/_write_integer_> (1.2)" << std::endl;
-                                        std::cout << " Write ---> r<" << r << "> x (" << (is_negative ? " NEG<00>":"") << " n<" << n << "> )" << std::endl;
+                                        // std::cout << "\t\t\tOfflineRiceRunsWriter/FSMEncoder/_write_integer_> (1.2)" << std::endl;
+                                        // std::cout << " Write ---> r<" << r << "> x (" << (is_negative ? " NEG<00>":"") << " n<" << n << "> )" << std::endl;
                                     } else {
-                                        std::cout << "\t\t\tOfflineRiceRunsWriter/FSMEncoder/_write_integer_> (2)" << std::endl;
+                                        // std::cout << "\t\t\tOfflineRiceRunsWriter/FSMEncoder/_write_integer_> (2)" << std::endl;
                                         codec->add(samg::grcodec::toolkits::RunLengthCommon<Word>::REPETITION_FLAG);
-                                        std::cout << "\t\t\tOfflineRiceRunsWriter/FSMEncoder/_write_integer_> (2.1)" << std::endl;
+                                        // std::cout << "\t\t\tOfflineRiceRunsWriter/FSMEncoder/_write_integer_> (2.1)" << std::endl;
                                         if( is_negative ) { codec->add(samg::grcodec::toolkits::RunLengthCommon<Word>::NEGATIVE_FLAG); }
-                                        std::cout << "\t\t\tOfflineRiceRunsWriter/FSMEncoder/_write_integer_> (2.2)" << std::endl;
+                                        // std::cout << "\t\t\tOfflineRiceRunsWriter/FSMEncoder/_write_integer_> (2.2)" << std::endl;
                                         codec->add(n);
-                                        std::cout << "\t\t\tOfflineRiceRunsWriter/FSMEncoder/_write_integer_> (2.3)" << std::endl;
+                                        // std::cout << "\t\t\tOfflineRiceRunsWriter/FSMEncoder/_write_integer_> (2.3)" << std::endl;
                                         codec->add(r);
-                                        std::cout << "\t\t\tOfflineRiceRunsWriter/FSMEncoder/_write_integer_> (2.4)" << std::endl;
+                                        // std::cout << "\t\t\tOfflineRiceRunsWriter/FSMEncoder/_write_integer_> (2.4)" << std::endl;
 
-                                        std::cout << " Write ---> REP<01>" << (is_negative ? " NEG<00>":"") << " n<" << n << "> r<" << r << ">" << std::endl;
+                                        // std::cout << " Write ---> REP<01>" << (is_negative ? " NEG<00>":"") << " n<" << n << "> r<" << r << ">" << std::endl;
                                     }
                                 }
 
@@ -1737,7 +1737,7 @@ namespace samg {
                                         this->is_initilized = true;
                                         // std::cout << "FSMEncoder/next> (1.2.3)" << std::endl;
                                     }
-                                    std::cout << "\t\t\tOfflineRiceRunsWriter/FSMEncoder/next> current_state = " << this->current_state << "; previous_n = " << previous_n << "; n = " << n << std::endl;
+                                    // std::cout << "\t\t\tOfflineRiceRunsWriter/FSMEncoder/next> current_state = " << this->current_state << "; previous_n = " << previous_n << "; n = " << n << std::endl;
                                     return this->current_state;
                                 }
 
@@ -1750,7 +1750,7 @@ namespace samg {
                                  * @param r 
                                  */
                                 void run( std::shared_ptr<samg::grcodec::base::writer::CodecWriter<Word>> codec, typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t &previous_n, const typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t n, std::size_t &r ) {
-                                    std::cout << "\t\t\tOfflineRiceRunsWriter/FSMEncoder/run> current_state = " << this->current_state << "; previous_n = " << previous_n << "; n = " << n << "; r = " << r << std::endl;
+                                    // std::cout << "\t\t\tOfflineRiceRunsWriter/FSMEncoder/run> current_state = " << this->current_state << "; previous_n = " << previous_n << "; n = " << n << "; r = " << r << std::endl;
                                     this->sfunction[this->current_state]( codec, previous_n, n, r );
                                 }
                                 
@@ -1800,37 +1800,37 @@ namespace samg {
                         }
 
                         void restart( ) {
-                            std::cout << "OfflineRiceRunsWriter/restart> (1)" << std::endl;
+                            // std::cout << "OfflineRiceRunsWriter/restart> (1)" << std::endl;
                             if( this->encoding_buffer ) {
                                 if( !this->encode() ){
                                     throw std::runtime_error("Ending encoding error!");
                                 }
-                                std::cout << "OfflineRiceRunsWriter/restart> (2)" << std::endl;
+                                // std::cout << "OfflineRiceRunsWriter/restart> (2)" << std::endl;
                                 this->encoding_buffer.reset();
                             }
-                            std::cout << "OfflineRiceRunsWriter/restart> (3)" << std::endl;
+                            // std::cout << "OfflineRiceRunsWriter/restart> (3)" << std::endl;
                             this->encoding_buffer = adapter::get_instance<typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t>( adapter::QueueAdapterType::Q_QUEUEADAPTER );
-                            std::cout << "OfflineRiceRunsWriter/restart> (4)" << std::endl;
+                            // std::cout << "OfflineRiceRunsWriter/restart> (4)" << std::endl;
                             this->encoding_fsm.restart();
                             this->encoding_is_first = true;
                             this->encoding_previous_n = 0;
                             this->encoding_r = 0;
                             // this->encoding_relative_n = 0;
                             this->encoding_previous_relative_n = 0;
-                            std::cout << "OfflineRiceRunsWriter/restart> (5)" << std::endl;
+                            // std::cout << "OfflineRiceRunsWriter/restart> (5)" << std::endl;
                         }
 
                         bool encode( ) {
                             // Encode:
                             typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t relative_v;
-                            std::cout << "\tRiceRuns/encode> (1)" << std::endl;
+                            // std::cout << "\tRiceRuns/encode> (1)" << std::endl;
                             this->encoding_fsm.next( this->encoding_buffer, this->encoding_previous_relative_n, relative_v );
-                            std::cout << "\tRiceRuns/encode> (2)" << std::endl;
-                            std::cout << "\t\tOfflineRiceRunsWriter/_encode_ --- pre> encoding_previous_relative_n = " << this->encoding_previous_relative_n<< "; relative_v = " << relative_v << "; encoding_r = " << this->encoding_r << "; |encoding_buffer| = " << this->encoding_buffer->size() << std::endl;
+                            // std::cout << "\tRiceRuns/encode> (2)" << std::endl;
+                            // std::cout << "\t\tOfflineRiceRunsWriter/_encode_ --- pre> encoding_previous_relative_n = " << this->encoding_previous_relative_n<< "; relative_v = " << relative_v << "; encoding_r = " << this->encoding_r << "; |encoding_buffer| = " << this->encoding_buffer->size() << std::endl;
                             if( this->encoding_fsm.is_error_state() ) { std::runtime_error("Encoding error state!"); }
-                            std::cout << "\tRiceRuns/encode> (3)" << std::endl;
+                            // std::cout << "\tRiceRuns/encode> (3)" << std::endl;
                             this->encoding_fsm.run( this->codec, this->encoding_previous_relative_n, relative_v, this->encoding_r );
-                            std::cout << "\t\tOfflineRiceRunsWriter/_encode_ --- post> encoding_previous_relative_n = " << this->encoding_previous_relative_n<< "; relative_v = " << relative_v << "; encoding_r = " << this->encoding_r << "; |encoding_buffer| = " << this->encoding_buffer->size() << std::endl;
+                            // std::cout << "\t\tOfflineRiceRunsWriter/_encode_ --- post> encoding_previous_relative_n = " << this->encoding_previous_relative_n<< "; relative_v = " << relative_v << "; encoding_r = " << this->encoding_r << "; |encoding_buffer| = " << this->encoding_buffer->size() << std::endl;
                             return this->encoding_fsm.is_end_state();
                         }
 
@@ -1838,19 +1838,19 @@ namespace samg {
                         // OfflineRiceRunsWriter( const std::string file_name, const std::size_t k ) { 
                         OfflineRiceRunsWriter( std::shared_ptr<samg::grcodec::rice::writer::OfflineRCodecWriter<Word>> codec ) :
                             samg::grcodec::base::writer::CodecFileWriter<Word>::CodecFileWriter( codec->get_file_name() ) { 
-                            std::cout << "OfflineRiceRunsWriter/init> (1)" << std::endl;
+                            // std::cout << "OfflineRiceRunsWriter/init> (1)" << std::endl;
                             // this->codec = std::make_shared<samg::grcodec::rice::writer::OfflineRCodecWriter<Word>>( file_name, k );
                             this->codec = codec;
 
-                            std::cout << "OfflineRiceRunsWriter/init> (2)" << std::endl;
+                            // std::cout << "OfflineRiceRunsWriter/init> (2)" << std::endl;
                             // this->encoding_buffer = adapter::get_instance<typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t>( adapter::QueueAdapterType::Q_QUEUEADAPTER );
                             this->restart();
 
-                            std::cout << "OfflineRiceRunsWriter/init> (3)" << std::endl;
+                            // std::cout << "OfflineRiceRunsWriter/init> (3)" << std::endl;
                         }
 
                         const bool add( Word v ) override {
-                            std::cout << "---------------------------------------------------------------\nOfflineRiceRunsWriter/add(v = " << v << ")" << std::endl;
+                            // std::cout << "---------------------------------------------------------------\nOfflineRiceRunsWriter/add(v = " << v << ")" << std::endl;
                             // Relativize:
                             typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t relative_v;
                             if( this->encoding_is_first ) {
@@ -1862,7 +1862,7 @@ namespace samg {
                             }
                             // std::cout << "\tOfflineRiceRunsWriter/add> (*)" << std::endl;
                             this->encoding_buffer->push( relative_v );
-                            std::cout << "\tOfflineRiceRunsWriter/add> v = " << v << "; relative_v (" << typeid(relative_v).name() << ") = " << relative_v << "; |encoding_buffer| = " << this->encoding_buffer->size() << "; encoding_previous_n = " << this->encoding_previous_n << std::endl;
+                            // std::cout << "\tOfflineRiceRunsWriter/add> v = " << v << "; relative_v (" << typeid(relative_v).name() << ") = " << relative_v << "; |encoding_buffer| = " << this->encoding_buffer->size() << "; encoding_previous_n = " << this->encoding_previous_n << std::endl;
                             this->encoding_previous_n = v;
                             
                             return this->encode();
@@ -2138,9 +2138,9 @@ namespace samg {
                             codec ( codec )  { 
                             // this->encoding_is_first = true;
                             // this->is_open = false;
-                            std::cout << "OfflineRiceRunsReader/init> (1) " << std::endl;
+                            // std::cout << "OfflineRiceRunsReader/init> (1) " << std::endl;
                             this->restart(); 
-                            std::cout << "OfflineRiceRunsReader/init> (2) " << std::endl;
+                            // std::cout << "OfflineRiceRunsReader/init> (2) " << std::endl;
                         }
 
                         const Word next() override {
@@ -2195,7 +2195,7 @@ namespace samg {
                         }
 
                         void restart( ) override {
-                            std::cout << "OfflineRiceRunsReader/restart> (1) " << std::endl;
+                            // std::cout << "OfflineRiceRunsReader/restart> (1) " << std::endl;
                             this->decoding_previous_n = 0;
                             this->decoding_n = 0;
                             this->decoding_previous_relative_value = 0;
@@ -2208,22 +2208,22 @@ namespace samg {
                             //         this->codec->restart();
                             // }
                             // if( !soft_restart ) {
-                            std::cout << "OfflineRiceRunsReader/restart> (2) " << std::endl;
+                            // std::cout << "OfflineRiceRunsReader/restart> (2) " << std::endl;
                             this->codec->restart();
                             // }
 
-                            std::cout << "OfflineRiceRunsReader/restart> (3) " << std::endl;
+                            // std::cout << "OfflineRiceRunsReader/restart> (3) " << std::endl;
 
                             this->decoding_fsm.restart();
 
-                            std::cout << "OfflineRiceRunsReader/restart> (4) " << std::endl;
+                            // std::cout << "OfflineRiceRunsReader/restart> (4) " << std::endl;
                         
                             if( this->decoding_next_buffer ) { 
                                 this->decoding_next_buffer.reset();
                             }
                             this->decoding_next_buffer = adapter::get_instance<Word>( adapter::QueueAdapterType::Q_QUEUEADAPTER );
 
-                            std::cout << "OfflineRiceRunsReader/restart> (5) " << std::endl;
+                            // std::cout << "OfflineRiceRunsReader/restart> (5) " << std::endl;
                             // if( this->encoding_buffer ){
                             //     this->encoding_buffer.reset();
                             // }

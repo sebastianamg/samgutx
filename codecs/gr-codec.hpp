@@ -33,7 +33,7 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF 
  * THE POSSIBILITY OF SUCH DAMAGE. 
  */
-#define DEBUG_OFFLINERICERUNSWRITER_ADD
+#define DEBUGGER_LOG
 
 #pragma once
 
@@ -817,6 +817,7 @@ namespace samg {
                         }
 
                         const bool add( const Word n ) override {
+                            LOG("OfflineRCodecWriter/add> [BEGIN] n = %u; bit_counter = %zu; bit_index = %zu", n, this->bit_counter, this->bit_index);
                             const std::size_t n_bits = samg::grcodec::toolkits::GolombRiceCommon<Word>::_value_size_( n, this->k );
                             // std::cout << "OfflineRCodecWriter/add> [BEGIN] k = " << this->k << "; n = " << n << "; |n| = " << n_bits << "[b]; bit_index = " << this->bit_index << "; bit_counter = " << this->bit_counter << "; value_counter = " << this->value_counter << "; word_max_capacity = " << this->words_max_capacity << "; word_counter = " << this->word_counter << std::endl;
                             if( std::ceil( (double)(this->bit_index + n_bits ) / (double) samg::grcodec::toolkits::GolombRiceCommon<Word>::get_word_bits() ) > this->words_max_capacity ) {
@@ -829,15 +830,19 @@ namespace samg {
                                 // std::cout << " to " << this->max_length << " [W]" << std::endl;
                                 this->sequence = samg::grcodec::toolkits::GolombRiceCommon<Word>::rrealloc( this->sequence, this->words_max_capacity );
                             }
+                            std::size_t bit_index_tmp = this->bit_index;
                             this->bit_index = samg::grcodec::toolkits::GolombRiceCommon<Word>::_rice_encode_(this->sequence, this->bit_index, n, this->k);
                             this->bit_counter += n_bits;
                             ++(this->value_counter);
+
+                            LOG("OfflineRCodecWriter/add> [MID] bit_counter = %zu; pre-bit_index %zu; bit_index = %zu", this->bit_counter, bit_index_tmp, this->bit_index);
 
                             // Checking if sequence is ready to be written on secondary memory:
                             const double words_in_sequence = (double) this->bit_index  / (double) samg::grcodec::toolkits::GolombRiceCommon<Word>::get_word_bits();
                             const std::size_t words = std::floor( words_in_sequence );
                             if( words > 0 ) { // Flush to secondary memory:
                                 // std::cout << "OfflineRCodecWriter/add>\t\tFlushing..." << std::endl;
+                                LOG("OfflineRCodecWriter/add> [MID] Flushing...");
                                 const std::size_t delta_words = std::ceil( words_in_sequence ) - words;
                                 this->serializer->template add_values<Word>( this->sequence, words );
                                 // this->word_counter += ( this->words_max_capacity - delta_words );
@@ -850,6 +855,8 @@ namespace samg {
                                 this->sequence = tmp_sequence;
                                 this->bit_index -= ( words * samg::grcodec::toolkits::GolombRiceCommon<Word>::get_word_bits() );
                             }
+                            LOG("OfflineRCodecWriter/add> [END] bit_counter = %zu; bit_index = %zu", this->bit_counter, this->bit_index);
+                            samg::utils::print_bitmap<Word>( this->sequence, this->words_max_capacity, this->bit_index );
                             return true; // To fulfill inheritance requirements.
                             // std::cout << "OfflineRCodecWriter/add>   [END] k = " << this->k << "; n = " << n << "; |n| = " << n_bits << "[b]; bit_index = " << this->bit_index << "; bit_counter = " << this->bit_counter << "; value_counter = " << this->value_counter << "; word_max_capacity = " << this->words_max_capacity << "; word_counter = " << this->word_counter << std::endl;
                         }
@@ -893,14 +900,14 @@ namespace samg {
                 template<typename Word> class OfflineRCodecReader : public samg::grcodec::base::reader::CodecFileReader<Word>, public samg::grcodec::base::MetadataSaver {
                     private:
                         const Word MAX;
+                        const std::size_t offset;
                         Word R_MASK;
                         std::unique_ptr<samg::serialization::OfflineWordReader<Word>> serializer;
                         std::vector<Word> buffer;
                         std::size_t k,
                                     position,
                                     bit_limit,
-                                    bit_counter,
-                                    offset;
+                                    bit_counter;
                         bool is_open;
 
                         const std::size_t _get_buffer_length_() {
@@ -967,8 +974,8 @@ namespace samg {
                         OfflineRCodecReader( const std::string file_name, const std::size_t offset = 0ULL, const std::size_t limit = 0ULL ) :
                             samg::grcodec::base::reader::CodecFileReader<Word>::CodecFileReader( file_name ),
                             MAX ( ~( (Word) 0 ) ),
-                            is_open ( false ),
-                            offset ( offset ) {
+                            offset ( offset ),
+                            is_open ( false ) {
                             
                             // std::cout << "OfflineRCodecReader/init> (1)" << std::endl;
 
@@ -994,6 +1001,8 @@ namespace samg {
                             // Seting environment:
                             this->R_MASK = MAX << this->k;
 
+                            LOG("OfflineRCodecReader/init> MAX = %u; offset = %zu; RMASK = %u; k = %zu; position = %zu; bit_limit = %zu; bit_counter = %zu; is_open = %u", this->MAX, this->offset, this->R_MASK, this->k, this->position, this->bit_limit, this->bit_counter, this->is_open);
+                            
                             // // Set the starting byte within the serialization based on the input offset:
                             // this->serializer->seek( std::ceil((std::double_t)offset/(std::double_t)BITS_PER_BYTE), std::ios::beg );
                             // std::cout << "OfflineRCodecReader/init> (5)" << std::endl;
@@ -1009,14 +1018,16 @@ namespace samg {
                         }
 
                         const Word next( ) override { 
-                            // std::cout << "OfflineRCodecReader/next> [BEGIN] k = " << this->k << "; bit_limit = " << this->bit_limit << "; position = " << this->position << "; bit_counter = " << this->bit_counter << std::endl;
+                            LOG("OfflineRCodecReader/next> [BEGIN] k = %zu; position = %zu; bit_limit = %zu; bit_counter = %zu; buffer_length = %zu [b]; buffer = %s", this->k, this->position, this->bit_limit, this->bit_counter, this->_get_buffer_length_(), samg::utils::to_string<Word>(this->buffer).c_str());
                             // NOTE: Based on `samg::grcodec::toolkits::GolombRiceCommon<Word>::_rice_decode_`.
-                            while( ( this->_get_buffer_length_() - this->position ) < this->k ) {
+                            while( this->position > this->_get_buffer_length_() || ( this->_get_buffer_length_() - this->position ) < this->k ) {
                                 this->_fecth_();
                             }
 
+                            LOG("OfflineRCodecReader/next> [MID] k = %zu; position = %zu; bit_limit = %zu; bit_counter = %zu; buffer_length = %zu [b]; buffer = %s", this->k, this->position, this->bit_limit, this->bit_counter, this->_get_buffer_length_(), samg::utils::to_string<Word>(this->buffer).c_str());
+
                             // Retrieve reminder:
-                            Word v = samg::grcodec::toolkits::GolombRiceCommon<Word>::_bitread_( buffer.data(), this->position, this->k );
+                            Word v = samg::grcodec::toolkits::GolombRiceCommon<Word>::_bitread_( buffer.data(), this->position, this->k ); // !FIXME
                             this->position += this->k;
                             this->bit_counter += this->k;
 
@@ -1031,6 +1042,7 @@ namespace samg {
                             ++(this->position);
                             ++(this->bit_counter);
                             // std::cout << "OfflineRCodecReader/next> \t\t[END] k = " << this->k << "; bit_limit = " << this->bit_limit << "; position = " << this->position << "; bit_counter = " << this->bit_counter << std::endl;
+                            LOG("OfflineRCodecReader/next> [END] k = %zu; position = %zu; bit_limit = %zu; bit_counter = %zu; v = %u", this->k, this->position, this->bit_limit, this->bit_counter, v);
                             return v;
                         }
 
@@ -1041,10 +1053,15 @@ namespace samg {
                         void restart() override {
                             this->close();
                             this->serializer = std::make_unique<samg::serialization::OfflineWordReader<Word>>( this->get_file_name() );
-                            this->position = 0ULL;
-                            this->bit_counter = 0ULL;
+                            
                             // Set the starting byte within the serialization based on the input offset:
-                            this->serializer->seek( std::ceil((std::double_t)this->offset/(std::double_t)BITS_PER_BYTE), std::ios::beg );
+                            std::size_t bytes = std::ceil((std::double_t)this->offset/(std::double_t)BITS_PER_BYTE),
+                                        words = std::ceil((std::double_t)bytes/(std::double_t)sizeof(Word));
+
+                            LOG("OfflineRCodecReader/restart> bytes = %zu, words = %zu",bytes, words);
+                            this->position = 0ULL; //( byte * BITS_PER_BYTE ) - this->offset;
+                            this->bit_counter = ( words * sizeof(Word) * BITS_PER_BYTE ); // - this->offset ;// 0ULL;
+                            this->serializer->seek( words * sizeof(Word), std::ios::beg );
 
                             this->is_open = true;
 
@@ -1741,7 +1758,7 @@ namespace samg {
                                         this->is_initilized = true;
                                         // std::cout << "FSMEncoder/next> (1.2.3)" << std::endl;
                                     }
-                                    // std::cout << "\t\t\tOfflineRiceRunsWriter/FSMEncoder/next> current_state = " << this->current_state << "; previous_n = " << previous_n << "; n = " << n << std::endl;
+                                    // LOG("OfflineRiceRunsWriter/FSMEncoder/next> current_state = %d; previous_n = %ld; n = %ld", this->current_state, previous_n, n);
                                     return this->current_state;
                                 }
 
@@ -1795,8 +1812,19 @@ namespace samg {
                         Word                            encoding_previous_n;
                         std::size_t                     encoding_r; // Repetition of current encoding value.
                         typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t encoding_previous_relative_n;
-                        bool                            encoding_is_first;
+                        bool                            encoding_is_first, is_flushed;
                         typename samg::grcodec::toolkits::RunLengthCommon<Word>::RelativeSequence<> encoding_buffer;
+
+                        void _flush_encoding_buffer_( ) {
+                            LOG("OfflineRiceRunsWriter/_flush_encoding_buffer_> [BEGIN] --- is_flushed = %u",this->is_flushed);
+                            if( !this->is_flushed ){
+                                if( !this->encode() ){
+                                    throw std::runtime_error("Ending encoding error!");
+                                }
+                                this->is_flushed = true;
+                            }
+                            LOG("OfflineRiceRunsWriter/_flush_encoding_buffer_> [END] --- is_flushed = %u",this->is_flushed);
+                        }
                     
                     protected:
                         std::shared_ptr<samg::grcodec::rice::writer::OfflineRCodecWriter<Word>> get_codec() const {
@@ -1804,19 +1832,19 @@ namespace samg {
                         }
 
                         void restart( ) {
-                            // std::cout << "OfflineRiceRunsWriter/restart> (1)" << std::endl;
+                            // LOG("OfflineRiceRunsWriter/restart> (1)");
                             if( this->encoding_buffer ) {
-                                if( !this->encode() ){
-                                    throw std::runtime_error("Ending encoding error!");
-                                }
+                                this->_flush_encoding_buffer_();
                                 // std::cout << "OfflineRiceRunsWriter/restart> (2)" << std::endl;
                                 this->encoding_buffer.reset();
                             }
+                            // LOG("OfflineRiceRunsWriter/restart> (2)");
+                            this->encoding_fsm.restart();
+                            // LOG("OfflineRiceRunsWriter/restart> (3)");
                             // std::cout << "OfflineRiceRunsWriter/restart> (3)" << std::endl;
                             this->encoding_buffer = adapter::get_instance<typename samg::grcodec::toolkits::RunLengthCommon<Word>::rseq_t>( adapter::QueueAdapterType::Q_QUEUEADAPTER );
                             // std::cout << "OfflineRiceRunsWriter/restart> (4)" << std::endl;
-                            this->encoding_fsm.restart();
-                            this->encoding_is_first = true;
+                            this->encoding_is_first = true; // NOTE Helps to restart the encoding_fsm!
                             this->encoding_previous_n = 0;
                             this->encoding_r = 0;
                             // this->encoding_relative_n = 0;
@@ -1830,18 +1858,20 @@ namespace samg {
                             // std::cout << "\tRiceRuns/encode> (1)" << std::endl;
                             this->encoding_fsm.next( this->encoding_buffer, this->encoding_previous_relative_n, relative_v );
                             // std::cout << "\tRiceRuns/encode> (2)" << std::endl;
-                            // std::cout << "\t\tOfflineRiceRunsWriter/_encode_ --- pre> encoding_previous_relative_n = " << this->encoding_previous_relative_n<< "; relative_v = " << relative_v << "; encoding_r = " << this->encoding_r << "; |encoding_buffer| = " << this->encoding_buffer->size() << std::endl;
+                            LOG( "OfflineRiceRunsWriter/encode> [BEGIN] --- encoding_previous_relative_n = %ld; relative_v = %ld; encoding_r = %zu; |encoding_buffer| = %zu",this->encoding_previous_relative_n, relative_v,this->encoding_r,this->encoding_buffer->size());
                             if( this->encoding_fsm.is_error_state() ) { std::runtime_error("Encoding error state!"); }
                             // std::cout << "\tRiceRuns/encode> (3)" << std::endl;
                             this->encoding_fsm.run( this->codec, this->encoding_previous_relative_n, relative_v, this->encoding_r );
-                            // std::cout << "\t\tOfflineRiceRunsWriter/_encode_ --- post> encoding_previous_relative_n = " << this->encoding_previous_relative_n<< "; relative_v = " << relative_v << "; encoding_r = " << this->encoding_r << "; |encoding_buffer| = " << this->encoding_buffer->size() << std::endl;
+                            LOG( "OfflineRiceRunsWriter/encode> [END] --- encoding_previous_relative_n = %ld; relative_v = %ld; encoding_r = %zu; |encoding_buffer| = %zu",this->encoding_previous_relative_n, relative_v,this->encoding_r,this->encoding_buffer->size());
                             return this->encoding_fsm.is_end_state();
                         }
 
                     public:
                         // OfflineRiceRunsWriter( const std::string file_name, const std::size_t k ) { 
                         OfflineRiceRunsWriter( std::shared_ptr<samg::grcodec::rice::writer::OfflineRCodecWriter<Word>> codec ) :
-                            samg::grcodec::base::writer::CodecFileWriter<Word>::CodecFileWriter( codec->get_file_name() ) { 
+                            samg::grcodec::base::writer::CodecFileWriter<Word>::CodecFileWriter( codec->get_file_name() ),
+                            is_flushed ( true ) // `true` is for the sake of the first call to `restart` function. (for not unnecessarily flush the `encoding_buffer`)
+                        { 
                             // std::cout << "OfflineRiceRunsWriter/init> (1)" << std::endl;
                             // this->codec = std::make_shared<samg::grcodec::rice::writer::OfflineRCodecWriter<Word>>( file_name, k );
                             this->codec = codec;
@@ -1866,20 +1896,18 @@ namespace samg {
                                 relative_v = samg::grcodec::toolkits::RunLengthCommon<Word>::get_transformed_relative_sequence( this->encoding_previous_n, v );
                             }
                             // std::cout << "\tOfflineRiceRunsWriter/add> pushing relative_v..." << std::endl;
-                            PRINT_OFFLINERICERUNSWRITER_ADD("\tOfflineRiceRunsWriter/add> pushing relative_v...");
+                            // PRINT_OFFLINERICERUNSWRITER_ADD("pushing relative_v...");
                             this->encoding_buffer->push( relative_v );
                             // std::cout << "\tOfflineRiceRunsWriter/add> v = " << v << "; relative_v (" << typeid(relative_v).name() << ") = " << relative_v << "; |encoding_buffer| = " << this->encoding_buffer->size() << "; encoding_previous_n = " << this->encoding_previous_n << std::endl;
-                            PRINT_OFFLINERICERUNSWRITER_ADD("\tOfflineRiceRunsWriter/add> v = %llu; relative_v = %llu; |encoding_buffer| = %llu; encoding_previous_n = %llu", v, relative_v, this->encoding_buffer->size(),this->encoding_previous_n);
+                            // LOG("OfflineRiceRunsWriter/add> v = %u; relative_v = %ld; |encoding_buffer| = %zu; encoding_previous_n = %u", v, relative_v, this->encoding_buffer->size(),this->encoding_previous_n);
                             this->encoding_previous_n = v;
-                            
+                            this->is_flushed = false;
                             return this->encode();
                         }
 
                         void close( ) override {
                             // this->encoding_buffer.pop();
-                            if( !this->encode() ){
-                                throw std::runtime_error("Ending encoding error!");
-                            }
+                            this->_flush_encoding_buffer_();
                             this->codec->close();
                             this->codec.reset();
                             this->encoding_buffer.reset();

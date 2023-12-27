@@ -62,6 +62,35 @@ namespace samg {
 
     namespace utils {
         /***************************************************************/
+        template<typename Word> void print_bitmap( Word* buff, std::size_t words, std::size_t limit_bit ) {
+            // static_assert(
+            //     std::is_same_v<Word, std::uint8_t> ||
+            //     std::is_same_v<Word, std::uint16_t> ||
+            //     std::is_same_v<Word, std::uint32_t> ||
+            //     std::is_same_v<Word, std::uint64_t>,
+            //     "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
+            // const std::size_t n = ( words * sizeof(Word) * samg::constants::BITS_PER_BYTE );
+            const Word MASK = 1;
+            Word mask, tmp;
+            std::size_t j;
+            for (std::size_t i = 0; i < words ; i++) {
+                mask = MASK;
+                j = 0;
+                while ( mask > 0 ) {
+                    if( j % 4 == 0 ) { 
+                        std::cout << " ";
+                    }
+                    if( j % 8 == 0 ) { 
+                        std::cout << "| ";
+                    }
+                    std::cout << (( ( ( ( i * sizeof(Word) * samg::constants::BITS_PER_BYTE ) + j ) < limit_bit ) && buff[i] & mask ) ? "1" : "0");
+                    ++j;
+                    mask <<= 1;
+                }
+            }
+            std::cout << std::endl;
+        }
+        /***************************************************************/
         /**
          * Artifact for feedback/debugging purposes. 
          * @brief This function allows getting a string representation of an object.

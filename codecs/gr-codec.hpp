@@ -33,8 +33,11 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF 
  * THE POSSIBILITY OF SUCH DAMAGE. 
  */
+#define DEBUG_OFFLINERICERUNSWRITER_ADD
+
 #pragma once
 
+#include <codecs/gr-code-debug.hpp>
 #include <cstddef>
 #include <cmath>
 #include <cstdint>
@@ -53,6 +56,7 @@
 #include <samg/matutx.hpp>
 #include <stdexcept>
 #include <typeinfo>
+
 
 #define BITS_PER_BYTE 8
 
@@ -1849,6 +1853,7 @@ namespace samg {
                             // std::cout << "OfflineRiceRunsWriter/init> (3)" << std::endl;
                         }
 
+                        
                         const bool add( Word v ) override {
                             // std::cout << "---------------------------------------------------------------\nOfflineRiceRunsWriter/add(v = " << v << ")" << std::endl;
                             // Relativize:
@@ -1860,9 +1865,11 @@ namespace samg {
                                 // this->encoding_buffer.push( this->encoding_previous_relative_n );
                                 relative_v = samg::grcodec::toolkits::RunLengthCommon<Word>::get_transformed_relative_sequence( this->encoding_previous_n, v );
                             }
-                            // std::cout << "\tOfflineRiceRunsWriter/add> (*)" << std::endl;
+                            // std::cout << "\tOfflineRiceRunsWriter/add> pushing relative_v..." << std::endl;
+                            PRINT_OFFLINERICERUNSWRITER_ADD("\tOfflineRiceRunsWriter/add> pushing relative_v...");
                             this->encoding_buffer->push( relative_v );
                             // std::cout << "\tOfflineRiceRunsWriter/add> v = " << v << "; relative_v (" << typeid(relative_v).name() << ") = " << relative_v << "; |encoding_buffer| = " << this->encoding_buffer->size() << "; encoding_previous_n = " << this->encoding_previous_n << std::endl;
+                            PRINT_OFFLINERICERUNSWRITER_ADD("\tOfflineRiceRunsWriter/add> v = %llu; relative_v = %llu; |encoding_buffer| = %llu; encoding_previous_n = %llu", v, relative_v, this->encoding_buffer->size(),this->encoding_previous_n);
                             this->encoding_previous_n = v;
                             
                             return this->encode();

@@ -58,7 +58,7 @@
 #include <typeinfo>
 
 
-#define BITS_PER_BYTE 8
+// #define BITS_PER_BYTE 8
 
 #define FLOORLOG_2(x,v)                     \
 {                                           \
@@ -219,7 +219,7 @@ namespace samg {
              */
             template<typename Word> struct GolombRiceCommon {
 
-                static const std::size_t WORD_bits = sizeof(Word) * BITS_PER_BYTE;
+                static const std::size_t WORD_bits = sizeof(Word) * samg::constants::BITS_PER_BYTE;
                 
                 static const std::size_t get_word_bits() {
                     return GolombRiceCommon::WORD_bits;
@@ -1055,15 +1055,16 @@ namespace samg {
                             this->serializer = std::make_unique<samg::serialization::OfflineWordReader<Word>>( this->get_file_name() );
                             
                             // Set the starting byte within the serialization based on the input offset:
-                            std::size_t bytes = std::ceil((std::double_t)this->offset/(std::double_t)BITS_PER_BYTE),
-                                        words = std::ceil((std::double_t)bytes/(std::double_t)sizeof(Word));
+                            std::size_t bytes = std::ceil((std::double_t)this->offset/(std::double_t)samg::constants::BITS_PER_BYTE);//,
+                                        // words = std::ceil((std::double_t)bytes/(std::double_t)sizeof(Word));
 
-                            LOG("OfflineRCodecReader/restart> bytes = %zu, words = %zu",bytes, words);
-                            this->position = 0ULL; //( byte * BITS_PER_BYTE ) - this->offset;
-                            this->bit_counter = ( words * sizeof(Word) * BITS_PER_BYTE ); // - this->offset ;// 0ULL;
-                            this->serializer->seek( words * sizeof(Word), std::ios::beg );
+                            this->position = this->offset - ( std::floor((std::double_t)bytes / (std::double_t)sizeof(Word)) * sizeof(Word) * samg::constants::BITS_PER_BYTE ); //( byte * BITS_PER_BYTE ) - this->offset;
+                            this->bit_counter = this->offset;//( words * sizeof(Word) * BITS_PER_BYTE ); // - this->offset ;// 0ULL;
+                            this->serializer->seek( bytes, std::ios::beg );
 
                             this->is_open = true;
+
+                            LOG("OfflineRCodecReader/restart> bytes = %zu, position = %zu; bit_counter = %zu; bit_limit = %zu",bytes, this->position, this->bit_counter, this->bit_limit);
 
                         }
 
@@ -1210,7 +1211,7 @@ namespace samg {
                                 get sub-vector --> [ begin-A-1-(s-2) , length = s-1 ] === [ 0 , 3 ]
                             */
                             sdsl::bit_vector rv = GRCodec::_get_sub_vector_(v,begin-A-1-(s-2),s-1);
-                            Type R = rv.get_int( 0, sizeof(Type) * BITS_PER_BYTE );
+                            Type R = rv.get_int( 0, sizeof(Type) * samg::constants::BITS_PER_BYTE );
                             // Computing length:
                             std::size_t c = std::pow(2,std::ceil(GRCodec::log2(m))) - m;
                             return A + 1 + ( R >= c ? s : s - 1 );
@@ -1255,7 +1256,7 @@ namespace samg {
                         
                         sdsl::bit_vector v(r_bits + q + 1);
                         
-                        v.set_int(0,r,BITS_PER_BYTE);
+                        v.set_int(0,r,samg::constants::BITS_PER_BYTE);
 
                         for (std::size_t i = r_bits + 1; i < (r_bits + q + 1); ++i) {
                             v[i] = 1;
@@ -1281,9 +1282,9 @@ namespace samg {
                         sdsl::bit_vector v(r_bits + q + 1);
                         
                         if( phase ) {
-                            v.set_int(0,r,BITS_PER_BYTE);
+                            v.set_int(0,r,samg::constants::BITS_PER_BYTE);
                         } else {
-                            v.set_int(0,r+c,BITS_PER_BYTE);
+                            v.set_int(0,r+c,samg::constants::BITS_PER_BYTE);
                         }
 
                         for (std::size_t i = r_bits + 1; i < (r_bits + q + 1); ++i) {
@@ -1332,8 +1333,8 @@ namespace samg {
                      */
                     static Type _rice_decode_(sdsl::bit_vector &v, const std::size_t A, const std::size_t m) {
                         // auto start = std::chrono::high_resolution_clock::now();
-                        Type R = v.get_int( 0, sizeof(Type) * BITS_PER_BYTE ),
-                            ans = ( m * A ) + R;
+                        Type R = v.get_int( 0, sizeof(Type) * samg::constants::BITS_PER_BYTE ),
+                             ans = ( m * A ) + R;
                         // auto end = std::chrono::high_resolution_clock::now();
                         // double time_taken = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
                         // printf("*** Rice decoding time %.2f[ns]\n",time_taken);
@@ -1352,7 +1353,7 @@ namespace samg {
                      */
                     static Type _golomb_decode_(sdsl::bit_vector &v, const std::size_t A, const std::size_t m) {
                         std::size_t c = std::pow(2,std::ceil(GRCodec::log2(m))) - m;
-                        Type    R = v.get_int( 0, sizeof(Type) * BITS_PER_BYTE ),
+                        Type    R = v.get_int( 0, sizeof(Type) * samg::constants::BITS_PER_BYTE ),
                                 n = GRCodec::_rice_decode_( v, A, m );
 
                         return ( R >= c )? ( n - c ) : n;

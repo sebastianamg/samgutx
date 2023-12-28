@@ -62,7 +62,19 @@ namespace samg {
 
     namespace utils {
         /***************************************************************/
-        template<typename Word> void print_bitmap( Word* buff, std::size_t words, std::size_t limit_bit ) {
+
+        /**
+         * @brief Prints a bitmap.
+         * 
+         * @tparam Word 
+         * @param buff is the bitmap.
+         * @param words 
+         * @param limit_bit is a limit up to where the function must output to prevent outputing garbage. 
+         * @param highlight_bit is a flag to highlight the bit at position `highlighted_bit` (see the next parameter).
+         * @param highlighted_bit 
+         * @return std::string 
+         */
+        template<typename Word> std::string to_string( Word* buff, const std::size_t words, const std::size_t limit_bit, const bool highlight_bit = false, const std::size_t highlighted_bit = 0ULL ) {
             // static_assert(
             //     std::is_same_v<Word, std::uint8_t> ||
             //     std::is_same_v<Word, std::uint16_t> ||
@@ -70,25 +82,30 @@ namespace samg {
             //     std::is_same_v<Word, std::uint64_t>,
             //     "typename must be one of std::uint8_t, std::uint16_t, std::uint32_t, or std::uint64_t");
             // const std::size_t n = ( words * sizeof(Word) * samg::constants::BITS_PER_BYTE );
+            std::ostringstream ss;
             const Word MASK = 1;
             Word mask, tmp;
-            std::size_t j;
+            std::size_t j, b;
             for (std::size_t i = 0; i < words ; i++) {
                 mask = MASK;
                 j = 0;
                 while ( mask > 0 ) {
                     if( j % 4 == 0 ) { 
-                        std::cout << " ";
+                        ss << " ";
                     }
                     if( j % 8 == 0 ) { 
-                        std::cout << "| ";
+                        ss << "| ";
                     }
-                    std::cout << (( ( ( ( i * sizeof(Word) * samg::constants::BITS_PER_BYTE ) + j ) < limit_bit ) && buff[i] & mask ) ? "1" : "0");
+                    b = ( ( i * sizeof(Word) * samg::constants::BITS_PER_BYTE ) + j );
+                    ss << ( ( highlight_bit && b == highlighted_bit ) ? "(" : "" );
+                    ss << ( ( ( b < limit_bit ) && buff[i] & mask ) ? "1" : "0" );
+                    ss << ( ( highlight_bit && b == highlighted_bit ) ? ")" : "" );
                     ++j;
                     mask <<= 1;
                 }
             }
-            std::cout << std::endl;
+            ss << std::endl;
+            return ss.str();
         }
         /***************************************************************/
         /**

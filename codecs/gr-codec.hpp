@@ -1075,6 +1075,15 @@ namespace samg {
                             return this->metadata;
                         }
 
+                        /**
+                         * @brief Returns bit limits of the reader. The limits are in the form of the range [offset,bit_limit).
+                         * 
+                         * @return const std::pair<std::size_t,std::size_t> 
+                         */
+                        const std::pair<std::size_t,std::size_t> get_bit_limits() const {
+                            return std::make_pair(this->offset, this->bit_limit);
+                        }
+
                         void close( ) override {
                             if( this->is_open ) {
                                 this->serializer->close();
@@ -2296,6 +2305,16 @@ namespace samg {
                         void push_metadata( std::size_t v ) {
                             throw std::runtime_error("Non-implemented method!");
                         }
+
+                        /**
+                         * @brief Returns bit limits of the codec. The limits are in the form of the range [offset,bit_limit).
+                         * 
+                         * @return const std::pair<std::size_t,std::size_t> 
+                         */
+                        const std::pair<std::size_t,std::size_t> get_bit_limits() const {
+                            return this->codec->get_bit_limits();
+                        }
+                        
                 };
             }
         }

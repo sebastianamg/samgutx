@@ -868,7 +868,7 @@ namespace QMX
 			return destination - (uint8_t *)into; // return length in bytes
 		}
 
-		size_t encode2(void *into_as_void, size_t encoded_buffer_length,
+		size_t encode(void *into_as_void, size_t encoded_buffer_length,
 					  std::shared_ptr<samg::matutx::reader::Reader> source ) {
 			uint32_t *into = static_cast<uint32_t *>(into_as_void);
 			const uint32_t WASTAGE = 512;
@@ -893,9 +893,9 @@ namespace QMX
 					Get the lengths of the integers
 			*/
 			current_length = length_buffer;
-			samg::matutx::streamer::IntStreamerAdapter<integer> source2 = samg::matutx::streamer::IntStreamerAdapter<integer>(source);
-			while( source2.has_next() ){
-				*current_length++ = bits_needed_for(source2.next());
+			samg::matutx::streamer::IntStreamerAdapter<integer> src_adapter = samg::matutx::streamer::IntStreamerAdapter<integer>(source);
+			while( src_adapter.has_next() ){
+				*current_length++ = bits_needed_for(src_adapter.next());
 			}
 
 			// for (current = (uint32_t *)source; current < source + source_integers;
@@ -1174,11 +1174,11 @@ namespace QMX
 			keys = length_buffer; // we're going to re-use the length_buffer because it
 								  // can't overlap and this saves a double malloc
 			// source = samg::matutx::reader::create_instance(input_file_name);
-			samg::matutx::streamer::IntStreamerAdapter<integer> source3 = samg::matutx::streamer::IntStreamerAdapter<integer>(samg::matutx::reader::create_instance(source->get_input_file_name()));
+			samg::matutx::streamer::IntStreamerAdapter<integer> src_adapter2 = samg::matutx::streamer::IntStreamerAdapter<integer>(samg::matutx::reader::create_instance(source->get_input_file_name()));
 			std::vector<uint32_t> tmp;
 			size_t length_buffer_index = 1;
-			while( source3.has_next() ) {
-				tmp.push_back(source3.next());
+			while( src_adapter2.has_next() ) {
+				tmp.push_back(src_adapter2.next());
 				// printf("encode2> Delta = index = %u\n",length_buffer_index);
 				uint32_t new_needed = length_buffer[ length_buffer_index ];
 				if (new_needed == bits){

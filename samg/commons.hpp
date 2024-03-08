@@ -928,5 +928,212 @@ namespace samg {
                     this->file.close();
                 }
         };
+
+        /**
+         * @brief Allows a direct unsigned integers sequence offline reading from a binary file. 
+         * 
+         * @tparam Type 
+         */
+        template<typename Type> class OnlineWordReader : public samg::serialization::Serializer<Type> {
+            private:
+                // std::vector<Type> byte_map; // To store the serialization in memory.
+                std::uint8_t *byte_map; // To store the serialization in memory avoiding the overhead of std::vector<Type>.
+                // const std::size_t WORD_SIZE = sizeof(Type)  * samg::constants::BITS_PER_BYTE;
+                std::size_t serialization_length, // Length is in bytes.
+                            index; // Index that points to the next byte in byte_map.
+
+                /**
+                 * @brief Allows retrieving a serialized unsigned integer UINT_T from a byte map.
+                 * 
+                 * @tparam UINT_T 
+                 * @param byte_map 
+                 * @param init_idx 
+                 * @return UINT_T 
+                 */
+                template<typename UINT_T> UINT_T _read_( std::uint8_t* byte_map, std::size_t &init_idx ) {
+                    const UINT_T* tmp_byte_map = reinterpret_cast<const UINT_T*>(byte_map + init_idx);
+                    init_idx += sizeof( UINT_T );
+                    return tmp_byte_map[0];
+                }
+
+            public:
+                /**
+                 * @brief Constructs a new offline word serializer object that either writes or retrieves data to or from a file.
+                 * 
+                 * @param file_name
+                 */
+                OnlineWordReader(const std::string file_name): 
+                samg::serialization::Serializer<Type> ( file_name ) {
+                    std::ifstream file = std::ifstream(file_name, std::ios::binary | std::ios::in);
+                    if ( !file.is_open() ) {
+                        throw std::runtime_error("Failed to open file \""+file_name+"\"!");
+                    }
+                    
+                    // Computing input length in bytes:
+                    this->serialization_length = samg::utils::get_file_size( file_name );
+
+                    // Reserve memory:
+                    byte_map = (std::uint8_t*) std::malloc( this->serialization_length );
+
+                    // Load byte_map in memory:
+                    OfflineWordReader<std::uint8_t> reader = OfflineWordReader<std::uint8_t>(file_name);
+                    std::size_t i = 0;
+                    while( reader.has_more() ) {
+                        byte_map[ i++ ] = reader.next<std::uint8_t>();
+                    }
+                    reader.close();
+
+                    this->index = 0ZU;
+                }
+
+                ~OnlineWordReader() {
+                    this->close();
+                }
+
+                /**
+                 * @brief It sets the byte that the internal index points to.
+                 * 
+                 * @param index 
+                 */
+                void seek( const std::size_t index ) {
+                    if( index < this->serialization_length ) {
+                        this->index = index;
+                    } else {
+                        throw std::runtime_error("Index \""+std::to_string(index)+"\" is out of bounds!");
+                    }
+                }
+
+                /**
+                 * @brief It returns the byte being pointed by the internal index.
+                 * 
+                 * @return const std::size_t 
+                 */
+                const std::size_t tell( ) const {
+                    return  this->index;
+                }
+
+                /**
+                 * @brief Allows retrieving the next value. 
+                 * 
+                 * @tparam TypeTrg 
+                 * @return const TypeTrg 
+                 */
+                template<typename TypeTrg> const TypeTrg next() {
+                    return OnlineWordReader<Type>::_read_<TypeTrg>( this->byte_map, this->index );
+                }
+
+                /**
+                 * @brief Allows retrieving the next `length` values.
+                 * 
+                 * @tparam TypeTrg 
+                 * @param length 
+                 * @return const std::vector<TypeTrg> 
+                 */
+                template<typename TypeTrg> const std::vector<TypeTrg> next( std::size_t length ) {
+                    std::vector<TypeTrg> V;
+                    for (std::size_t i = 0 ; i < length ; i++) {
+                        V.push_back( this->next<TypeTrg>() );
+                    }
+                    return V;
+                }
+
+                /**
+                 * @brief Allows getting all the remaining values from the serialization. 
+                 * 
+                 * @tparam TypeTrg 
+                 * @return const std::vector<TypeTrg> 
+                 */
+                template<typename TypeTrg> const std::vector<TypeTrg> next_remaining() {
+                    std::vector<TypeTrg> V;
+                    while( this->has_more() ) {
+                        V.push_back( this->next<TypeTrg>() );
+                    }
+                    return V;
+                }
+
+                /**
+                 * @brief Retrieves a serialized string. 
+                 * 
+                 * @return std::string 
+                 */
+                std::string next_string() {
+                    const std::size_t   bytes_length = this->next<std::size_t>(),
+                                        words_legnth = this->next<std::size_t>();
+                    std::vector<Type> V = this->next<Type>( words_legnth );
+                    std::string str = serialization::convert_vector_to_string<Type>( V , bytes_length );
+                    return str;
+                }
+
+                /**
+                 * @brief Retrieves a serialized `std::map<std::string,std::string>`'s entry.
+                 * 
+                 * @return std::pair<TypeA,TypeB> 
+                 */
+                template<typename TypeA, typename TypeB> std::pair<TypeA,TypeB> next_map_entry() {
+                    TypeA key;
+                    if constexpr(std::is_integral_v<TypeA>) {
+                        key = this->next<TypeA>();
+                    } else if constexpr(std::is_same_v<TypeA, std::string>) {
+                        key = this->next_string();
+                    } else {
+                        throw std::runtime_error("\""+ std::string(typeid(TypeA).name()) +"\" is an unsuported datatype!");
+                    }
+                    TypeB value;
+                    if constexpr(std::is_integral_v<TypeB>) {
+                        value = this->next<TypeB>();
+                    } else if constexpr(std::is_same_v<TypeB, std::string>) {
+                        value = this->next_string();
+                    } else {
+                        throw std::runtime_error("\""+ std::string(typeid(TypeB).name()) +"\" is an unsuported datatype!");
+                    }
+                    // return std::pair<std::string,std::string>( key , value );
+                    return std::make_pair( key , value );
+                }
+
+                /**
+                 * @brief Retrieves a serialized `std::map<std::string,std::string>`.
+                 * 
+                 * @return std::map<std::string,std::string> 
+                 */
+                template<typename TypeA, typename TypeB> std::map<TypeA,TypeB> get_map() {
+                    const std::size_t length = this->next<std::size_t>();
+                    std::map<TypeA,TypeB> map;
+                    for (std::uint64_t i = 0; i < length; i++) {
+                        map.insert( this->next_map_entry<TypeA,TypeB>() );
+                    }
+                    return map;
+                }
+
+                /**
+                 * @brief Verifies whether the serialization has or not more elements. 
+                 * 
+                 * @return true 
+                 * @return false 
+                 */
+                const bool has_more() const {
+                    return this->index < this->serialization_length;
+                }
+
+                /**
+                 * @brief Returns the number of bytes that composes the serialization. 
+                 * 
+                 * @return const std::size_t 
+                 */
+                const std::size_t size() const override {
+                    return this->serialization_length;
+                }
+
+                /**
+                 * @brief Closes binary file.
+                 * 
+                 */
+                void close() override {
+                    static bool _free_required_ = true;
+                    if( _free_required_ ) {
+                        std::free( this->byte_map );
+                        _free_required_ = false;
+                    }
+                }
+        };
     }
 }

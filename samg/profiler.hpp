@@ -56,10 +56,10 @@ namespace samg {
                 template <typename R, class F, class ...Args>
                 R measure_memory(F&& func, Args&&... args) {
                     const pid_t this_process = getpid();
-                    std::uint64_t beginning_memory = Profiler::_get_memory_usage_(this_process);
+                    std::uint64_t initial_memory = Profiler::_get_memory_usage_(this_process);
                     R ans = std::invoke(std::forward<F>(func), std::forward<Args>(args)...);
                     std::uint64_t ending_memory = Profiler::_get_memory_usage_(this_process);
-                    this->profile[Profiler::MEMORY_USAGE] = std::to_string( ending_memory > beginning_memory ?  ending_memory - beginning_memory : beginning_memory - ending_memory );
+                    this->profile[Profiler::MEMORY_USAGE] = std::to_string( ending_memory > initial_memory ?  ending_memory - initial_memory : initial_memory - ending_memory );
                     return ans;
                 }
 
@@ -76,15 +76,15 @@ namespace samg {
                 template <typename R, class F, class ...Args>
                 R measure_all(F&& func, Args&&... args) {
                     const pid_t this_process = getpid();
-                    std::uint64_t beginning_memory = Profiler::_get_memory_usage_(this_process);
-                    this->profile[Profiler::INITIAL_MEMORY] = std::to_string( beginning_memory ); 
+                    std::uint64_t initial_memory = Profiler::_get_memory_usage_(this_process);
+                    this->profile[Profiler::INITIAL_MEMORY] = std::to_string( initial_memory ); 
                     auto start = ClockT::now();
                     R ans = std::invoke(std::forward<F>(func), std::forward<Args>(args)...);
                     // auto ans = std::invoke(std::forward<F>(func), std::forward<Args>(args)...);
                     this->profile[Profiler::EXECUTION_TIME] = std::to_string( std::chrono::duration_cast<TimeT>(ClockT::now()-start).count() );
                     std::uint64_t ending_memory = Profiler::_get_memory_usage_(this_process);
                     this->profile[Profiler::FINAL_MEMORY] = std::to_string( ending_memory );
-                    this->profile[Profiler::MEMORY_USAGE] = std::to_string( ending_memory > beginning_memory ?  ending_memory - beginning_memory : beginning_memory - ending_memory );
+                    this->profile[Profiler::MEMORY_USAGE] = std::to_string( ending_memory > initial_memory ?  ending_memory - initial_memory : initial_memory - ending_memory );
                     return ans;
                 }
 
@@ -126,20 +126,21 @@ namespace samg {
                         return -1;
                     }
 
-                    read(fd, buf, 4095);
-                    buf[4095] = '\0';
-                    close(fd);
-
                     data = stack = 0;
+                    if( read(fd, buf, 4095) != -1 ){
+                        buf[4095] = '\0';
+                        vm = strstr(buf, "VmData:");
+                        if (vm) {
+                            sscanf(vm, "%*s %d", &data);
+                        }
+                        vm = strstr(buf, "VmStk:");
+                        if (vm) {
+                            sscanf(vm, "%*s %d", &stack);
+                        }
 
-                    vm = strstr(buf, "VmData:");
-                    if (vm) {
-                        sscanf(vm, "%*s %d", &data);
+                        // free(vm);
                     }
-                    vm = strstr(buf, "VmStk:");
-                    if (vm) {
-                        sscanf(vm, "%*s %d", &stack);
-                    }
+                    close(fd);
 
                     return data + stack;
                 }

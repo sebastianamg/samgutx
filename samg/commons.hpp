@@ -537,8 +537,6 @@ namespace samg {
                 }
         };
 
-
-
         /**
          * @brief The class OfflineWordWriter allows direct offline unsigned integer sequence serialization directly to a file. 
          * 
@@ -975,20 +973,23 @@ namespace samg {
                     // Reserve memory:
                     byte_map = (std::uint8_t*) std::malloc( this->serialization_length );
 
+                    // std::cout << "### this->serialization_length = " << this->serialization_length << std::endl; 
+
                     // Load byte_map in memory:
                     OfflineWordReader<std::uint8_t> reader = OfflineWordReader<std::uint8_t>(file_name);
                     std::size_t i = 0;
                     while( reader.has_more() ) {
                         byte_map[ i++ ] = reader.next<std::uint8_t>();
+                        // std::cout << "### byte_map[ i : " << (i-1) << " ] = " << ((std::uint16_t)byte_map[ i-1 ]) << std::endl; 
                     }
                     reader.close();
 
                     this->index = 0ZU;
                 }
 
-                ~OnlineWordReader() {
-                    this->close();
-                }
+                // ~OnlineWordReader() {
+                //     this->close();
+                // }
 
                 /**
                  * @brief It sets the byte that the internal index points to.
@@ -1128,11 +1129,13 @@ namespace samg {
                  * 
                  */
                 void close() override {
-                    static bool _free_required_ = true;
-                    if( _free_required_ ) {
-                        std::free( this->byte_map );
-                        _free_required_ = false;
+                    // static bool _free_required_ = true;
+                    // if( _free_required_ ) {
+                    if( this->byte_map ) {
+                        // std::free( this->byte_map );
+                        // _free_required_ = false;
                     }
+                    // }
                 }
         };
     }

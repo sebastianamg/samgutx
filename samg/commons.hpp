@@ -222,6 +222,10 @@ namespace samg {
         std::size_t get_file_size( const std::string file_name ) {
             // Open the file in read mode:
             std::ifstream file(file_name, std::ios::binary);
+            // Checking if file is opened:
+            if ( !file.is_open() ) {
+                throw std::runtime_error("Failed to open file \""+file_name+"\"!");
+            }
             // Get the file size:
             file.seekg(0, std::ios::end);
             std::size_t size = file.tellg();
@@ -511,7 +515,8 @@ namespace samg {
         template<typename T> static std::string convert_vector_to_string(const std::vector<T>& vector, std::size_t length) {
             const T* T_ptr = vector.data();
             // std::size_t length = vector.size() * sizeof(T);
-            const char* char_ptr = reinterpret_cast<const char*>(T_ptr);
+            // const char* char_ptr = reinterpret_cast<const char*>(T_ptr);
+            const std::uint8_t* char_ptr = reinterpret_cast<const std::uint8_t*>(T_ptr);
             return std::string(char_ptr, length);
         }
 
@@ -782,15 +787,17 @@ namespace samg {
                 OfflineWordReader(const std::string file_name): 
                 samg::serialization::Serializer<Type> ( file_name ),
                 file ( std::ifstream(file_name, std::ios::binary | std::ios::in) ) {
-                    if ( !file.is_open() ) {
-                        throw std::runtime_error("Failed to open file \""+file_name+"\"!");
-                    }
                     
                     // Computing input length in bytes:
                     this->serialization_length = samg::utils::get_file_size( file_name );
+                    
+                    if ( !file.is_open() ) {
+                        throw std::runtime_error("Failed to open file \""+file_name+"\"!");
+                    }
                     // file.seekg(0, file.end);
                     // this->serialization_length = file.tellg();
                     // file.seekg(0, file.beg);
+                    std::cout << " OfflineWordReader> file_name = " << file_name << std::endl;
                 }
 
                 void seek( const std::streampos index, const std::ios_base::seekdir pos ) {
@@ -962,21 +969,22 @@ namespace samg {
                  */
                 OnlineWordReader(const std::string file_name): 
                 samg::serialization::Serializer<Type> ( file_name ) {
-                    std::ifstream file = std::ifstream(file_name, std::ios::binary | std::ios::in);
-                    if ( !file.is_open() ) {
-                        throw std::runtime_error("Failed to open file \""+file_name+"\"!");
-                    }
+                    // std::ifstream file = std::ifstream(file_name, std::ios::binary | std::ios::in);
+                    // if ( !file.is_open() ) {
+                    //     throw std::runtime_error("Failed to open file \""+file_name+"\"!");
+                    // }
                     
                     // Computing input length in bytes:
                     this->serialization_length = samg::utils::get_file_size( file_name );
 
                     // Reserve memory:
+                    // byte_map = (std::uint8_t*) std::malloc( this->serialization_length );
                     byte_map = (std::uint8_t*) std::malloc( this->serialization_length );
 
-                    // std::cout << "### this->serialization_length = " << this->serialization_length << std::endl; 
 
                     // Load byte_map in memory:
-                    OfflineWordReader<std::uint8_t> reader = OfflineWordReader<std::uint8_t>(file_name);
+                    OfflineWordReader<std::uint8_t> reader = OfflineWordReader<std::uint8_t>( file_name );
+                    std::cout << "### file_name = " << file_name << " this->serialization_length = " << this->serialization_length << std::endl; 
                     std::size_t i = 0;
                     while( reader.has_more() ) {
                         byte_map[ i++ ] = reader.next<std::uint8_t>();

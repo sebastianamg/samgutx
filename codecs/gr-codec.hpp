@@ -46,6 +46,7 @@
 #include <vector>
 #include <array>
 #include <queue>
+#include <list>
 #include <functional>
 #include <stdexcept>
 #include <cassert>
@@ -95,7 +96,8 @@ namespace samg {
             template<typename Type> class QQueueAdapter : public QueueAdapter<Type> {
                 private:
                     // std::queue<Type,std::deque<Type>> queue;
-                    std::vector<Type> queue;
+                    // std::vector<Type> queue; // NOTE Expensive operation of deletion.
+                    std::list<Type> queue; // NOTE std::list supports constant time operations of insertion and deletion. 
 
                     void _swap_( QueueAdapter<Type>& other ) override {
                         QQueueAdapter<Type>* x = dynamic_cast<QQueueAdapter<Type>*>( &other );
@@ -105,8 +107,9 @@ namespace samg {
                 public:
                     QQueueAdapter() :
                         // queue ( std::queue<Type>() ) {}
-                        queue ( std::vector<Type>() ) {}
-
+                        // queue ( std::vector<Type>() ) {}
+                        queue ( std::list<Type>() ) {}
+                        
                     Type front() override {
                         Type tmp = this->queue.front();
                       //  std::cout << "QQueueAdapter / front> Type = " << typeid(Type).name() << " front (" << typeid(tmp).name() << ") = " << tmp << std::endl;
@@ -133,7 +136,8 @@ namespace samg {
 
                     void pop() override {
                         // this->queue.pop();
-                        this->queue.erase(this->queue.begin());
+                        // this->queue.erase(this->queue.begin());
+                        this->queue.pop_front();
                     }
             };
 

@@ -97,23 +97,30 @@ namespace samg {
                 private:
                     // std::queue<Type,std::deque<Type>> queue;
                     // std::vector<Type> queue; // NOTE Expensive operation of deletion.
-                    std::list<Type> queue; // NOTE std::list supports constant time operations of insertion and deletion. 
+                    // std::list<Type> queue; // NOTE std::list supports constant time operations of insertion and deletion. 
+                    std::vector<Type> queue; // Optimized by using a companion index.
+                    std::size_t starting_index;
 
                     void _swap_( QueueAdapter<Type>& other ) override {
                         QQueueAdapter<Type>* x = dynamic_cast<QQueueAdapter<Type>*>( &other );
                         std::swap( this->queue, x->queue );
+                        std::size_t tmp_indx = x->starting_index;
+                        x->starting_index = this->starting_index;
+                        this->starting_index = tmp_indx;
                     }
 
                 public:
                     QQueueAdapter() :
                         // queue ( std::queue<Type>() ) {}
-                        // queue ( std::vector<Type>() ) {}
-                        queue ( std::list<Type>() ) {}
+                        queue ( std::vector<Type>() ),
+                        // queue ( std::list<Type>() ),
+                        starting_index (0ZU) {}
                         
                     Type front() override {
-                        Type tmp = this->queue.front();
+                        // Type tmp = this->queue.front();
                       //  std::cout << "QQueueAdapter / front> Type = " << typeid(Type).name() << " front (" << typeid(tmp).name() << ") = " << tmp << std::endl;
-                        return tmp;
+                        // return tmp;
+                        return this->queue[this->starting_index];
                     }
 
                     Type back() override {
@@ -127,17 +134,20 @@ namespace samg {
                     }
 
                     bool empty() override {
-                        return this->queue.empty();
+                        // return this->queue.empty();
+                        return this->starting_index == this->queue.size();
                     }
 
                     std::size_t size() override {
-                        return this->queue.size();
+                        // return this->queue.size();
+                        return this->queue.size() - this->starting_index;
                     }
 
                     void pop() override {
                         // this->queue.pop();
                         // this->queue.erase(this->queue.begin());
-                        this->queue.pop_front();
+                        // this->queue.pop_front();
+                        this->starting_index++;
                     }
             };
 
@@ -336,10 +346,33 @@ namespace samg {
                     }
                     return answ;
                 }
+                // template <typename Iter> static Word _bitread_(Iter it, std::size_t p, const std::size_t len) {
+                //     Word answ;
+                //     std::advance( it, p / GolombRiceCommon<Word>::WORD_bits); // it += ( p / GolombRiceCommon<Word>::WORD_bits );
+                //     p %= GolombRiceCommon<Word>::WORD_bits;
+                //     answ = (*it) >> p;
+                //     if (len == GolombRiceCommon<Word>::WORD_bits) {
+                //         if (p){
+                //             it++;
+                //             answ |= (*it) << (GolombRiceCommon<Word>::WORD_bits - p);
+                //         }
+                //     } else {
+                //         if (p + len > GolombRiceCommon<Word>::WORD_bits) {
+                //             it++;
+                //             answ |= (*it) << (GolombRiceCommon<Word>::WORD_bits - p);
+                //         }
+                //         answ &= (1 << len) - 1;
+                //     }
+                //     return answ;
+                // }
 
                 static Word _bitget_(Word* e, const std::size_t p) {
                     return (((e)[(p) / GolombRiceCommon<Word>::WORD_bits] >> ((p) % GolombRiceCommon<Word>::WORD_bits)) & 1);
                 }
+                // template <typename Iter> static Word _bitget_(Iter it, const std::size_t p) {
+                    // return (((it)[(p) / GolombRiceCommon<Word>::WORD_bits] >> ((p) % GolombRiceCommon<Word>::WORD_bits)) & 1);
+                    // return ( *(std::next( it, p / GolombRiceCommon<Word>::WORD_bits )) >> ( p % GolombRiceCommon<Word>::WORD_bits )) & 1;
+                // }
 
                 /**
                  * TODO
@@ -932,7 +965,7 @@ namespace samg {
                         void _update_() {
                             // Relief buffer:
                             while( this->position >= samg::grcodec::toolkits::GolombRiceCommon<Word>::get_word_bits() ) {
-                                this->buffer.erase(this->buffer.begin());
+                                this->buffer.erase(this->buffer.begin()); // !XXX INEFFICIENT OPERATIN ON STD::VECTOR !!!
                                 this->position -= samg::grcodec::toolkits::GolombRiceCommon<Word>::get_word_bits();
                             }
                             // Fill up buffer:
@@ -1032,12 +1065,14 @@ namespace samg {
 
                             // Retrieve reminder:
                             Word v = samg::grcodec::toolkits::GolombRiceCommon<Word>::_bitread_( buffer.data(), this->position, this->k );
+                            // Word v = samg::grcodec::toolkits::GolombRiceCommon<Word>::_bitread_( buffer.begin(), this->position, this->k );
                             this->position += this->k;
                             this->bit_counter += this->k;
 
                             // Retrieve quotient:
                             this->_update_();
                             while ( samg::grcodec::toolkits::GolombRiceCommon<Word>::_bitget_( buffer.data() , this->position ) ) {
+                            // while ( samg::grcodec::toolkits::GolombRiceCommon<Word>::_bitget_( buffer.begin() , this->position ) ) {
                                 v += ( 1 << this->k );
                                 ++(this->position);
                                 ++(this->bit_counter);
@@ -1104,6 +1139,7 @@ namespace samg {
                         Word R_MASK;
                         std::unique_ptr<samg::serialization::OnlineWordReader<Word>> serializer;
                         std::vector<Word> buffer;
+                        // std::list<Word> buffer;
                         std::size_t k,
                                     position,
                                     bit_limit,
@@ -1130,7 +1166,8 @@ namespace samg {
                         void _update_() {
                             // Relief buffer:
                             while( this->position >= samg::grcodec::toolkits::GolombRiceCommon<Word>::get_word_bits() ) {
-                                this->buffer.erase(this->buffer.begin());
+                                this->buffer.erase(this->buffer.begin()); // !XXX INNEFICIENT OPERATION ON STD::VECTOR !!! 
+                                // this->buffer.pop_front();
                                 this->position -= samg::grcodec::toolkits::GolombRiceCommon<Word>::get_word_bits();
                             }
                             // Fill up buffer:
@@ -1228,13 +1265,15 @@ namespace samg {
                             // LOG("OfflineRCodecReader/next> %s", samg::utils::to_string( this->buffer.data(), this->buffer.size(), this->buffer.size() * sizeof(Word) * samg::constants::BITS_PER_BYTE, true, this->position ).c_str() );
 
                             // Retrieve reminder:
-                            Word v = samg::grcodec::toolkits::GolombRiceCommon<Word>::_bitread_( buffer.data(), this->position, this->k );
+                            Word v = samg::grcodec::toolkits::GolombRiceCommon<Word>::_bitread_( this->buffer.data(), this->position, this->k );
+                            // Word v = samg::grcodec::toolkits::GolombRiceCommon<Word>::_bitread_( this->buffer.begin(), this->position, this->k );
                             this->position += this->k;
                             this->bit_counter += this->k;
 
                             // Retrieve quotient:
                             this->_update_();
-                            while ( samg::grcodec::toolkits::GolombRiceCommon<Word>::_bitget_( buffer.data() , this->position ) ) {
+                            while ( samg::grcodec::toolkits::GolombRiceCommon<Word>::_bitget_( this->buffer.data() , this->position ) ) {
+                            // while ( samg::grcodec::toolkits::GolombRiceCommon<Word>::_bitget_( this->buffer.begin() , this->position ) ) {
                                 v += ( 1 << this->k );
                                 ++(this->position);
                                 ++(this->bit_counter);
@@ -1435,7 +1474,7 @@ namespace samg {
                      * @param n 
                      * @param m 
                      * @param T
-                     * @return std::vector<std::uint8_t> 
+                     * @return sdsl::bit_vector 
                      */
                     static sdsl::bit_vector _encode_golomb_rice_(const Type n, const std::size_t m) {
                         Type    q = std::floor( ((std::double_t) n) / ((std::double_t)m) ),

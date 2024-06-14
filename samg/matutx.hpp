@@ -119,19 +119,19 @@ namespace samg {
                     std::string get_input_file_name(){
                         return this->input_file_name;
                     }
-                    virtual std::size_t get_number_of_dimensions() = 0;
-                    virtual std::vector<std::uint64_t> get_max_per_dimension() = 0;
-                    virtual std::uint64_t get_number_of_entries() = 0;
-                    virtual bool has_next() = 0;
-                    virtual std::uint64_t get_matrix_side_size() = 0;
-                    virtual std::uint64_t get_matrix_size() = 0;
-                    virtual std::float_t get_matrix_expected_density() = 0;
-                    virtual std::float_t get_matrix_actual_density() = 0;
-                    virtual std::string get_matrix_distribution() = 0;
-                    virtual std::float_t get_gauss_mu() = 0;
-                    virtual std::float_t get_gauss_sigma() = 0;
-                    virtual std::uint64_t get_clustering() = 0;
-                    virtual std::float_t get_clustering_distance_error() = 0;
+                    virtual const std::size_t get_number_of_dimensions() const = 0;
+                    virtual const std::vector<std::uint64_t> get_max_per_dimension() const = 0;
+                    virtual const std::uint64_t get_number_of_entries() const = 0;
+                    virtual const bool has_next() = 0;
+                    virtual const std::uint64_t get_matrix_side_size() const = 0;
+                    virtual const std::uint64_t get_matrix_size() const = 0;
+                    virtual const std::float_t get_matrix_expected_density() const = 0;
+                    virtual const std::float_t get_matrix_actual_density() const = 0;
+                    virtual const std::string get_matrix_distribution() const = 0;
+                    virtual const std::float_t get_gauss_mu() const = 0;
+                    virtual const std::float_t get_gauss_sigma() const = 0;
+                    virtual const std::uint64_t get_clustering() const = 0;
+                    virtual const std::float_t get_clustering_distance_error() const = 0;
                     virtual std::vector<std::uint64_t> next() = 0;
             };
             
@@ -293,46 +293,46 @@ namespace samg {
                         this->input_file.close();
                     }
 
-                    std::size_t get_number_of_dimensions() override {
+                    const std::size_t get_number_of_dimensions() const override {
                         return this->max_per_dimension.size();
                     }
-                    std::vector<std::uint64_t> get_max_per_dimension() override {
+                    const std::vector<std::uint64_t> get_max_per_dimension() const override {
                         return this->max_per_dimension;
                     }
-                    std::uint64_t get_number_of_entries() override {
+                    const std::uint64_t get_number_of_entries() const override {
                         return this->number_of_entries;
                     }
-                    bool has_next() override {
+                    const bool has_next() override {
                         // std::cout << "is_there_next_entry> number of entries = " << this->number_of_entries << "; eof? = " << this->input_file.eof() << std::endl;
                         return ( this->number_of_entries > 0 ) && ( this->entries_counter < this->number_of_entries ) && !this->input_file.eof();
                     }
 
-                    std::uint64_t get_matrix_side_size() override {
+                    const std::uint64_t get_matrix_side_size() const override {
                         // std::cout << "MDXReader>get_matrix_side_size> (1)" << std::endl;
                         return this->matrix_side_size;
                     }
-                    std::uint64_t get_matrix_size() override {
+                    const std::uint64_t get_matrix_size() const override {
                         return this->matrix_size;
                     }
-                    std::float_t get_matrix_expected_density() override {
+                    const std::float_t get_matrix_expected_density() const override {
                         return this->matrix_expected_density;
                     }
-                    std::float_t get_matrix_actual_density() override {
+                    const std::float_t get_matrix_actual_density() const override {
                         return this->matrix_actual_density;
                     }
-                    std::string get_matrix_distribution() override {
+                    const std::string get_matrix_distribution() const override {
                         return this->matrix_distribution;
                     }
-                    std::float_t get_gauss_mu() override {
+                    const std::float_t get_gauss_mu() const override {
                         return this->gauss_mu;
                     }
-                    std::float_t get_gauss_sigma() override {
+                    const std::float_t get_gauss_sigma() const override {
                         return this->gauss_sigma;
                     }
-                    std::uint64_t get_clustering() override {
+                    const std::uint64_t get_clustering() const override {
                         return this->clustering;
                     }
-                    std::float_t get_clustering_distance_error() override {
+                    const std::float_t get_clustering_distance_error() const override {
                         return this->clustering_distance_error;
                     }
 
@@ -422,46 +422,46 @@ namespace samg {
                         graal_tear_down_isolate(this->thread);
                     }
 
-                    std::size_t get_number_of_dimensions() override {
+                    const std::size_t get_number_of_dimensions() const override {
                         return this->max_per_dimension.size();
                     }
-                    std::vector<std::uint64_t> get_max_per_dimension() override {
+                    const std::vector<std::uint64_t> get_max_per_dimension() const override {
                         return this->max_per_dimension;
                     }
-                    std::uint64_t get_number_of_entries() override {
+                    const std::uint64_t get_number_of_entries() const override {
                         return this->number_of_entries;
                     }
-                    bool has_next() override {
+                    const bool has_next() override {
                         // std::cout << "is_there_next_entry> number of entries = " << this->number_of_entries << "; eof? = " << this->input_file.eof() << std::endl;
                         return ( this->number_of_entries > 0 ) && ( this->entries_counter < this->number_of_entries );
                     }
 
-                    std::uint64_t get_matrix_side_size() override {
+                    const std::uint64_t get_matrix_side_size() const override {
                         // std::cout << "GraphReader>get_matrix_side_size> (1)" << std::endl;
                         return this->matrix_side_size;
                     }
-                    std::uint64_t get_matrix_size() override {
+                    const std::uint64_t get_matrix_size() const override {
                         return this->matrix_size;
                     }
-                    std::float_t get_matrix_expected_density() override {
+                    const std::float_t get_matrix_expected_density() const override {
                         return this->matrix_expected_density;
                     }
-                    std::float_t get_matrix_actual_density() override {
+                    const std::float_t get_matrix_actual_density() const override {
                         return this->matrix_actual_density;
                     }
-                    std::string get_matrix_distribution() override {
+                    const std::string get_matrix_distribution() const override {
                         return this->matrix_distribution;
                     }
-                    std::float_t get_gauss_mu() override {
+                    const std::float_t get_gauss_mu() const override {
                         return this->gauss_mu;
                     }
-                    std::float_t get_gauss_sigma() override {
+                    const std::float_t get_gauss_sigma() const override {
                         return this->gauss_sigma;
                     }
-                    std::uint64_t get_clustering() override {
+                    const std::uint64_t get_clustering() const override {
                         return this->clustering;
                     }
-                    std::float_t get_clustering_distance_error() override {
+                    const std::float_t get_clustering_distance_error() const override {
                         return this->clustering_distance_error;
                     }
 

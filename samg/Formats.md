@@ -21,10 +21,6 @@ funct encode( E, n ) {
     Let Pi be an array of n cells to store pointers to P, initially as Pi = [0,1,2,...,n-1].
     Let Ii be an array of n cells to store pointers to I, initially as Ii = [0,1,2,...,n-1].
 
-    p' = n // Index for P
-    i' = n // Index for I
-    j = n-1 // Index for both Pi and Ii
-
     init = true
     for e in E do {
         if init then {

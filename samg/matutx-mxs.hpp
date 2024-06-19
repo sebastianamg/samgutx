@@ -175,46 +175,6 @@ namespace samg {
             };
         }
         namespace writer {
-            class Writer {
-                private:
-                    const std::string output_file_name;
-                    // const std::size_t n;
-                    const std::vector<std::uint64_t> maxs;
-                    const std::uint64_t e, s, c;
-                    const std::float_t d, actual_d, cderr;
-                    const std::string dist;
-                public:
-                    Writer(
-                        const std::string output_file_name,
-                        // const std::size_t n,
-                        const std::vector<std::uint64_t> maxs,
-                        const std::uint64_t e,
-                        const std::uint64_t s,
-                        const std::float_t d,
-                        const std::float_t actual_d,
-                        const std::string dist = "unknonwn",
-                        const std::uint64_t c = 0ULL,
-                        const std::float_t cderr = 0.0f
-                    ):
-                        output_file_name(output_file_name),
-                        // n(n),
-                        maxs(maxs),
-                        e(e),
-                        s(s),
-                        d(d),
-                        actual_d(actual_d),
-                        dist(dist),
-                        c(c),
-                        cderr(cderr)
-                    {}
-                    const std::string get_output_file_name() const {
-                        return this->output_file_name;
-                    }
-                    
-                    virtual void add_entry(std::vector<std::uint64_t> entry) = 0;
-                    virtual void close() = 0;
-            };
-
             class MXSWriter : public Writer {
                 /**
                  * @brief MXS Format:

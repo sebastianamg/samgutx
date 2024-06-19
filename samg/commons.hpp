@@ -516,7 +516,8 @@ namespace samg {
             const T* T_ptr = vector.data();
             // std::size_t length = vector.size() * sizeof(T);
             // const char* char_ptr = reinterpret_cast<const char*>(T_ptr);
-            const std::uint8_t* char_ptr = reinterpret_cast<const std::uint8_t*>(T_ptr);
+            // const std::uint8_t* char_ptr = reinterpret_cast<const std::uint8_t*>(T_ptr);
+            const char* char_ptr = reinterpret_cast<const char*>(T_ptr);
             return std::string(char_ptr, length);
         }
 

@@ -1,5 +1,6 @@
 #pragma once
-#include <samg/matutx.hpp>
+#include <samg/commons.hpp>
+#include <samg/mmm-interface.hpp>
 
 /**
  * ---------------------------------------------------------------
@@ -39,7 +40,7 @@
 
 namespace samg {
     namespace matutx {
-        typedef unsigned char Word;
+        typedef std::uint8_t Word;
         namespace reader {
             class MXSReader : public Reader {
                 private:
@@ -111,21 +112,21 @@ namespace samg {
                     const std::uint64_t get_matrix_size() const override {
                         return std::pow( s, maxs.size() );
                     }
-                    const std::float_t get_matrix_expected_density() const  {
+                    const std::float_t get_matrix_expected_density() const override {
                         return this->d;
                     }
-                    const std::float_t get_matrix_actual_density() const  {
+                    const std::float_t get_matrix_actual_density() const override {
                         return this->actual_d;
                     }
-                    const std::string get_matrix_distribution() const  {
+                    const std::string get_matrix_distribution() const override {
                         return this->dist;
                     }
-                    // const std::float_t get_gauss_mu() const  {
-                    //     return this->gauss_mu;
-                    // }
-                    // const std::float_t get_gauss_sigma() const  {
-                    //     return this->gauss_sigma;
-                    // }
+                    const std::float_t get_gauss_mu() const override {
+                        return 0.0f;
+                    }
+                    const std::float_t get_gauss_sigma() const override {
+                        return 0.0f;
+                    }
                     const std::uint64_t get_clustering() const override {
                         return this->c;
                     }
@@ -152,6 +153,7 @@ namespace samg {
                                 this->j--;
                                 this->I[ this->Ii[ this->j ] ]--;
                                 if( this->j == 0 && this->I[ this->Ii[ this->j ] ] == 0ZU ){
+                                    this->current_entry++;
                                     return C;// Decoding completed!
                                 }
                             }
@@ -167,6 +169,7 @@ namespace samg {
                             }
                             this->j--;
                         }
+                        this->current_entry++;
                         return C;
                     }
             };
@@ -263,7 +266,6 @@ namespace samg {
                         Ii( std::vector<std::size_t>( maxs.size() ) )
                     {
                         this->serializer = std::make_unique<samg::serialization::OfflineWordWriter<Word>>( output_file_name );
-                        this->is_open = true;
                         // Writing HEADER:
                         this->serializer->add_value<std::uint64_t>( s );
                         // this->serializer->add_value<std::uint64_t>( std::pow( s , maxs.size() ));
@@ -274,10 +276,8 @@ namespace samg {
                         this->serializer->add_value<std::size_t>( ( std::size_t ) (cderr * 1000000ZU) );
                         this->serializer->add_value<std::size_t>( maxs.size() );
                         this->serializer->add_values<std::uint64_t>( maxs );
-                        // for (std::uint64_t m : maxs ) {
-                        //     this->serializer->add_value<std::uint64_t>( m );
-                        // }
                         this->serializer->add_value<std::uint64_t>( e );
+                        this->is_open = true;
                     }
                     void add_entry(std::vector<std::uint64_t> entry) override {
                         if( this->is_open ) {
@@ -300,11 +300,11 @@ namespace samg {
                                 }
                                 while( j < n ) {
                                     this->serializer->add_value<std::uint64_t>( entry[ j ] );
-                                    Pi[ j ] = entry[ j ];
-                                    I[ Ii[ j ] ]++;
+                                    this->Pi[ j ] = entry[ j ];
+                                    this->I[ Ii[ j ] ]++;
                                     j++;
                                     if( j < n ) {
-                                        this->I.push_back( 1ZU );
+                                        this->I.push_back( 0ZU );
                                         this->Ii[ j ] = this->I.size() - 1;
                                     } 
                                 }
@@ -316,6 +316,7 @@ namespace samg {
                         this->serializer->add_value<std::size_t>( this->I.size() ); // Adding index length in elements (words).
                         this->serializer->close();
                         this->serializer.reset();
+                        this->is_open = false;
                     }
             };
         }

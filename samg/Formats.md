@@ -52,6 +52,32 @@ funct encode( E, n ) {
 }
 ```
 
+- As an example, let us suppose to encode the following sequence of entries:
+
+```
+1 1 1
+1 1 2
+1 3 1
+2 4 1
+2 5 1
+2 5 2
+2 6 0
+```
+```
+entry    = 1 1 1 | 1 1 2 | 1 3 1
+is_open  = true
+n        = 3
+init     = false
+
+P (slzr) = 1 1 1 2 3 1
+I        = 1 2 2 1
+Pi       = 1 3 1
+Ii       = 0 1 3
+
+j        = 0 1 2 3 0 1 2
+```
+
+
 ### Decoding
 
 ```

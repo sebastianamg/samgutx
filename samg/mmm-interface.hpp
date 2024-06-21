@@ -46,7 +46,6 @@
  */
 namespace samg {
     namespace matutx {
-        typedef std::uint8_t Word;
         /***************************************************************/
         namespace reader {
             // const std::size_t roundup_matrix_size( const std::uint64_t size, const std::size_t k ) {
@@ -118,6 +117,13 @@ namespace samg {
                     }
                     
                     virtual void add_entry(std::vector<std::uint64_t> entry) = 0;
+
+                    void add_entries(samg::matutx::reader::Reader &reader) {
+                        while( reader.has_next() ) {
+                            this->add_entry( reader.next() );
+                        }
+                    }
+
                     virtual void close() = 0;
             };
         }

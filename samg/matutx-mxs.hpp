@@ -41,10 +41,84 @@
 namespace samg {
     namespace matutx {
         typedef std::uint8_t Word;
+        namespace wrapper {
+            namespace serializer {
+                class OfflineWordReaderWrapper : public samg::serialization::OfflineWordReader<samg::matutx::Word> {
+                    private:
+
+                    public:
+
+                };
+
+                class OfflineWordWriterWrapper : public samg::serialization::OfflineWordWriter<samg::matutx::Word> {
+                    private:
+                        std::size_t max_value;
+                        template<typename T> void _add_integer_( T &value ) {
+                            if (this->max_value <= std::numeric_limits<std::uint8_t>::max()) {
+                                samg::serialization::OfflineWordWriter<samg::matutx::Word>::add_value<std::uint8_t>( static_cast<std::uint8_t>( value ) );
+                            } else if (this->max_value <= std::numeric_limits<std::uint16_t>::max()) {
+                                samg::serialization::OfflineWordWriter<samg::matutx::Word>::add_value<std::uint16_t>( static_cast<std::uint16_t>( value ) );
+                            } else if (this->max_value <= std::numeric_limits<std::uint32_t>::max()) {
+                                samg::serialization::OfflineWordWriter<samg::matutx::Word>::add_value<std::uint32_t>( static_cast<std::uint32_t>( value ) );
+                            } else  if (this->max_value <= std::numeric_limits<std::uint64_t>::max()) {
+                                samg::serialization::OfflineWordWriter<samg::matutx::Word>::add_value<std::uint64_t>( static_cast<std::uint64_t>( value ) );
+                            } else{
+                                throw std::runtime_error("OfflineWordWriterWrapper - Unrecognized datatype!");
+                            }
+                        }
+
+                        template<typename T> void _add_integer_vector_( std::vector<T> &values ) {
+                            for (T v : values) {
+                                this->_add_integer_( v );
+                            }
+                            // if (this->max_value <= std::numeric_limits<std::uint8_t>::max()) {
+                            //     samg::serialization::OfflineWordWriter<samg::matutx::Word>::add_values<std::uint8_t>( static_cast<std::vector<std::uint8_t>>( values ) );
+                            // } else if (this->max_value <= std::numeric_limits<std::uint16_t>::max()) {
+                            //     samg::serialization::OfflineWordWriter<samg::matutx::Word>::add_values<std::uint16_t>( static_cast<std::vector<std::uint16_t>>( values ) );
+                            // } else if (this->max_value <= std::numeric_limits<std::uint32_t>::max()) {
+                            //     samg::serialization::OfflineWordWriter<samg::matutx::Word>::add_values<std::uint32_t>( static_cast<std::vector<std::uint32_t>>( values ) );
+                            // } else  if (this->max_value <= std::numeric_limits<std::uint64_t>::max()) {
+                            //     samg::serialization::OfflineWordWriter<samg::matutx::Word>::add_values<std::uint64_t>( static_cast<std::vector<std::uint64_t>>( values ) );
+                            // } else{
+                            //     throw std::runtime_error("OfflineWordWriterWrapper - Unrecognized datatype!");
+                            // }
+                        }
+                    public:
+                        
+                        OfflineWordWriterWrapper( const std::string file_name, const std::size_t max_value ) :
+                        samg::serialization::OfflineWordWriter<samg::matutx::Word>( file_name ),
+                        max_value(max_value) {
+
+                        }
+
+                        template<typename TypeSrc> void add_metadata(TypeSrc v) {
+                            samg::serialization::OfflineWordWriter<samg::matutx::Word>::add_value<TypeSrc>( v );
+                        }
+
+                        template<typename TypeSrc> void add_metadata_vector( std::vector<TypeSrc> V ) {
+                            samg::serialization::OfflineWordWriter<samg::matutx::Word>::add_values<TypeSrc>( V );
+                        }
+
+                        template<typename TypeSrc> void add_value(TypeSrc v) {
+                            this->_add_integer_<TypeSrc>( v )
+                        }
+                        
+                        template<typename TypeSrc> void add_values(const std::vector<TypeSrc>& V) {
+                            this->_add_integer_vector_<TypeSrc>( V )
+                        }
+
+                        void set_max_value( const std::size_t max_value ) {
+                            this->max_value = max_value;
+                        }
+                };
+            }
+        }
         namespace reader {
             class MXSReader : public Reader {
                 private:
-                    std::unique_ptr<samg::serialization::OfflineWordReader<Word>> serializer;
+                    std::size_t MAX_VALUE, MAX_INDEX_VALUE;
+                    // std::unique_ptr<samg::serialization::OfflineWordReader<samg::matutx::Word>> serializer;
+                    std::unique_ptr<samg::matutx::wrapper::serializer::OfflineWordReaderWrapper> serializer;
                     std::vector<std::uint64_t> maxs;
                     std::uint64_t e, s, c;
                     std::float_t d, actual_d, cderr;
@@ -68,9 +142,11 @@ namespace samg {
                         Reader(input_file_name),
                         current_entry(0)
                     {
-                        this->serializer = std::make_unique<samg::serialization::OfflineWordReader<Word>>( input_file_name );
+                        // this->serializer = std::make_unique<samg::serialization::OfflineWordReader<samg::matutx::Word>>( input_file_name );
+                        this->serializer = std::make_unique<samg::matutx::wrapper::serializer::OfflineWordReaderWrapper>( input_file_name );
                         // Read TAIL:
-                        this->serializer->seek( -sizeof( std::size_t ), std::ios::end ); //  ( this->serializer->tell() - sizeof( std::size_t ) )
+                        this->serializer->seek( -sizeof( std::size_t ) * 3, std::ios::end ); //  ( this->serializer->tell() - sizeof( std::size_t ) )
+                        // TODO Adapt from here on...
                         std::size_t tail_length = this->serializer->next<std::size_t>();
                         this->serializer->seek( -( ( tail_length + 1 ) * sizeof( std::size_t ) ), std::ios::end );
                         this->I = this->serializer->next<std::size_t>( tail_length );
@@ -186,9 +262,11 @@ namespace samg {
                  * TAIL: I0 I1 I2 ... Im |I|<in bytes>
                  */
                 private:
-                    std::unique_ptr<samg::serialization::OfflineWordWriter<Word>> serializer;
+                    const std::size_t MAX_VALUE;
+                    // std::unique_ptr<samg::serialization::OfflineWordWriter<samg::matutx::Word>> serializer;
+                    std::unique_ptr<samg::matutx::wrapper::serializer::OfflineWordWriterWrapper> serializer;
                     bool is_open;
-                    std::size_t p;
+                    std::size_t p, MAX_INDEX_VALUE;
                     // Let P be a vector of positive integers. --- Replaced by `this->serializer`. 
                     std::vector<std::uint64_t> Pi;// Let Pi be an array of n cells to store the latests added values to P.
                     std::vector<std::size_t> I; // Let I be a vector of positive integers.
@@ -219,24 +297,27 @@ namespace samg {
                             c,
                             cderr
                         ),
+                        MAX_VALUE ( maxs[0] ),
+                        MAX_INDEX_VALUE ( 1ZU ),
                         p( 0ZU ),
                         init( true ),
                         Pi( std::vector<std::uint64_t>( maxs.size() ) ),
                         I( std::vector<std::size_t>() ),
                         Ii( std::vector<std::size_t>( maxs.size() ) )
                     {
-                        this->serializer = std::make_unique<samg::serialization::OfflineWordWriter<Word>>( output_file_name );
+                        // this->serializer = std::make_unique<samg::serialization::OfflineWordWriter<samg::matutx::Word>>( output_file_name );
+                        this->serializer = std::make_unique<samg::matutx::wrapper::serializer::OfflineWordWriterWrapper>( output_file_name, this->MAX_VALUE );
                         // Writing HEADER:
-                        this->serializer->add_value<std::uint64_t>( s );
+                        this->serializer->add_metadata<std::uint64_t>( s );
                         // this->serializer->add_value<std::uint64_t>( std::pow( s , maxs.size() ));
-                        this->serializer->add_value<std::size_t>( ( std::size_t ) (d * 1000000ZU) );
-                        this->serializer->add_value<std::size_t>( ( std::size_t ) (actual_d * 1000000ZU) );
+                        this->serializer->add_metadata<std::size_t>( ( std::size_t ) (d * 1000000ZU) );
+                        this->serializer->add_metadata<std::size_t>( ( std::size_t ) (actual_d * 1000000ZU) );
                         this->serializer->add_string( dist );
-                        this->serializer->add_value<std::uint64_t>( c );
-                        this->serializer->add_value<std::size_t>( ( std::size_t ) (cderr * 1000000ZU) );
-                        this->serializer->add_value<std::size_t>( maxs.size() );
-                        this->serializer->add_values<std::uint64_t>( maxs );
-                        this->serializer->add_value<std::uint64_t>( e );
+                        this->serializer->add_metadata<std::uint64_t>( c );
+                        this->serializer->add_metadata<std::size_t>( ( std::size_t ) (cderr * 1000000ZU) );
+                        this->serializer->add_metadata<std::size_t>( maxs.size() );
+                        this->serializer->add_metadata_vector<std::uint64_t>( maxs );
+                        this->serializer->add_metadata<std::uint64_t>( e );
                         this->is_open = true;
                     }
                     void add_entry(std::vector<std::uint64_t> entry) override {
@@ -245,9 +326,11 @@ namespace samg {
                             if( this->init ){
                                 for(std::size_t i = 0; i < n; i++) {
                                     this->serializer->add_value<std::uint64_t>( entry[ i ] );
-                                    this->Pi.push_back( entry[ i ] );
+                                    // this->Pi.push_back( entry[ i ] );
+                                    this->Pi[ i ] = entry[ i ];
                                     this->I.push_back( 1ZU );
-                                    this->Ii.push_back( i );
+                                    // this->Ii.push_back( i );
+                                    this->Ii[ i ] = i;
                                 }
                                 this->init = false;
                             } else {
@@ -262,6 +345,7 @@ namespace samg {
                                     this->serializer->add_value<std::uint64_t>( entry[ j ] );
                                     this->Pi[ j ] = entry[ j ];
                                     this->I[ Ii[ j ] ]++;
+                                    if( this->I[ Ii[ j ] ] > MAX_INDEX_VALUE ) { MAX_INDEX_VALUE = this->I[ Ii[ j ] ];}
                                     j++;
                                     if( j < n ) {
                                         this->I.push_back( 0ZU );
@@ -271,9 +355,13 @@ namespace samg {
                             }
                         }
                     }
+
                     void close() override {
+                        this->serializer->set_max_value( this->MAX_INDEX_VALUE );
                         this->serializer->add_values<std::size_t>( this->I ); // Adding index.
-                        this->serializer->add_value<std::size_t>( this->I.size() ); // Adding index length in elements (words).
+                        this->serializer->add_metadata<std::size_t>( this->I.size() ); // Adding index length in elements (words).
+                        this->serializer->add_metadata<std::size_t>( this->MAX_VALUE );// Adding sequence max value among all dimensions.
+                        this->serializer->add_metadata<std::size_t>( this->MAX_INDEX_VALUE );// Adding index max value. 
                         this->serializer->close();
                         this->serializer.reset();
                         this->is_open = false;

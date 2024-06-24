@@ -45,8 +45,56 @@ namespace samg {
             namespace serializer {
                 class OfflineWordReaderWrapper : public samg::serialization::OfflineWordReader<samg::matutx::Word> {
                     private:
+                        std::size_t max_value;
+                        template<typename T> const T _read_integer_( ) {
+                            if ( this->max_value <= std::numeric_limits<std::uint8_t>::max() ) {
+                                return static_cast<T>( samg::serialization::OfflineWordReader<samg::matutx::Word>::next<std::uint8_t>( ) );
+                            } else if ( this->max_value <= std::numeric_limits<std::uint16_t>::max() ) {
+                                return static_cast<T>( samg::serialization::OfflineWordReader<samg::matutx::Word>::next<std::uint16_t>( ) );
+                            } else if ( this->max_value <= std::numeric_limits<std::uint32_t>::max() ) {
+                                return static_cast<T>( samg::serialization::OfflineWordReader<samg::matutx::Word>::next<std::uint32_t>( ) );
+                            } else  if ( this->max_value <= std::numeric_limits<std::uint64_t>::max() ) {
+                                return static_cast<T>( samg::serialization::OfflineWordReader<samg::matutx::Word>::next<std::uint64_t>( ) );
+                            } else {
+                                throw std::runtime_error("OfflineWordReaderWrapper - Unrecognized datatype!");
+                            }
+                        }
 
+                        template<typename T> const std::vector<T> _read_integer_vector_( const std::size_t length ) {
+                            std::vector<T> ans = std::vector<T>( n );
+                            for (std::size_t i=0; i < length; i++) {
+                                ans[ i ] = this->_read_integer_( );
+                            }
+                            // if (this->max_value <= std::numeric_limits<std::uint8_t>::max()) {
+                            //     samg::serialization::OfflineWordWriter<samg::matutx::Word>::add_values<std::uint8_t>( static_cast<std::vector<std::uint8_t>>( values ) );
+                            // } else if (this->max_value <= std::numeric_limits<std::uint16_t>::max()) {
+                            //     samg::serialization::OfflineWordWriter<samg::matutx::Word>::add_values<std::uint16_t>( static_cast<std::vector<std::uint16_t>>( values ) );
+                            // } else if (this->max_value <= std::numeric_limits<std::uint32_t>::max()) {
+                            //     samg::serialization::OfflineWordWriter<samg::matutx::Word>::add_values<std::uint32_t>( static_cast<std::vector<std::uint32_t>>( values ) );
+                            // } else  if (this->max_value <= std::numeric_limits<std::uint64_t>::max()) {
+                            //     samg::serialization::OfflineWordWriter<samg::matutx::Word>::add_values<std::uint64_t>( static_cast<std::vector<std::uint64_t>>( values ) );
+                            // } else{
+                            //     throw std::runtime_error("OfflineWordWriterWrapper - Unrecognized datatype!");
+                            // }
+                        }
                     public:
+                        OfflineWordReaderWrapper( const std::string file_name, const std::size_t max_value ) :
+                        samg::serialization::OfflineWordReader<samg::matutx::Word>( file_name ),
+                        max_value(max_value) {
+
+                        }
+
+                        template<typename TypeTrg> const TypeTrg next_metadata() {
+                            return samg::serialization::OfflineWordReader<samg::matutx::Word>::next<TypeTrg>( );
+                        }
+
+                        template<typename TypeTrg> const TypeTrg next() {
+                            return  this->_read_integer_<TypeSrc>( );
+                        }
+
+                        void set_max_value( const std::size_t max_value ) {
+                            this->max_value = max_value;
+                        }
 
                 };
 
@@ -147,8 +195,11 @@ namespace samg {
                         // Read TAIL:
                         this->serializer->seek( -sizeof( std::size_t ) * 3, std::ios::end ); //  ( this->serializer->tell() - sizeof( std::size_t ) )
                         // TODO Adapt from here on...
-                        std::size_t tail_length = this->serializer->next<std::size_t>();
-                        this->serializer->seek( -( ( tail_length + 1 ) * sizeof( std::size_t ) ), std::ios::end );
+                        std::size_t tail_length = this->serializer->next<std::size_t>(),
+                                    MAX_VALUE = this->serializer->next<std::size_t>(),
+                                    MAX_INDEX_VALUE = this->serializer->next<std::size_t>();
+
+                        this->serializer->seek( -( ( tail_length + 3 ) * sizeof( std::size_t ) ) , std::ios::end );
                         this->I = this->serializer->next<std::size_t>( tail_length );
                         // Read HEADER:
                         this->serializer->seek( 0, std::ios::beg );

@@ -5,12 +5,16 @@
 
 ## MXS
 
-- HEADER: $s$ $s^n$ $d$ $d^{\prime}$ $\text{dist}$ $c$ $c_{derr}$ $n$ $max_1$ $max_2$ $max_3$ $...$ $max_n$ $e$
-- PAYLOAD: $l_{n}$ $v_{n}$ $l_{n-1}$ $v_{n-1}$ $l_{n-2}$ $v_{n-3}$ $l_{n-4}$ $...$ $v_{2}$ $l_{1}$ $v^1_{1}$ $v^2_{1}$ $v^3_{1}$ $...$ $v^m_{1}$ $...$
-
 Let $I$ be a vector of positive integers as frequencies counting different values per entry in each dimension.
 
 Let $P$ be a vector containing the payload. 
+
+- HEADER: $s$ $s^n$ $d$ $d^{\prime}$ $\text{dist}$ $c$ $c_{derr}$ $n$ $max_1$ $max_2$ $max_3$ $...$ $max_n$ $e$
+- PAYLOAD: $v_{n}$ $v_{n-1}$ $v_{n-3}$ $...$ $v_{2}$ $v^1_{1}$ $v^2_{1}$ $v^3_{1}$ $...$ $v^m_{1}$ $...$ 
+- TAIL (Index): $i_{n}$ $i_{n-1}$ $i_{n-3}$ $...$ $i_{2}$ $i_{1}$ $...$ $i^m_{1}$ $...$
+- METADATA: $|I|$ $\max{(P)}$ $\max{(I)}$
+
+...with $v_k \in P$, and $i_k \in I$.
 
 ### Encoding
 

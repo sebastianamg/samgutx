@@ -35,6 +35,10 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF 
  * THE POSSIBILITY OF SUCH DAMAGE. 
  */
+
+#ifndef MATUTX_SNAP_H
+#define MATUTX_SNAP_H
+
 #include <Snap.h>
 
 namespace samg {
@@ -68,3 +72,5 @@ namespace samg {
         }
     }
 }
+
+#endif

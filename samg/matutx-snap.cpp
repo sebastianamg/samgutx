@@ -72,7 +72,7 @@ namespace samg {
             }
 
             const bool SnapReader::has_next() {
-                return this->ntrg < this->NI.GetOutDeg() || this->nid < this->v.Len();
+                return ( (int) this->ntrg ) < this->NI.GetOutDeg() || ( (int) this->nid ) < this->v.Len();
             }
 
             const unsigned long long int SnapReader::get_matrix_side_size() {
@@ -112,8 +112,8 @@ namespace samg {
             }
 
             unsigned long long int* SnapReader::next() {
-                while( this->nid < v.Len() ) {
-                    if( this->ntrg < this->NI.GetOutDeg() ) {
+                while( ( (int) this->nid ) < v.Len() ) {
+                    if( ( (int) this->ntrg ) < this->NI.GetOutDeg() ) {
                         unsigned long long int* edge = new unsigned long long int[ 2 ];
                         edge[ 0 ] = (unsigned long long int) this->v[ this->nid ];
                         edge[ 1 ] = this->NI.GetOutNId( this->ntrg );
@@ -121,7 +121,7 @@ namespace samg {
                         return edge;
                     } else {
                         this->nid++;
-                        if( this->nid < v.Len() ) {
+                        if( ( (int) this->nid ) < v.Len() ) {
                             this->NI = this->graph->GetNI( (int)this->v[ this->nid ] );
                             this->NI.SortNIdV( );
                         } else {

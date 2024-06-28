@@ -116,12 +116,13 @@ namespace samg {
                     return false;
                 }
 
-                if( ( ( (int) this->ntrg ) >= this->NI.GetOutDeg() ) ) {
+                while( this->NI.GetOutDeg() == 0 || ( ( (int) this->ntrg ) >= this->NI.GetOutDeg() ) ) {
                     this->nid++;
                     if( ( (int) this->nid ) < v.Len() ) {
                         this->NI = this->graph->GetNI( (int)this->v[ this->nid ] );
                         this->NI.SortNIdV( );
                         this->ntrg = 0ULL;
+                        // break;
                     } else {
                         return false;
                     }
@@ -138,16 +139,6 @@ namespace samg {
                     edge[ 1 ] = this->NI.GetOutNId( this->ntrg );
                     this->ntrg++;
                     return edge;
-                    // } else {
-                    //     this->nid++;
-                    //     if( ( (int) this->nid ) < v.Len() ) {
-                    //         this->NI = this->graph->GetNI( (int)this->v[ this->nid ] );
-                    //         this->NI.SortNIdV( );
-                    //         this->ntrg = 0ULL;
-                    //     } else {
-                    //         break;
-                    //     }
-                    // }
                 }
                 throw 123; // NOTE No more entries!
             }

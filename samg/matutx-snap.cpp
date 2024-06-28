@@ -42,6 +42,10 @@ namespace samg {
     namespace matutx {
         namespace reader {
 
+            // void SnapReader::_update( ) {
+
+            // }
+
             SnapReader::SnapReader( const char *file_name, const unsigned int src_col_id, const unsigned int dst_col_id ) :
                 FILE_NAME ( TStr(file_name) ),
                 graph ( TSnap::LoadEdgeList<PNGraph>(file_name, src_col_id, dst_col_id) ) {
@@ -69,10 +73,6 @@ namespace samg {
 
             const unsigned long long int SnapReader::get_number_of_entries() {
                 return this->graph->GetEdges();
-            }
-
-            const bool SnapReader::has_next() {
-                return ( (int) this->ntrg ) < this->NI.GetOutDeg() || ( (int) this->nid ) < this->v.Len();
             }
 
             const unsigned long long int SnapReader::get_matrix_side_size() {
@@ -111,23 +111,43 @@ namespace samg {
                 return 0.0F;
             }
 
-            unsigned long long int* SnapReader::next() {
-                while( ( (int) this->nid ) < v.Len() ) {
-                    if( ( (int) this->ntrg ) < this->NI.GetOutDeg() ) {
-                        unsigned long long int* edge = new unsigned long long int[ 2 ];
-                        edge[ 0 ] = (unsigned long long int) this->v[ this->nid ];
-                        edge[ 1 ] = this->NI.GetOutNId( this->ntrg );
-                        this->ntrg++;
-                        return edge;
+            const bool SnapReader::has_next() {
+                if( ( (int) this->nid ) >= this->v.Len() ) {
+                    return false;
+                }
+
+                if( ( ( (int) this->ntrg ) >= this->NI.GetOutDeg() ) ) {
+                    this->nid++;
+                    if( ( (int) this->nid ) < v.Len() ) {
+                        this->NI = this->graph->GetNI( (int)this->v[ this->nid ] );
+                        this->NI.SortNIdV( );
+                        this->ntrg = 0ULL;
                     } else {
-                        this->nid++;
-                        if( ( (int) this->nid ) < v.Len() ) {
-                            this->NI = this->graph->GetNI( (int)this->v[ this->nid ] );
-                            this->NI.SortNIdV( );
-                        } else {
-                            break;
-                        }
+                        return false;
                     }
+                }
+
+                return  true;
+            }
+
+            unsigned long long int* SnapReader::next() {
+                if( this->has_next() ) {
+                    // if( ( (int) this->ntrg ) < this->NI.GetOutDeg() ) {
+                    unsigned long long int* edge = new unsigned long long int[ 2 ];
+                    edge[ 0 ] = (unsigned long long int) this->v[ this->nid ];
+                    edge[ 1 ] = this->NI.GetOutNId( this->ntrg );
+                    this->ntrg++;
+                    return edge;
+                    // } else {
+                    //     this->nid++;
+                    //     if( ( (int) this->nid ) < v.Len() ) {
+                    //         this->NI = this->graph->GetNI( (int)this->v[ this->nid ] );
+                    //         this->NI.SortNIdV( );
+                    //         this->ntrg = 0ULL;
+                    //     } else {
+                    //         break;
+                    //     }
+                    // }
                 }
                 throw 123; // NOTE No more entries!
             }

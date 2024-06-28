@@ -5,7 +5,10 @@
  * @version 0.1
  * @date 2024-06-26
  * @note This code uses [link https://github.com/snap-stanford/snap snap]
- * @note compilation: g++-13 -std=c++98 -O3 -Wall -DNDEBUG -fopenmp -I ~/include/Snap-6.0/snap-core/ -I ~/include/Snap-6.0/glib-core/ ./trials/trial_snap.cpp ~/include/Snap-6.0/snap-core/Snap.o -o ./trials/trial_snap -lrt
+ * @note compilation to generate the static library for debugging: g++-13 -std=c++98 -ggdb -g -O0 -Wall -DNDEBUG -fopenmp -I ~/include/Snap-6.0/snap-core/ -I ~/include/Snap-
+6.0/glib-core/ -I ~/include/samg/ -c ./samg/matutx-snap.cpp -o ./samg/matutx-snap.o -lsnap -lrt && ar rcs samg/libmatutx-snap.a samg/matutx-snap.o
+ * @note compilation to generate the static library for production: g++-13 -std=c++98 -O3 -DNDEBUG -fopenmp -I ~/include/Snap-6.0/snap-core/ -I ~/include/Snap-
+6.0/glib-core/ -I ~/include/samg/ -c ./samg/matutx-snap.cpp -o ./samg/matutx-snap.o -lsnap -lrt && ar rcs samg/libmatutx-snap.a samg/matutx-snap.o
  * 
  * @copyright (c) 2024 Sebastián AMG (@sebastianamg)
  * 
@@ -51,13 +54,13 @@ namespace samg {
                     TIntV v;
                     unsigned long long int nid, ntrg;
                     TNGraph::TNodeI NI;
+                    // void _update_( );
                 public:
                     SnapReader( const char *file_name, const unsigned int src_col_id = 0U, const unsigned int dst_col_id = 1U );
                     const char* get_input_file_name();
                     const unsigned long long int get_number_of_dimensions();
                     unsigned long long int* get_max_per_dimension();
                     const unsigned long long int get_number_of_entries();
-                    const bool has_next();
                     const unsigned long long int get_matrix_side_size();
                     const unsigned long long int get_matrix_size();
                     const float get_matrix_expected_density();
@@ -67,6 +70,7 @@ namespace samg {
                     const float get_gauss_sigma();
                     const unsigned long long int get_clustering();
                     const float get_clustering_distance_error();
+                    const bool has_next();
                     unsigned long long int* next();
             };
         }

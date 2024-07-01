@@ -80,7 +80,7 @@ namespace samg {
             }
 
             const unsigned long long int SnapReader::get_matrix_size() {
-                return this->v[ this->v.Len()-1 ] * this->v[ this->v.Len()-1 ];
+                return ( (unsigned long long int) this->v[ this->v.Len()-1 ] ) * ( (unsigned long long int) this->v[ this->v.Len()-1 ] );
             }
 
             const float SnapReader::get_matrix_expected_density() {

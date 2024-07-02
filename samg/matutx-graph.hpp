@@ -150,11 +150,12 @@ namespace samg {
                     std::vector<std::uint64_t> next() override {
                         std::string entry = std::string(get_next_entry(this->thread));
                         if( entry != "eos" ) {
-                            std::vector<std::uint64_t> entries = std::vector<std::uint64_t>();
+                            std::vector<std::uint64_t> entries = std::vector<std::uint64_t>(this->max_per_dimension.size());
                             std::string token;
                             std::stringstream strm(entry);
                             for(std::size_t d=0;d<this->max_per_dimension.size()&&std::getline(strm,token,'\t');d++){
-                                entries.push_back(std::stoull(token));
+                                // entries.push_back(std::stoull(token));
+                                entries[d] = std::stoull(token);
                                 // std::cout << "(1)" << std::endl;
                             }
                             if(entries.size() == this->max_per_dimension.size()) {

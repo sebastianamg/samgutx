@@ -6,6 +6,7 @@
 #include <samg/matutx-mdx.hpp>
 #include <samg/matutx-mxs.hpp>
 #include <samg/matutx-graph.hpp>
+#include <samg/matutx-csv.hpp>
 
 
 /**
@@ -57,6 +58,7 @@ namespace samg {
             QMX, // QMX binary format.
             RRN, // Rice-runs binary format.
             GRAPH, // Graph format from LAW webgraph framework [https://law.di.unimi.it/index.php].
+            CSV, // Comma Separated Values.
             Unknown
         };
 
@@ -107,6 +109,11 @@ namespace samg {
                 return FileFormat::GRAPH;
             } 
 
+            position = file_name.find(".csv");
+            if (position != std::string::npos) {
+                return FileFormat::CSV;
+            } 
+
             return FileFormat::Unknown;
         }
         /***************************************************************/
@@ -116,18 +123,15 @@ namespace samg {
             }
 
             std::shared_ptr<Reader> create_instance(const std::string& input_file_name) {
-                // std::cout << "get_instance> (1)" << std::endl;
                 switch (samg::matutx::identify_file_format(input_file_name)) {
                     case samg::matutx::FileFormat::GRAPH:
-                        // std::cout << "get_instance> (2.1)" << std::endl;
-                        // return *(std::make_unique<GraphReader>(input_file_name));
                         return std::make_shared<GraphReader>(input_file_name);
                     case samg::matutx::FileFormat::MDX:
-                        // std::cout << "get_instance> (2.2)" << std::endl;
                         return std::make_shared<MDXReader>(input_file_name);
                     case samg::matutx::FileFormat::MXS:
-                        // std::cout << "get_instance> (2.2)" << std::endl;
                         return std::make_shared<MXSReader>(input_file_name);
+                    case samg::matutx::FileFormat::CSV:
+                        return std::make_shared<CSVReader>(input_file_name);
                     default:
                         throw std::runtime_error("Unrecognized file format!");
                 }

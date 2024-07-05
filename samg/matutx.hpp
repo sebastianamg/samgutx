@@ -140,7 +140,7 @@ namespace samg {
             void destroy_instance( Reader& reader ) {
                 delete &reader;
             }
-        };
+        }
 
         namespace streamer {
             template<typename IntType> class IntStreamerAdapter {

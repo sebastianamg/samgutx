@@ -107,13 +107,13 @@ namespace samg {
 
                         const std::uint8_t get_bytes( ) {
                             if ( this->max_value <= std::numeric_limits<std::uint8_t>::max() ) {
-                                return 1U;
+                                return sizeof(std::uint8_t); //1U;
                             } else if ( this->max_value <= std::numeric_limits<std::uint16_t>::max() ) {
-                                return 2U;
+                                return sizeof(std::uint16_t);//2U;
                             } else if ( this->max_value <= std::numeric_limits<std::uint32_t>::max() ) {
-                                return 4U;
+                                return sizeof(std::uint32_t);//4U;
                             } else  if ( this->max_value <= std::numeric_limits<std::uint64_t>::max() ) {
-                                return 8U;
+                                return sizeof(std::uint64_t);//8U;
                             } else {
                                 throw std::runtime_error("OfflineWordReaderWrapper/get_bytes> Unrecognized datatype!");
                             }
@@ -187,14 +187,14 @@ namespace samg {
         namespace reader {
             class MXSReader : public Reader {
                 private:
-                    std::size_t MAX_VALUE, MAX_INDEX_VALUE;
+                    // std::size_t MAX_VALUE, MAX_INDEX_VALUE;
                     // std::unique_ptr<samg::serialization::OfflineWordReader<samg::matutx::Word>> serializer;
                     std::unique_ptr<samg::matutx::wrapper::serializer::OfflineWordReaderWrapper> serializer;
                     std::vector<std::uint64_t> maxs;
                     std::uint64_t e, s, c;
                     std::float_t d, actual_d, cderr;
                     std::string dist;
-                    std::size_t current_entry,  j, pp, ip;
+                    std::size_t current_entry,  j/*, pp*/, ip;
                     // Let P be a vector of positive integers. --- Replaced by `this->serializer`. 
                     std::vector<std::uint64_t> Pi;// Let Pi be an array of n cells to store the latests added values to P.
                     std::vector<std::size_t> I; // Let I be a vector of positive integers.
@@ -223,6 +223,11 @@ namespace samg {
                         this->serializer->set_max_value( MAX_INDEX_VALUE );
                         this->serializer->seek( -( ( tail_length * this->serializer->get_bytes( ) ) + ( 3 * sizeof( std::size_t ) ) ), std::ios::end );
                         this->I = this->serializer->next_vector<std::size_t>( tail_length );
+
+                        /***************************************************************/
+                        samg::utils::print_vector<std::size_t>("I:\n",this->I,true,"\n");
+                        /***************************************************************/
+
                         // Read HEADER:
                         this->serializer->seek( 0ZU, std::ios::beg );
                         this->s = this->serializer->next_metadata<std::uint64_t>();
@@ -241,7 +246,7 @@ namespace samg {
                             this->Ii.push_back( i );
                             this->Pi.push_back( this->serializer->next<std::uint64_t>() );
                         }
-                        this->j = this->pp = this->ip = maxs.size();
+                        this->j /*= this->pp*/ = this->ip = maxs.size();
                         this->j--;
 
                         this->serializer->set_max_value( MAX_VALUE );
@@ -311,8 +316,8 @@ namespace samg {
                             
                             // Checking forward:
                             while( this->j < this->maxs.size() ) {
-                                this->Pi[ this->j ] = this->serializer->next<std::uint64_t>();
-                                this->j++;
+                                this->Pi[ this->j++ ] = this->serializer->next<std::uint64_t>();
+                                // this->j++;
                                 if( this->j < this->maxs.size() ) {
                                     this->Ii[ this->j ] = this->ip;
                                     this->ip++;
@@ -346,7 +351,7 @@ namespace samg {
                     std::vector<std::uint64_t> Pi;// Let Pi be an array of n cells to store the latests added values to P.
                     std::vector<std::size_t> I; // Let I be a vector of positive integers.
                     std::vector<std::size_t> Ii;// Let Ii be an array of n cells to store pointers to I, initially as Ii = [0,1,2,...,n-1].
-                    bool init;
+                    bool first;
 
                 public:
                     MXSWriter(const std::string output_file_name,
@@ -375,7 +380,7 @@ namespace samg {
                         MAX_VALUE ( maxs[0] ),
                         MAX_INDEX_VALUE ( 1ZU ),
                         p( 0ZU ),
-                        init( true ),
+                        first( true ),
                         Pi( std::vector<std::uint64_t>( maxs.size() ) ),
                         I( std::vector<std::size_t>() ),
                         Ii( std::vector<std::size_t>( maxs.size() ) )
@@ -395,10 +400,10 @@ namespace samg {
                         this->serializer->add_metadata<std::uint64_t>( e );
                         this->is_open = true;
                     }
-                    void add_entry(std::vector<std::uint64_t> entry) override {
+                    void add_entry( std::vector<std::uint64_t> entry ) override {
                         if( this->is_open ) {
                             const std::size_t n = entry.size();
-                            if( this->init ){
+                            if( this->first ){
                                 for(std::size_t i = 0; i < n; i++) {
                                     this->serializer->add_value<std::uint64_t>( entry[ i ] );
                                     // this->Pi.push_back( entry[ i ] );
@@ -407,7 +412,7 @@ namespace samg {
                                     // this->Ii.push_back( i );
                                     this->Ii[ i ] = i;
                                 }
-                                this->init = false;
+                                this->first = false;
                             } else {
                                 std::size_t j = 0ZU;
                                 while( j < n ){
@@ -434,6 +439,11 @@ namespace samg {
                     void close() override {
                         this->serializer->set_max_value( this->MAX_INDEX_VALUE );
                         this->serializer->add_values<std::size_t>( this->I ); // Adding index.
+                        
+                        /***************************************************************/
+                        samg::utils::print_vector<std::size_t>("I:\n",this->I,true,"\n");
+                        /***************************************************************/
+                        
                         this->serializer->add_metadata<std::size_t>( this->I.size() ); // Adding index length in elements (words).
                         this->serializer->add_metadata<std::size_t>( this->MAX_VALUE );// Adding sequence max value among all dimensions.
                         this->serializer->add_metadata<std::size_t>( this->MAX_INDEX_VALUE );// Adding index max value. 

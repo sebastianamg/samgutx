@@ -56,14 +56,15 @@ namespace samg {
                     }
 
                 public:
-                    CSVReader( const std::string file_name, const char separator = ',' , const std::vector<std::size_t> selected_columns = std::vector<std::size_t>(), const std::size_t first_row=0ZU, const std::size_t first_column=0ZU):
+                    CSVReader( const std::string file_name, const char separator = ',' , const std::vector<std::size_t> selected_columns = std::vector<std::size_t>(), const std::int8_t first_row=-1, const std::int8_t first_column=-1):
                         Reader ( file_name ),
                         doc ( rapidcsv::Document(file_name, rapidcsv::LabelParams( first_column , first_row ), rapidcsv::SeparatorParams( separator )) ),
                         selected_columns ( selected_columns ),
                         index ( 0ZU ),
                         global_max ( 0ULL )
                     {
-                        // Setting selected columns:
+                        
+                        // Setting selected columns:   
                         if( this->selected_columns.size() == 0 ) {
                             this->selected_columns = std::vector<std::size_t>();
                             for (std::size_t i = 0; i < this->doc.GetColumnCount(); i++) {
@@ -71,15 +72,18 @@ namespace samg {
                             }    
                         }
 
-                        // Analyzing selected columns:
+                        // Analyzing selected columns looking for the global max:
+                        this->global_max = 0ULL;
                         for (std::size_t i = 0; i < this->doc.GetRowCount(); i++) {
                             std::vector<std::uint64_t> tmp = doc.GetRow<std::uint64_t>( i );
                             for (std::size_t j = 0; j < this->selected_columns.size(); j++ ){
-                                if( tmp[ this->selected_columns[ j ] ] > this->global_max ) {
+                                // Update global max:
+                                if( tmp[ this->selected_columns[ j ] ] > this->global_max ) { 
                                     this->global_max = tmp[ this->selected_columns[ j ] ];
                                 }
                             }
                         }
+                        std::cout << "MAX: " << this->global_max << "; selected columns: " << this->selected_columns.size() << std::endl;
                     }
                     // ~CSVReader() {   
                     // }
@@ -135,6 +139,8 @@ namespace samg {
                                 //     this->global_max = ans[ i ];
                                 // }
                             }
+
+                            // samg::utils::print_vector<std::uint64_t>("\n",ans);
                             
                             return ans;
                         }

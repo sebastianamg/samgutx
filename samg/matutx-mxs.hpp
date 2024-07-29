@@ -225,7 +225,7 @@ namespace samg {
                         this->I = this->serializer->next_vector<std::size_t>( tail_length );
 
                         /***************************************************************/
-                        samg::utils::print_vector<std::size_t>("I:\n",this->I,true,"\n");
+                        // samg::utils::print_vector<std::size_t>("I:\n",this->I,true,"\n");
                         /***************************************************************/
 
                         // Read HEADER:
@@ -242,6 +242,8 @@ namespace samg {
 
                         this->e = this->serializer->next_metadata<std::uint64_t>();
                         
+                        this->serializer->set_max_value( MAX_VALUE );
+                        
                         for (size_t i = 0; i < maxs.size(); i++) {
                             this->Ii.push_back( i );
                             this->Pi.push_back( this->serializer->next<std::uint64_t>() );
@@ -249,8 +251,6 @@ namespace samg {
                         this->j /*= this->pp*/ = this->ip = maxs.size();
                         this->j--;
 
-                        this->serializer->set_max_value( MAX_VALUE );
-                        
                     }
 
                     const std::size_t get_number_of_dimensions() const override {
@@ -441,7 +441,7 @@ namespace samg {
                         this->serializer->add_values<std::size_t>( this->I ); // Adding index.
                         
                         /***************************************************************/
-                        samg::utils::print_vector<std::size_t>("I:\n",this->I,true,"\n");
+                        // samg::utils::print_vector<std::size_t>("I:\n",this->I,true,"\n");
                         /***************************************************************/
                         
                         this->serializer->add_metadata<std::size_t>( this->I.size() ); // Adding index length in elements (words).

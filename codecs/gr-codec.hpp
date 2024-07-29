@@ -95,11 +95,12 @@ namespace samg {
             };
             template<typename Type> class QQueueAdapter : public QueueAdapter<Type> {
                 private:
+                    // const std::size_t LIMIT;
                     // std::queue<Type,std::deque<Type>> queue;
                     // std::vector<Type> queue; // NOTE Expensive operation of deletion.
                     // std::list<Type> queue; // NOTE std::list supports constant time operations of insertion and deletion. 
                     std::vector<Type> queue; // Optimized by using a companion index.
-                    std::size_t starting_index;
+                    std::size_t starting_index, ending_index;
 
                     void _swap_( QueueAdapter<Type>& other ) override {
                         QQueueAdapter<Type>* x = dynamic_cast<QQueueAdapter<Type>*>( &other );
@@ -110,9 +111,10 @@ namespace samg {
                     }
 
                 public:
-                    QQueueAdapter() :
+                    QQueueAdapter( const std::size_t limit = 1024) :
+                        // LIMIT ()
                         // queue ( std::queue<Type>() ) {}
-                        queue ( std::vector<Type>() ),
+                        queue ( std::vector<Type>( limit ) ),
                         // queue ( std::list<Type>() ),
                         starting_index (0ZU) {}
                         

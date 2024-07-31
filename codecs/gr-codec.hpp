@@ -93,63 +93,155 @@ namespace samg {
                         a._swap_( b );
                     }
             };
+            // template<typename Type> class QQueueAdapter : public QueueAdapter<Type> {
+            //     private:
+            //         // const std::size_t LIMIT;
+            //         // std::queue<Type,std::deque<Type>> queue;
+            //         // std::vector<Type> queue; // NOTE Expensive operation of deletion.
+            //         // std::list<Type> queue; // NOTE std::list supports constant time operations of insertion and deletion. 
+            //         std::vector<Type> queue; // Optimized by using a companion index.
+            //         std::size_t starting_index, ending_index; // !TODO HERE I AM!!!
+
+            //         void _swap_( QueueAdapter<Type>& other ) override {
+            //             QQueueAdapter<Type>* x = dynamic_cast<QQueueAdapter<Type>*>( &other );
+            //             std::swap( this->queue, x->queue );
+            //             std::size_t tmp_indx = x->starting_index;
+            //             x->starting_index = this->starting_index;
+            //             this->starting_index = tmp_indx;
+            //         }
+
+            //     public:
+            //         QQueueAdapter( const std::size_t limit = 1024) :
+            //             // LIMIT ()
+            //             // queue ( std::queue<Type>() ) {}
+            //             queue ( std::vector<Type>( limit ) ),
+            //             // queue ( std::list<Type>() ),
+            //             starting_index (0ZU) {}
+                        
+            //         Type front() override {
+            //             // Type tmp = this->queue.front();
+            //           //  std::cout << "QQueueAdapter / front> Type = " << typeid(Type).name() << " front (" << typeid(tmp).name() << ") = " << tmp << std::endl;
+            //             // return tmp;
+            //             return this->queue[this->starting_index];
+            //         }
+
+            //         Type back() override {
+            //             return this->queue.back();
+            //         }
+
+            //         void push( Type v ) override {
+            //           //  std::cout << "QQueueAdapter / push> Type = " << typeid(Type).name() << " push (" << v << ") --- " << typeid(v).name() << std::endl;
+            //             // this->queue.push( v );
+            //             this->queue.push_back(v);
+            //         }
+
+            //         bool empty() override {
+            //             // return this->queue.empty();
+            //             return this->starting_index == this->queue.size();
+            //         }
+
+            //         std::size_t size() override {
+            //             // return this->queue.size();
+            //             return this->queue.size() - this->starting_index;
+            //         }
+
+            //         void pop() override {
+            //             // this->queue.pop();
+            //             // this->queue.erase(this->queue.begin());
+            //             // this->queue.pop_front();
+            //             this->starting_index++;
+            //         }
+            // };
+
             template<typename Type> class QQueueAdapter : public QueueAdapter<Type> {
                 private:
-                    // const std::size_t LIMIT;
-                    // std::queue<Type,std::deque<Type>> queue;
-                    // std::vector<Type> queue; // NOTE Expensive operation of deletion.
-                    // std::list<Type> queue; // NOTE std::list supports constant time operations of insertion and deletion. 
-                    std::vector<Type> queue; // Optimized by using a companion index.
-                    std::size_t starting_index, ending_index;
+                    std::vector<Type> queue; // Optimized by using companion indexes to come up with a circular list.
+                    std::size_t i, // Starting index
+                                j; // Ending index.
+                    bool _empty_;
 
                     void _swap_( QueueAdapter<Type>& other ) override {
                         QQueueAdapter<Type>* x = dynamic_cast<QQueueAdapter<Type>*>( &other );
                         std::swap( this->queue, x->queue );
-                        std::size_t tmp_indx = x->starting_index;
-                        x->starting_index = this->starting_index;
-                        this->starting_index = tmp_indx;
+                        std::size_t tmp_indx = x->i;
+                        x->i = this->i;
+                        this->i = tmp_indx;
+                        tmp_indx = x->j;
+                        x->j = this->j;
+                        this->j = tmp_indx;
+                        bool tmp_empty = x->_empty_;
+                        x->_empty_ = this->_empty_;
+                        this->_empty_ = tmp_empty;
                     }
+
+                    const bool _is_full_() {
+                        return !this->_empty_ && this->size() == this->queue.size();
+                    } 
 
                 public:
                     QQueueAdapter( const std::size_t limit = 1024) :
-                        // LIMIT ()
-                        // queue ( std::queue<Type>() ) {}
                         queue ( std::vector<Type>( limit ) ),
-                        // queue ( std::list<Type>() ),
-                        starting_index (0ZU) {}
+                        i (0ZU),
+                        j (0ZU),
+                        _empty_ (true) {}
                         
                     Type front() override {
-                        // Type tmp = this->queue.front();
-                      //  std::cout << "QQueueAdapter / front> Type = " << typeid(Type).name() << " front (" << typeid(tmp).name() << ") = " << tmp << std::endl;
-                        // return tmp;
-                        return this->queue[this->starting_index];
+                        if( !this->_empty_ ) {
+                            return this->queue[this->i];
+                        } else {
+                            throw std::runtime_error("QQueueAdapter/front> No more elements in the queue!");
+                        }
                     }
 
                     Type back() override {
-                        return this->queue.back();
+                        if( !this->_empty_ ) {
+                            return this->queue[ ( this->j == 0 ) ? this->queue.size() - 1 : this->j - 1 ];
+                        } else {
+                            throw std::runtime_error("QQueueAdapter/back> No more elements in the queue!");
+                        }
                     }
 
                     void push( Type v ) override {
-                      //  std::cout << "QQueueAdapter / push> Type = " << typeid(Type).name() << " push (" << v << ") --- " << typeid(v).name() << std::endl;
-                        // this->queue.push( v );
-                        this->queue.push_back(v);
+                        if( this->_is_full_() ) {
+                            // Resize...
+                            std::shared_ptr<QueueAdapter<Type>> tmp_q = get_instance<Type>( QueueAdapterType::Q_QUEUEADAPTER );
+                            while( !this->empty() ) {
+                                tmp_q->push( this->front() );
+                                this->pop();
+                            }
+                            this->_swap_( *tmp_q );
+                        }
+                        this->queue[j] = v;
+                        this->j = ( this->j + 1 ) % this->queue.size();
+                        this->_empty_ = false;
                     }
 
                     bool empty() override {
-                        // return this->queue.empty();
-                        return this->starting_index == this->queue.size();
+                        return this->_empty_;
                     }
 
                     std::size_t size() override {
-                        // return this->queue.size();
-                        return this->queue.size() - this->starting_index;
+                        if( this->_empty_ ) {
+                            return 0ZU;
+                        }else if( this->j > this->i ) {
+                            return this->j - this->i;
+                        } else if( this->j < this->i ) {
+                            return this->queue.size() - this->i + this->j;
+                        } else { // if j == i, then it is full!
+                            return this->queue.size();
+                        }
                     }
 
                     void pop() override {
                         // this->queue.pop();
                         // this->queue.erase(this->queue.begin());
                         // this->queue.pop_front();
-                        this->starting_index++;
+                        if( !this->_empty_ ) {
+                            this->i = ( this->i + 1 ) % this->queue.size();
+                            this->_empty_ = this->i == this->j;
+                        } else {
+                            throw std::runtime_error("QQueueAdapter/pop> No more elements in the queue!");
+                        }
                     }
             };
 

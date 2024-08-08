@@ -204,12 +204,23 @@ namespace samg {
                     void push( Type v ) override {
                         if( this->_is_full_() ) {
                             // Resize...
-                            std::shared_ptr<QueueAdapter<Type>> tmp_q = get_instance<Type>( QueueAdapterType::Q_QUEUEADAPTER );
-                            while( !this->empty() ) {
-                                tmp_q->push( this->front() );
-                                this->pop();
-                            }
-                            this->_swap_( *tmp_q );
+                            //std::shared_ptr<QueueAdapter<Type>> tmp_q = get_instance<Type>( QueueAdapterType::Q_QUEUEADAPTER );
+                            // while( !this->empty() ) {
+                            //     tmp_q->push( this->front() );
+                            //     this->pop();
+                            // }
+                            // this->_swap_( *tmp_q );
+                            std::size_t size = this->j = this->queue.size();
+                            this->queue.resize( size + ( (std::size_t) ( size / 2ZU ) ) );
+                            std::cout << "*** " << size << " / " << this->queue.size() << std::endl;
+                            // std::vector<Type> tmp = this->queue;
+                            // this->queue = std::vector<Type>( tmp.size() + ( (std::size_t) ( tmp.size() / 2ZU ) ) );
+                            // while( !this->empty() ) {
+                            //     tmp_q->push( this->front() );
+                            //     this->pop();
+                            // }
+                            // this->_swap_( *tmp_q );
+                            // this->j = size - 1ZU;
                         }
                         this->queue[j] = v;
                         this->j = ( this->j + 1 ) % this->queue.size();

@@ -324,9 +324,9 @@ namespace samg {
         /**
          * @brief Converts from n-dimensional coordinates of order `base` to z-order. 
          * 
-         * @param c 
-         * @param base 
-         * @param len is the number of bits to correctly represent each element in the coordinate. 
+         * @param c is the coordinate.
+         * @param base is the target base to which z-value will be parsed (usually binary --- 2 ).
+         * @param len is the number of bits to correctly represent each element in the coordinate in base `base`. 
          * @return std::size_t 
          */
         std::size_t to_zvalue( const std::vector<std::uint64_t>& c, const std::size_t base, const std::size_t len ) {
@@ -355,8 +355,8 @@ namespace samg {
          * @brief Convert `z_value` into `dims`-dimensional coordinates:
          * 
          * @param zvalue 
-         * @param base 
-         * @param dims 
+         * @param base is the target base to which z-value will be parsed (usually binary --- 2 ).
+         * @param dims are the dimensions of the coordinate to recover from `zvalue`.
          * @param len is the sum of number of bits that represent each element in the sought coordinate. The number of bits must be must be divisible by `dims`.
          * @return std::vector<std::uint64_t> 
          */

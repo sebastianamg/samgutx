@@ -357,7 +357,7 @@ namespace samg {
          * @param zvalue 
          * @param base is the target base to which z-value will be parsed (usually binary --- 2 ).
          * @param dims are the dimensions of the coordinate to recover from `zvalue`.
-         * @param len is the sum of number of bits that represent each element in the sought coordinate. The number of bits must be must be divisible by `dims`.
+         * @param len is the sum of number of bits that represent each element in the sought coordinate. The number of bits must be divisible by `dims`.
          * @return std::vector<std::uint64_t> 
          */
         std::vector<std::uint64_t> from_zvalue( const std::size_t zvalue, const std::size_t base, const std::size_t dims, const std::size_t len ) {

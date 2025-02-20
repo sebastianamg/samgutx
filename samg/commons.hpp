@@ -378,6 +378,76 @@ namespace samg {
             
             return c;
         }
+
+
+        /**
+         * @brief Converts from n-dimensional coordinates C to z-order.
+         * 
+         * @param C 
+         * @param s is the size of the hyper-space.
+         * @param n are the number of dimensions of the hyper-space.
+         * @param k is the order. 
+         * @return std::size_t 
+         */
+        std::size_t to_zvalue2( const std::vector<std::uint64_t>& C, const std::size_t s, const std::uint8_t n, const std::uint8_t k ) {
+            static const std::size_t    d = (std::size_t) std::ceil( std::log2(s)/ std::log2(k) ),// Digits to encode vz
+                                        b = (std::size_t) std::ceil(std::log2(k)), // Bits per digit.
+                                        bd = b*d,
+                                        vz_bit_length = n * bd; // Total bit length to encode vz.
+            // Set mask M:	
+            std::size_t M = ((std::size_t)std::pow( 2, b )) - 1ZU;
+            M = M << ( bd - b ); // Shifting M to the leftmost position ready to retrieve the right bits.
+
+            // Build zv:
+            std::size_t zv = 0ZU, x;
+            for( std::size_t i = 0ZU; i < d; i++ ) { 
+                for( std::size_t j = 0ZU; j < n; j++ ) {
+                    zv = zv << b;
+                    x = C[j] & M;
+                    if( x != 0ZU ) {	
+                        zv = zv | ( x >> ( bd - ( ( i + 1ZU ) * b ) ) );
+                    }
+                }
+                M = M >> b;
+            }
+            return zv;
+        }
+
+        /**
+         * @brief Converts from z-order to n-dimensional coordinates.
+         * 
+         * @param zv is the z-value.
+         * @param s is the size of the hyper-space.
+         * @param n are the number of dimensions of the hyper-space.
+         * @param k is the order. 
+         * @return std::vector<std::uint64_t> 
+         */
+        std::vector<std::uint64_t> from_zvalue2( const std::size_t zv, const std::size_t s, const std::uint8_t n, const std::uint8_t k ) {
+            static const std::size_t    d = (std::size_t) std::ceil( std::log2(s)/ std::log2(k) ),// Digits to encode vz
+                                        b = (std::size_t) std::ceil(std::log2(k)), // Bits per digit.
+                                        bd = b*d,
+                                        nb = n * b,
+                                        base = ((bd*n)-b);
+
+            // Set mask M:	
+            std::size_t M = ((std::size_t)std::pow( 2, b )) - 1ZU,
+                        x;
+            M = M << ( bd * n) - b ; // Shifting M to the leftmost position ready to retrieve the bits.
+            
+            // Build zv:
+            std::vector<std::uint64_t> C = std::vector<std::uint64_t>( n );
+            for( std::size_t i = 0ZU; i < d; i++ ) { 
+                for( std::size_t j = 0ZU; j < n; j++ ) {
+                    C[j] = C[j] << b;
+                    x = zv & M;
+                    if( x != 0ZU ) {	
+                        C[j] = C[j] | ( x >> ( base - ( (nb*i)+(j*b) ) ) );
+                    }
+                    M = M >> b;
+                }
+            }
+            return C;
+        }
         /***************************************************************/
         /**
          * @brief This function allows appending a string to and replace the extension of a file name. 

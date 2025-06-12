@@ -352,6 +352,32 @@ namespace samg {
         }
 
         /**
+         * @brief Calculates the normalized side size for a k-ary tree structure.
+         * The normalized side size is the smallest power of k that is greater than or equal to
+         * the raw_side_size, considering the number of bits `b` required to represent a component in base k.
+         *
+         * @param raw_side_size The original side size of the matrix/space.
+         * @param k The order of the k-ary tree.
+         * @return The normalized side size.
+         */
+        std::size_t get_norm_side_size(std::size_t raw_side_size, std::uint8_t k) {
+            if (raw_side_size == 0) {
+                return 0;
+            }
+            if (k == 0) { // Or handle as an error
+                return 0;
+            }
+            if (k == 1) {
+                return (raw_side_size > 0) ? 1 : 0;
+            }
+
+            std::size_t b = std::bit_width(static_cast<unsigned long long>(k - 1)); // Bits per component for base k
+            double log2_raw_s = std::log2(static_cast<double>(raw_side_size));
+            double levels_double = std::ceil(log2_raw_s / static_cast<double>(b));
+            return static_cast<std::size_t>(std::pow(static_cast<double>(k), levels_double));
+        }
+
+        /**
          * @brief Convert `z_value` into `dims`-dimensional coordinates:
          * 
          * @param zvalue 
@@ -390,12 +416,13 @@ namespace samg {
          * @return std::size_t 
          */
         std::size_t to_zvalue2( const std::vector<std::uint64_t>& C, const std::size_t s, const std::uint8_t n, const std::uint8_t k ) {
-            static const std::size_t    d = (std::size_t) std::ceil( std::log2(s)/ std::log2(k) ),// Digits to encode vz
-                                        b = (std::size_t) std::ceil(std::log2(k)), // Bits per digit.
-                                        bd = b*d,
-                                        vz_bit_length = n * bd; // Total bit length to encode vz.
-            // Set mask M:	
-            std::size_t M = ((std::size_t)std::pow( 2, b )) - 1ZU;
+            /*static */const std::size_t    //p_k = std::bit_width( k ),
+                                            b = (std::size_t) (k == 1UL ? 0UL : std::bit_width(k - 1UL)), //std::ceil(std::log2(k)), // Bits per digit.
+                                            d = (std::size_t) std::ceil( std::log2(s) / b ),//std::ceil( std::log2(s)/ std::log2(k) ),// Digits to encode vz
+                                            bd = b*d,
+                                            vz_bit_length = n * bd; // Total bit length to encode vz.
+            // Set mask M:
+            std::size_t M = (1ZU << b) - 1ZU;
             M = M << ( bd - b ); // Shifting M to the leftmost position ready to retrieve the right bits.
 
             // Build zv:
@@ -423,14 +450,15 @@ namespace samg {
          * @return std::vector<std::uint64_t> 
          */
         std::vector<std::uint64_t> from_zvalue2( const std::size_t zv, const std::size_t s, const std::uint8_t n, const std::uint8_t k ) {
-            static const std::size_t    d = (std::size_t) std::ceil( std::log2(s)/ std::log2(k) ),// Digits to encode vz
-                                        b = (std::size_t) std::ceil(std::log2(k)), // Bits per digit.
-                                        bd = b*d,
-                                        nb = n * b,
-                                        base = ((bd*n)-b);
+            /*static */const std::size_t    b = (std::size_t) (k == 1UL ? 0UL : std::bit_width(k - 1UL)), //std::ceil(std::log2(k)), // Bits per digit.
+                                            d = (std::size_t) std::ceil( std::log2(s) / b ),//std::ceil( std::log2(s)/ std::log2(k) ),// Digits to encode vz 
+                                            //d = (std::size_t) std::ceil( std::log2(s)/ std::log2(k) ),// Digits to encode vz
+                                            //b = (std::size_t) std::ceil(std::log2(k)), // Bits per digit.
+                                            bd = b*d,
+                                            nb = n * b,
+                                            base = ((bd*n)-b);
 
-            // Set mask M:	
-            std::size_t M = ((std::size_t)std::pow( 2, b )) - 1ZU,
+            std::size_t M = (1ZU << b) - 1ZU, // Set mask M.
                         x;
             M = M << ( bd * n) - b ; // Shifting M to the leftmost position ready to retrieve the bits.
             

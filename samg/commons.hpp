@@ -416,6 +416,7 @@ namespace samg {
          * @return std::size_t 
          */
         std::size_t to_zvalue2( const std::vector<std::uint64_t>& C, const std::size_t s, const std::uint8_t n, const std::uint8_t k ) {
+            assert(C.size() == n && "*** to_zvalue2 > Reader returned coordinate with wrong arity!");
             /*static */const std::size_t    //p_k = std::bit_width( k ),
                                             b = (std::size_t) (k == 1UL ? 0UL : std::bit_width(k - 1UL)), //std::ceil(std::log2(k)), // Bits per digit.
                                             d = (std::size_t) std::ceil( std::log2(s) / b ),//std::ceil( std::log2(s)/ std::log2(k) ),// Digits to encode vz

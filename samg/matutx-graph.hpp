@@ -162,16 +162,48 @@ namespace samg {
                     }
 
                     std::vector<std::uint64_t> next() override {
-                        // this->_update_();
-                        if( this->has_next() ) {
-                            // Assuming 2-dimensional matrix:
-                            std::vector<std::uint64_t> entries = std::vector<std::uint64_t>(this->max_per_dimension.size());
-                            entries[0] = this->e->first;//*(this->entries_iter);
-                            entries[1] = this->e->second;//successors[this->successors_index++];
-                            ++(this->e);
-                            return entries;
+                        
+                        // Check if there are more edges.
+                        // this->has_next() is implemented as `return this->e != this->e_end;`
+                        if (!this->has_next()) {
+                            throw std::runtime_error("GraphReader::next() called when no more entries exist.");
                         }
-                        throw std::runtime_error("No more entries.");
+
+                        // Ensure the vector for storing coordinates is correctly sized.
+                        // this->max_per_dimension.size() should be 2 for typical graph edges.
+                        if (this->max_per_dimension.size() < 2) {
+                            // This would indicate a setup issue, as max_per_dimension should reflect the graph's dimensionality.
+                            throw std::logic_error("GraphReader: max_per_dimension is not correctly initialized for 2D coordinates.");
+                        }
+                        std::vector<std::uint64_t> current_edge_coordinates(this->max_per_dimension.size());
+
+                        // Access the source and target nodes of the current edge.
+                        // this->e is boost::graph_traits<webgraph::bv_graph::graph>::edge_iterator.
+                        // Dereferencing it (*(this->e)) gives an edge_descriptor.
+                        // For webgraph-cpp, the edge_descriptor is std::pair<node_t, node_t>.
+                        // this->e->first is equivalent to (*(this->e)).first.
+                        // webgraph::types::node_t is typically 'int', so casting to std::uint64_t is good practice.
+                        current_edge_coordinates[0] = static_cast<std::uint64_t>(this->e->first);
+                        current_edge_coordinates[1] = static_cast<std::uint64_t>(this->e->second);
+
+                        // Advance the iterator to the next edge.
+                        // The ASan error "CHECK failed: asan_allocator.cpp:190" occurs during this increment,
+                        // specifically within the webgraph-cpp library's iterator machinery when it performs a delete.
+                        // This indicates that the heap metadata was corrupted *before* this point.
+                        ++(this->e);
+
+                        return current_edge_coordinates;
+
+                        // // this->_update_();
+                        // if( this->has_next() ) {
+                        //     // Assuming 2-dimensional matrix:
+                        //     std::vector<std::uint64_t> entries = std::vector<std::uint64_t>(this->max_per_dimension.size());
+                        //     entries[0] = this->e->first;//*(this->entries_iter);
+                        //     entries[1] = this->e->second;//successors[this->successors_index++];
+                        //     ++(this->e);
+                        //     return entries;
+                        // }
+                        // throw std::runtime_error("No more entries.");
                     }
             };
 

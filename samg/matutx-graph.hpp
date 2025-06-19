@@ -164,7 +164,7 @@ namespace samg {
                         // The ASan error "CHECK failed: asan_allocator.cpp:190" occurs during this increment,
                         // specifically within the webgraph-cpp library's iterator machinery when it performs a delete.
                         // This indicates that the heap metadata was corrupted *before* this point.
-                        ++(this->e);
+                        this->e++;
 
                         return current_edge_coordinates;
                     }

@@ -64,12 +64,16 @@ namespace samg {
                     std::float_t gauss_sigma;
                     std::uint64_t clustering;
                     std::float_t clustering_distance_error;
-                    boost::graph_traits<webgraph::bv_graph::graph>::edge_iterator e, e_end;
+                    // boost::graph_traits<webgraph::bv_graph::graph>::edge_iterator e, e_end;
+                    boost::iterator_range<boost::graph_traits<webgraph::bv_graph::graph>::edge_iterator> edge_range;
+                    boost::graph_traits<webgraph::bv_graph::graph>::edge_iterator current_iterator;
                     boost::shared_ptr<webgraph::bv_graph::graph> graph;
                 public:
                     GraphReader(std::string file_name) :
                         Reader(file_name),
                         graph (webgraph::bv_graph::graph::load_offline( samg::utils::get_file_basename(file_name) ))
+                        // edge_range(boost::edges(*graph)),
+                        // current_iterator(edge_range.begin())
                     {
                         this->max_per_dimension = std::vector<std::uint64_t>();
                         std::string properties_file = samg::utils::change_extension(file_name,"properties");
@@ -92,7 +96,10 @@ namespace samg {
                         } else {
                             throw std::runtime_error("Graph properties file \""+properties_file+"\" not available.");
                         }
-                        std::tie( this->e, this->e_end ) = boost::edges( *(this->graph) );
+                        // std::tie( this->e, this->e_end ) = boost::edges( *(this->graph) );
+                        // Initialize the rest of the members
+                        this->edge_range = boost::edges(*graph);
+                        this->current_iterator = this->edge_range.begin();
                     }
 
                     const std::size_t get_number_of_dimensions() const override {
@@ -105,7 +112,8 @@ namespace samg {
                         return this->number_of_entries;
                     }
                     const bool has_next() override {
-                        return this->e != this->e_end;
+                        // return this->e != this->e_end;
+                        return this->current_iterator != this->edge_range.end();
                     }
                     const std::uint64_t get_matrix_side_size() const override {
                         return this->matrix_side_size;
@@ -157,14 +165,17 @@ namespace samg {
                         // For webgraph-cpp, the edge_descriptor is std::pair<node_t, node_t>.
                         // this->e->first is equivalent to (*(this->e)).first.
                         // webgraph::types::node_t is typically 'int', so casting to std::uint64_t is good practice.
-                        current_edge_coordinates[0] = static_cast<std::uint64_t>(this->e->first);
-                        current_edge_coordinates[1] = static_cast<std::uint64_t>(this->e->second);
+                        // current_edge_coordinates[0] = static_cast<std::uint64_t>(this->e->first);
+                        // current_edge_coordinates[1] = static_cast<std::uint64_t>(this->e->second);
+                        current_edge_coordinates[0] = static_cast<std::uint64_t>(this->current_iterator->first);
+                        current_edge_coordinates[1] = static_cast<std::uint64_t>(this->current_iterator->second);
 
                         // Advance the iterator to the next edge.
                         // The ASan error "CHECK failed: asan_allocator.cpp:190" occurs during this increment,
                         // specifically within the webgraph-cpp library's iterator machinery when it performs a delete.
                         // This indicates that the heap metadata was corrupted *before* this point.
-                        this->e++;
+                        // this->e++;
+                        this->current_iterator++;
 
                         return current_edge_coordinates;
                     }

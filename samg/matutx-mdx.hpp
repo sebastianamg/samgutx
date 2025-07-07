@@ -256,6 +256,9 @@ namespace samg {
                                 if(entries.size() == this->max_per_dimension.size()) {
                                     // std::cout << "(3)" << std::endl;
                                     this->entries_counter++;
+                                    /* ===================== */
+                                    std::cout << "MDX ENTRY: " << samg::utils::to_string(entries) << std::endl;
+                                    /* ===================== */
                                     return entries;
                                 } else {
                                     throw std::runtime_error("Wrong entry format.");

@@ -416,20 +416,32 @@ namespace samg {
          */
         std::size_t to_zvalue3( const std::vector<std::uint64_t>& C, const std::uint8_t n, const std::size_t b, const std::size_t d, const std::size_t bd, std::size_t M ) {
             assert(C.size() == n && "*** to_zvalue2 > Reader returned coordinate with wrong arity!");
-            M = M << ( bd - b ); // Shifting M to the leftmost position ready to retrieve the right bits.
+            // M = M << ( bd - b ); // Shifting M to the leftmost position ready to retrieve the right bits.
 
-            // Build zv:
-            std::size_t zv = 0ZU, x;
-            for( std::size_t i = 0ZU; i < d; i++ ) { 
-                for( std::size_t j = 0ZU; j < n; j++ ) {
-                    zv = zv << b;
-                    x = C[j] & M;
-                    if( x != 0ZU ) {	
-                        zv = zv | ( x >> ( bd - ( ( i + 1ZU ) * b ) ) );
-                    }
+
+            // Iterate through each 'b-bit digit' position, from most significant to least
+            std::size_t zv = 0ZU,digit;
+            for (int i = d - 1; i >= 0; --i) {
+                // Interleave the ith digit from each dimension
+                for (std::size_t j = 0; j < n; ++j) {
+                    zv <<= b;
+                    digit = (C[j] >> (i * b)) & M;
+                    zv |= digit;
                 }
-                M = M >> b;
             }
+
+            // // Build zv:
+            // std::size_t zv = 0ZU, x;
+            // for( std::size_t i = 0ZU; i < d; i++ ) { 
+            //     for( std::size_t j = 0ZU; j < n; j++ ) {
+            //         zv = zv << b;
+            //         x = C[j] & M;
+            //         if( x != 0ZU ) {	
+            //             zv = zv | ( x >> ( bd - ( ( i + 1ZU ) * b ) ) );
+            //         }
+            //     }
+            //     M = M >> b;
+            // }
             return zv;
         }
 
@@ -443,7 +455,7 @@ namespace samg {
          * @return std::size_t 
          */
         std::size_t to_zvalue2( const std::vector<std::uint64_t>& C, const std::size_t s, const std::uint8_t n, const std::uint8_t k ) {
-            assert(C.size() == n && "*** to_zvalue2 > Reader returned coordinate with wrong arity!");
+            // assert(C.size() == n && "*** to_zvalue2 > Reader returned coordinate with wrong arity!");
             /*static */const std::size_t    //p_k = std::bit_width( k ),
                                             b = (std::size_t) (k == 1UL ? 0UL : std::bit_width(k - 1UL)), //std::ceil(std::log2(k)), // Bits per digit.
                                             d = (std::size_t) std::ceil( std::log2(s) / b ),//std::ceil( std::log2(s)/ std::log2(k) ),// Digits to encode vz
@@ -460,31 +472,41 @@ namespace samg {
          * @param k is the order. 
          * @return std::vector<std::uint64_t> 
          */
-        std::vector<std::uint64_t> from_zvalue2( const std::size_t zv, const std::size_t s, const std::uint8_t n, const std::uint8_t k ) {
-            /*static */const std::size_t    b = (std::size_t) (k == 1UL ? 0UL : std::bit_width(k - 1UL)), //std::ceil(std::log2(k)), // Bits per digit.
-                                            d = (std::size_t) std::ceil( std::log2(s) / b ),//std::ceil( std::log2(s)/ std::log2(k) ),// Digits to encode vz 
+        std::vector<std::uint64_t> from_zvalue2( std::size_t zv, const std::size_t s, const std::uint8_t n, const std::uint8_t k ) {
+            /*static */const std::size_t    b = std::bit_width(static_cast<unsigned long long>(k - 1)),//b = (std::size_t) (k == 1UL ? 0UL : std::bit_width(k - 1UL)), //std::ceil(std::log2(k)), // Bits per digit.
+                                            d = (s == 0) ? 0 : static_cast<std::size_t>(std::ceil(std::log2(s) / static_cast<double>(b))),//d = (std::size_t) std::ceil( std::log2(s) / b ),//std::ceil( std::log2(s)/ std::log2(k) ),// Digits to encode vz 
                                             //d = (std::size_t) std::ceil( std::log2(s)/ std::log2(k) ),// Digits to encode vz
                                             //b = (std::size_t) std::ceil(std::log2(k)), // Bits per digit.
                                             bd = b*d,
                                             nb = n * b,
                                             base = ((bd*n)-b);
 
-            std::size_t M = (1ZU << b) - 1ZU, // Set mask M.
-                        x;
-            M = M << ( bd * n) - b ; // Shifting M to the leftmost position ready to retrieve the bits.
+            // std::size_t M = (1ZU << b) - 1ZU, // Set mask M.
+            // x;
+            const std::size_t M = (1ZU << b) - 1ZU; // Set mask M.
+            // M = M << ( bd * n) - b ; // Shifting M to the leftmost position ready to retrieve the bits.
             
             // Build zv:
-            std::vector<std::uint64_t> C = std::vector<std::uint64_t>( n );
-            for( std::size_t i = 0ZU; i < d; i++ ) { 
-                for( std::size_t j = 0ZU; j < n; j++ ) {
-                    C[j] = C[j] << b;
-                    x = zv & M;
-                    if( x != 0ZU ) {	
-                        C[j] = C[j] | ( x >> ( base - ( (nb*i)+(j*b) ) ) );
-                    }
-                    M = M >> b;
+            std::vector<std::uint64_t> C = std::vector<std::uint64_t>( n, 0ULL );
+            // Iterate through each 'b-bit digit' position, from least significant to most
+            for (std::size_t i = 0; i < d; ++i) {
+                // De-interleave the ith set of digits
+                for (int j = n - 1; j >= 0; --j) {
+                    std::size_t digit = zv & M;
+                    zv >>= b;
+                    C[j] |= (digit << (i * b));
                 }
             }
+            // for( std::size_t i = 0ZU; i < d; i++ ) { 
+            //     for( std::size_t j = 0ZU; j < n; j++ ) {
+            //         C[j] = C[j] << b;
+            //         x = zv & M;
+            //         if( x != 0ZU ) {	
+            //             C[j] = C[j] | ( x >> ( base - ( (nb*i)+(j*b) ) ) );
+            //         }
+            //         M = M >> b;
+            //     }
+            // }
             return C;
         }
         /***************************************************************/

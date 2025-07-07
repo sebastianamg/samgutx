@@ -175,7 +175,7 @@ namespace samg {
                         // specifically within the webgraph-cpp library's iterator machinery when it performs a delete.
                         // This indicates that the heap metadata was corrupted *before* this point.
                         // this->e++;
-                        this->current_iterator++;
+                        ++(this->current_iterator);
 
                         return current_edge_coordinates;
                     }

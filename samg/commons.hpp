@@ -405,9 +405,8 @@ namespace samg {
             return c;
         }
 
-
         /**
-         * @brief Converts from n-dimensional coordinates C to z-order.
+         * @brief Converts from n-dimensional coordinates C to z-order. This function improves speed by avoiding recalculating constants. 
          * 
          * @param C 
          * @param s is the size of the hyper-space.
@@ -415,15 +414,8 @@ namespace samg {
          * @param k is the order. 
          * @return std::size_t 
          */
-        std::size_t to_zvalue2( const std::vector<std::uint64_t>& C, const std::size_t s, const std::uint8_t n, const std::uint8_t k ) {
+        std::size_t to_zvalue3( const std::vector<std::uint64_t>& C, const std::uint8_t n, const std::size_t b, const std::size_t d, const std::size_t bd, std::size_t M ) {
             assert(C.size() == n && "*** to_zvalue2 > Reader returned coordinate with wrong arity!");
-            /*static */const std::size_t    //p_k = std::bit_width( k ),
-                                            b = (std::size_t) (k == 1UL ? 0UL : std::bit_width(k - 1UL)), //std::ceil(std::log2(k)), // Bits per digit.
-                                            d = (std::size_t) std::ceil( std::log2(s) / b ),//std::ceil( std::log2(s)/ std::log2(k) ),// Digits to encode vz
-                                            bd = b*d,
-                                            vz_bit_length = n * bd; // Total bit length to encode vz.
-            // Set mask M:
-            std::size_t M = (1ZU << b) - 1ZU;
             M = M << ( bd - b ); // Shifting M to the leftmost position ready to retrieve the right bits.
 
             // Build zv:
@@ -441,6 +433,24 @@ namespace samg {
             return zv;
         }
 
+        /**
+         * @brief Converts from n-dimensional coordinates C to z-order.
+         * 
+         * @param C 
+         * @param s is the size of the hyper-space.
+         * @param n are the number of dimensions of the hyper-space.
+         * @param k is the order. 
+         * @return std::size_t 
+         */
+        std::size_t to_zvalue2( const std::vector<std::uint64_t>& C, const std::size_t s, const std::uint8_t n, const std::uint8_t k ) {
+            assert(C.size() == n && "*** to_zvalue2 > Reader returned coordinate with wrong arity!");
+            /*static */const std::size_t    //p_k = std::bit_width( k ),
+                                            b = (std::size_t) (k == 1UL ? 0UL : std::bit_width(k - 1UL)), //std::ceil(std::log2(k)), // Bits per digit.
+                                            d = (std::size_t) std::ceil( std::log2(s) / b ),//std::ceil( std::log2(s)/ std::log2(k) ),// Digits to encode vz
+                                            bd = b*d;
+            return samg::utils::to_zvalue3( C, n, b, d, bd, /*Set mask M:*/ (1ZU << b) - 1ZU);
+        }
+        
         /**
          * @brief Converts from z-order to n-dimensional coordinates.
          * 

@@ -352,32 +352,6 @@ namespace samg {
         }
 
         /**
-         * @brief Calculates the normalized side size for a k-ary tree structure.
-         * The normalized side size is the smallest power of k that is greater than or equal to
-         * the raw_side_size, considering the number of bits `b` required to represent a component in base k.
-         *
-         * @param raw_side_size The original side size of the matrix/space.
-         * @param k The order of the k-ary tree.
-         * @return The normalized side size.
-         */
-        std::size_t get_norm_side_size(std::size_t raw_side_size, std::uint8_t k) {
-            if (raw_side_size == 0) {
-                return 0;
-            }
-            if (k == 0) { // Or handle as an error
-                return 0;
-            }
-            if (k == 1) {
-                return (raw_side_size > 0) ? 1 : 0;
-            }
-
-            std::size_t b = std::bit_width(static_cast<unsigned long long>(k - 1)); // Bits per component for base k
-            double log2_raw_s = std::log2(static_cast<double>(raw_side_size));
-            double levels_double = std::ceil(log2_raw_s / static_cast<double>(b));
-            return static_cast<std::size_t>(std::pow(static_cast<double>(k), levels_double));
-        }
-
-        /**
          * @brief Convert `z_value` into `dims`-dimensional coordinates:
          * 
          * @param zvalue 
@@ -403,6 +377,51 @@ namespace samg {
             }
             
             return c;
+        }
+
+        /**
+         * @brief Helper function to get the number of bits needed for a given size.
+         * @note For s=8, this returns 3. For s=7, it also returns 3.
+         * 
+         * @param s 
+         * @return size_t 
+         */
+        inline const std::size_t get_required_bits( const std::size_t k ) {
+            return ( k == 1UL ) ? 0UL : std::bit_width( static_cast<unsigned long long>(k - 1) ); //(s == 0) ? 0 : std::bit_width(s - 1);
+        }
+
+        inline const std::size_t get_required_digits( const std::size_t s, const std::size_t b ) {
+            return (s == 0) ? 0 : static_cast<std::size_t>(std::ceil(std::log2(s) / static_cast<double>(b)));
+        }
+
+        inline const std::size_t get_initial_mask(const std::size_t b) {
+            return (1ZU << b) - 1ZU; // 
+        }
+
+        /**
+         * @brief Calculates the normalized side size for a k-ary tree structure.
+         * The normalized side size is the smallest power of k that is greater than or equal to
+         * the raw_side_size, considering the number of bits `b` required to represent a component in base k.
+         *
+         * @param raw_side_size The original side size of the matrix/space.
+         * @param k The order of the k-ary tree.
+         * @return The normalized side size.
+         */
+        std::size_t get_norm_side_size(std::size_t raw_side_size, std::uint8_t k) {
+            if (raw_side_size == 0) {
+                return 0;
+            }
+            if (k == 0) { // Or handle as an error
+                return 0;
+            }
+            if (k == 1) {
+                return (raw_side_size > 0) ? 1 : 0;
+            }
+
+            std::size_t b = samg::utils::get_required_bits(k);//std::bit_width(static_cast<unsigned long long>(k - 1)); // Bits per component for base k
+            double log2_raw_s = std::log2(static_cast<double>(raw_side_size));
+            double levels_double = std::ceil(log2_raw_s / static_cast<double>(b));
+            return static_cast<std::size_t>(std::pow(static_cast<double>(k), levels_double));
         }
 
         /**
@@ -457,10 +476,10 @@ namespace samg {
         std::size_t to_zvalue2( const std::vector<std::uint64_t>& C, const std::size_t s, const std::uint8_t n, const std::uint8_t k ) {
             // assert(C.size() == n && "*** to_zvalue2 > Reader returned coordinate with wrong arity!");
             /*static */const std::size_t    //p_k = std::bit_width( k ),
-                                            b = (std::size_t) (k == 1UL ? 0UL : std::bit_width(k - 1UL)), //std::ceil(std::log2(k)), // Bits per digit.
-                                            d = (std::size_t) std::ceil( std::log2(s) / b ),//std::ceil( std::log2(s)/ std::log2(k) ),// Digits to encode vz
+                                            b = samg::utils::get_required_bits(k),//(std::size_t) (k == 1UL ? 0UL : std::bit_width(k - 1UL)), //std::ceil(std::log2(k)), // Bits per digit.
+                                            d = samg::utils::get_required_digits( s, b ),//(std::size_t) std::ceil( std::log2(s) / b ),//std::ceil( std::log2(s)/ std::log2(k) ),// Digits to encode vz
                                             bd = b*d;
-            return samg::utils::to_zvalue3( C, n, b, d, bd, /*Set mask M:*/ (1ZU << b) - 1ZU);
+            return samg::utils::to_zvalue3( C, n, b, d, bd, /*Set mask M:*/ samg::utils::get_initial_mask( b ) );
         }
         
         /**
@@ -473,8 +492,8 @@ namespace samg {
          * @return std::vector<std::uint64_t> 
          */
         std::vector<std::uint64_t> from_zvalue2( std::size_t zv, const std::size_t s, const std::uint8_t n, const std::uint8_t k ) {
-            /*static */const std::size_t    b = std::bit_width(static_cast<unsigned long long>(k - 1)),//b = (std::size_t) (k == 1UL ? 0UL : std::bit_width(k - 1UL)), //std::ceil(std::log2(k)), // Bits per digit.
-                                            d = (s == 0) ? 0 : static_cast<std::size_t>(std::ceil(std::log2(s) / static_cast<double>(b))),//d = (std::size_t) std::ceil( std::log2(s) / b ),//std::ceil( std::log2(s)/ std::log2(k) ),// Digits to encode vz 
+            /*static */const std::size_t    b = samg::utils::get_required_bits(k),//std::bit_width(static_cast<unsigned long long>(k - 1)),//b = (std::size_t) (k == 1UL ? 0UL : std::bit_width(k - 1UL)), //std::ceil(std::log2(k)), // Bits per digit.
+                                            d = samg::utils::get_required_digits( s, b ),//(s == 0) ? 0 : static_cast<std::size_t>(std::ceil(std::log2(s) / static_cast<double>(b))),//d = (std::size_t) std::ceil( std::log2(s) / b ),//std::ceil( std::log2(s)/ std::log2(k) ),// Digits to encode vz 
                                             //d = (std::size_t) std::ceil( std::log2(s)/ std::log2(k) ),// Digits to encode vz
                                             //b = (std::size_t) std::ceil(std::log2(k)), // Bits per digit.
                                             bd = b*d,
@@ -483,7 +502,7 @@ namespace samg {
 
             // std::size_t M = (1ZU << b) - 1ZU, // Set mask M.
             // x;
-            const std::size_t M = (1ZU << b) - 1ZU; // Set mask M.
+            const std::size_t M = samg::utils::get_initial_mask( b );//(1ZU << b) - 1ZU; // Set mask M.
             // M = M << ( bd * n) - b ; // Shifting M to the leftmost position ready to retrieve the bits.
             
             // Build zv:

@@ -170,8 +170,10 @@ namespace samg {
                         // Dereference the current iterator to get the edge,
                         // then post-increment the iterator to move it to the next position.
                         auto edge = *(this->m_current_edge);
-                        this->m_current_edge++;
-                        std::vector<std::uint64_t> current_edge_coordinates = {edge.first, edge.second};
+                        ++(this->m_current_edge);
+                        std::vector<std::uint64_t> current_edge_coordinates = std::vector<std::uint64_t>(this->max_per_dimension.size());
+                        current_edge_coordinates[0] = edge.first;
+                        current_edge_coordinates[1] = edge.second;
                         return current_edge_coordinates;
                     }
             };

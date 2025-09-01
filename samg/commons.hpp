@@ -428,9 +428,11 @@ namespace samg {
          * @brief Converts from n-dimensional coordinates C to z-order. This function improves speed by avoiding recalculating constants. 
          * 
          * @param C 
-         * @param s is the size of the hyper-space.
          * @param n are the number of dimensions of the hyper-space.
-         * @param k is the order. 
+         * @param b is the number of bits per coordinate component considered for Z-ordering.
+         * @param d is the number of digits to encode a component considered for Z-ordering.
+         * @param bd is the product of b and d (b*d).
+         * @param M is the initial mask to retrieve bits from each coordinate component.
          * @return std::size_t 
          */
         std::size_t to_zvalue3( const std::vector<std::uint64_t>& C, const std::uint8_t n, const std::size_t b, const std::size_t d, const std::size_t bd, std::size_t M ) {
@@ -485,6 +487,31 @@ namespace samg {
         /**
          * @brief Converts from z-order to n-dimensional coordinates.
          * 
+         * @param z is the z-value. 
+         * @param n are the number of dimensions of the hyper-space.
+         * @param b is the number of bits per coordinate component considered for Z-ordering.
+         * @param d is the number of digits to encode a component considered for Z-ordering.
+         * @param M is the initial mask to retrieve bits from each coordinate component.
+         * @return std::vector<std::uint64_t> 
+         */
+        std::vector<std::uint64_t> from_zvalue3( std::size_t zv, const std::uint8_t n, const std::size_t b, const std::size_t d, std::size_t M  ) {
+            // Build zv:
+            std::vector<std::uint64_t> C = std::vector<std::uint64_t>( n, 0ULL );
+            // Iterate through each 'b-bit digit' position, from least significant to most
+            for (std::size_t i = 0; i < d; ++i) {
+                // De-interleave the ith set of digits
+                for (int j = n - 1; j >= 0; --j) {
+                    std::size_t digit = zv & M;
+                    zv >>= b;
+                    C[j] |= (digit << (i * b));
+                }
+            }
+            return C;
+        }
+        
+        /**
+         * @brief Converts from z-order to n-dimensional coordinates.
+         * 
          * @param zv is the z-value.
          * @param s is the size of the hyper-space.
          * @param n are the number of dimensions of the hyper-space.
@@ -496,9 +523,9 @@ namespace samg {
                                             d = samg::utils::get_required_digits( s, b ),//(s == 0) ? 0 : static_cast<std::size_t>(std::ceil(std::log2(s) / static_cast<double>(b))),//d = (std::size_t) std::ceil( std::log2(s) / b ),//std::ceil( std::log2(s)/ std::log2(k) ),// Digits to encode vz 
                                             //d = (std::size_t) std::ceil( std::log2(s)/ std::log2(k) ),// Digits to encode vz
                                             //b = (std::size_t) std::ceil(std::log2(k)), // Bits per digit.
-                                            bd = b*d,
-                                            nb = n * b,
-                                            base = ((bd*n)-b);
+                                            bd = b*d;
+                                            // nb = n * b,
+                                            // base = ((bd*n)-b);
 
             // std::size_t M = (1ZU << b) - 1ZU, // Set mask M.
             // x;

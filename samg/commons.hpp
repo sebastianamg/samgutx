@@ -438,19 +438,17 @@ namespace samg {
         std::size_t to_zvalue3( const std::vector<std::uint64_t>& C, const std::uint8_t n, const std::size_t b, const std::size_t d, const std::size_t bd, std::size_t M ) {
             assert(C.size() == n && "*** to_zvalue2 > Reader returned coordinate with wrong arity!");
             // M = M << ( bd - b ); // Shifting M to the leftmost position ready to retrieve the right bits.
-
-
             // Iterate through each 'b-bit digit' position, from most significant to least
             std::size_t zv = 0ZU,digit;
             for (int i = d - 1; i >= 0; --i) {
                 // Interleave the ith digit from each dimension
                 for (std::size_t j = 0; j < n; ++j) {
-                    zv <<= b;
-                    digit = (C[j] >> (i * b)) & M;
-                    zv |= digit;
+                    // zv <<= b;
+                    // digit = (C[j] >> (i * b)) & M;
+                    // zv |= digit;
+                    zv = ( zv << b ) | (C[j] >> (i * b)) & M;
                 }
             }
-
             // // Build zv:
             // std::size_t zv = 0ZU, x;
             // for( std::size_t i = 0ZU; i < d; i++ ) { 

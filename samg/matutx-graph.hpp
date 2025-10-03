@@ -172,7 +172,8 @@ namespace samg {
                         auto edge = *(this->m_current_edge);
                         ++(this->m_current_edge);
                         std::vector<std::uint64_t> current_edge_coordinates = std::vector<std::uint64_t>(this->max_per_dimension.size());
-                        current_edge_coordinates[0] = edge.first;
+                        // NOTE: Perhaps, encoding must be the opposite; edge.first must be at 1, and edge.second at 0.
+                        current_edge_coordinates[0] = edge.first;  
                         current_edge_coordinates[1] = edge.second;
                         return current_edge_coordinates;
                     }

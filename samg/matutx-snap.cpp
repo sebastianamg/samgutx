@@ -135,6 +135,7 @@ namespace samg {
                 if( this->has_next() ) {
                     // if( ( (int) this->ntrg ) < this->NI.GetOutDeg() ) {
                     unsigned long long int* edge = new unsigned long long int[ 2 ];
+                    // NOTE: Perhaps, encoding must be the opposite; this->[this->nid] must be at 1, and this->NI.GetOutNId( this->ntrg ) at 0.
                     edge[ 0 ] = (unsigned long long int) this->v[ this->nid ];
                     edge[ 1 ] = this->NI.GetOutNId( this->ntrg );
                     this->ntrg++;

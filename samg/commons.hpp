@@ -436,7 +436,7 @@ namespace samg {
          * @return std::size_t 
          */
         std::size_t to_zvalue3( const std::vector<std::uint64_t>& C, const std::uint8_t n, const std::size_t b, const std::size_t d, const std::size_t bd, std::size_t M ) {
-            assert(C.size() == n && "*** to_zvalue2 > Reader returned coordinate with wrong arity!");
+            assert(C.size() == n && "*** to_zvalue3 > Reader returned coordinate with wrong arity!");
             // M = M << ( bd - b ); // Shifting M to the leftmost position ready to retrieve the right bits.
             // Iterate through each 'b-bit digit' position, from most significant to least
             std::size_t zv = 0ZU,digit;

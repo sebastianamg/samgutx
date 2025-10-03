@@ -1,7 +1,48 @@
 # Multidimensional Matrix Market Formats
 
 ## MDX
-<!-- TODO -->
+
+To store a $n$-dimensional array:
+* We can use a Matrix Market Exchange Format style to store and retrieve it. We can call it Multidimensional Matrix Market Exchange Format (with extension `.mdx`) defined as follows:
+
+```
+%%MatrixMarket matrix coordinate pattern general
+% <comments>
+<number N of dimensions> <max coord val dim1> <max coord val dim2> <max coord val dim3> ... <max coord val dimN> <num non-zero entries>
+<coord dim1> <coord dim2> <coord dim3> ... <coord dimN>
+...
+```
+
+Example: Where coordinates are encoded as `(z,y,x)` or `(d,r,c)`, *i.e.* depth, row, column.
+
+```
+%%MatrixMarket matrix coordinate pattern general
+% <comments>
+3 3 3 3 23
+0 0 0
+0 0 2
+0 0 3
+0 1 1
+0 3 1
+1 0 0
+1 0 2
+1 0 3
+1 1 1
+1 2 0
+1 2 1
+1 3 0
+1 3 1
+2 0 2
+2 0 3
+2 2 1
+2 3 0
+2 3 1
+3 0 2
+3 0 3
+3 1 2
+3 1 3
+3 3 1
+```
 
 ## MXS
 

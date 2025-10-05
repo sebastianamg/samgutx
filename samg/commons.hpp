@@ -15,6 +15,7 @@
 // #include <set>
 #include <boost/algorithm/string.hpp>
 // #include <boost/range.hpp>
+#include <bit>
 
 /**
  * ---------------------------------------------------------------
@@ -552,6 +553,16 @@ namespace samg {
             //     }
             // }
             return C;
+        }
+        /***************************************************************/
+        /** This function checks if a number is a power of two.
+         * @param n is the number to check.
+         * @return true if n is a power of two, false otherwise.
+         * */ 
+        constexpr bool is_power_of_two(std::size_t n) {
+            // A power of 2 must be positive and have only one bit set.
+            // return (n > 0) && ((n & (n - 1)) == 0);
+            return n > 0ZU && std::popcount(n) == 1ZU;
         }
         /***************************************************************/
         /**

@@ -56,8 +56,9 @@ namespace samg {
     namespace matutx {
         namespace reader {
 
-
-            class GraphReader : public Reader { // NOTE: Patch-implementation! ...on account of memory corruption that happens when trying to use an edge-iterator. 
+            /** 2026 Implementation: */
+         
+            class GraphReader : public Reader {
                 private:
                     std::vector<std::uint64_t> max_per_dimension;
                     std::uint64_t number_of_entries;
@@ -70,24 +71,17 @@ namespace samg {
                     std::float_t gauss_sigma;
                     std::uint64_t clustering;
                     std::float_t clustering_distance_error;
-                    webgraph::bv_graph::graph::graph_ptr graph;
-                    boost::graph_traits<webgraph::bv_graph::graph>::edge_iterator m_edge_begin;
-                    boost::graph_traits<webgraph::bv_graph::graph>::edge_iterator m_edge_end;
-                    boost::graph_traits<webgraph::bv_graph::graph>::edge_iterator m_current_edge;
-
-                    std::queue<std::vector<std::uint64_t>> data; // This is a placeholder for the data structure to hold the graph edges.
-                    // // boost::graph_traits<webgraph::bv_graph::graph>::edge_iterator e, e_end;
-                    // boost::iterator_range<boost::graph_traits<webgraph::bv_graph::graph>::edge_iterator> edge_range;
-                    // boost::graph_traits<webgraph::bv_graph::graph>::edge_iterator current_iterator;
+                    
+                    std::vector<std::uint64_t> payload;
+                    std::size_t payload_index;
+                    std::size_t n;
+                    std::size_t b;
+                    std::size_t d;
+                    std::uint64_t initial_M;
                     
                 public:
-                    GraphReader(std::string file_name) :
-                        Reader(file_name),
-                        // graph (webgraph::bv_graph::graph::load( samg::utils::get_file_basename(file_name) ))
-                        // graph (webgraph::bv_graph::graph::load_sequential( samg::utils::get_file_basename(file_name) ))
-                        graph (webgraph::bv_graph::graph::load_offline( samg::utils::get_file_basename(file_name) ))
-                        // edge_range(boost::edges(*graph)),
-                        // current_iterator(edge_range.begin())
+                    GraphReader(std::string file_name, const std::size_t k = 2ZU ) :
+                        Reader(file_name)
                     {
                         this->max_per_dimension = std::vector<std::uint64_t>();
                         std::string properties_file = samg::utils::change_extension(file_name,"properties");
@@ -103,24 +97,29 @@ namespace samg {
                             this->matrix_expected_density = (double) arcs / (double) this->matrix_size;
                             this->matrix_actual_density = (double) arcs / (double) this->matrix_size;
                             this->matrix_distribution = "null";
-                            this->gauss_mu = -1.0f; // Properties might override this
-                            this->gauss_sigma = -1.0f; // Properties might override this
-                            this->clustering = 0ull; // Properties might override this
-                            this->clustering_distance_error = -1.0f; // Properties might override this
+                            this->gauss_mu = -1.0f;
+                            this->gauss_sigma = -1.0f;
+                            this->clustering = 0ull;
+                            this->clustering_distance_error = -1.0f;
                         } else {
                             throw std::runtime_error("Graph properties file \""+properties_file+"\" not available.");
                         }
-                        // Loading data in memory:
-                        // webgraph::bv_graph::graph::node_iterator n, n_end;
-   
                         std::cout << "Loading graph data from file: " << file_name << std::endl;
-                        
-                        auto edge_pair = boost::edges(*(this->graph));
+                        // this->graph = webgraph::bv_graph::graph::load_offline( samg::utils::get_file_basename(file_name) );
+                        // this->graph = webgraph::bv_graph::graph::load_sequential( samg::utils::get_file_basename() );
+                        webgraph::bv_graph::graph::graph_ptr G = webgraph::bv_graph::graph::load_offline( samg::utils::get_file_basename(file_name) );
 
-                        // Setting iterator:
-                        this->m_edge_begin = edge_pair.first;
-                        this->m_edge_end = edge_pair.second;
-                        this->m_current_edge = this->m_edge_begin;
+                        /* Either qualify the call … */
+                        this->b = samg::utils::get_required_bits( k );//(k == 1UL ? 0UL : std::bit_width(k - 1UL)), // Number of bits per coordinate component considered for Z-ordering.
+                        this->d = samg::utils::get_required_digits( this->matrix_side_size, b );//(s == 0) ? 0 : static_cast<std::size_t>(std::ceil(std::log2(s) / static_cast<double>(b))), // Number of digits to encode a component considered for Z-ordering.
+                        this->n = this->max_per_dimension.size(); // Number of dimensions of the matrix.
+                        this->initial_M = samg::utils::get_initial_mask( b );
+                        std::size_t bd = b * d;
+                        this->payload = std::vector<std::uint64_t>();
+                        this->payload_index = 0ZU;
+                        for (auto e : boost::make_iterator_range(boost::edges(*G))) {
+                            this->payload.push_back( static_cast<std::uint64_t>( samg::utils::to_zvalue3( {static_cast<std::uint64_t>(e.first), static_cast<std::uint64_t>(e.second)}, this->n, this->b, this->d, bd, this->initial_M ) ) );
+                        }
                     }
 
                     const std::size_t get_number_of_dimensions() const override {
@@ -133,7 +132,8 @@ namespace samg {
                         return this->number_of_entries;
                     }
                     const bool has_next() override {
-                        return this->m_current_edge != this->m_edge_end;
+                        // If the current adjacency iterator is not at its end, we have an edge.
+                        return this->payload_index < this->payload.size();
                     }
                     const std::uint64_t get_matrix_side_size() const override {
                         return this->matrix_side_size;
@@ -164,20 +164,140 @@ namespace samg {
                     }
 
                     std::vector<std::uint64_t> next() override {
+                        return std::vector<std::uint64_t>( samg::utils::from_zvalue3( this->next_zvalue(), this->n, this->b, this->d, this->initial_M ) );
+                    }
+
+                    std::uint64_t next_zvalue() override {
                         if (!has_next()) {
                             throw std::out_of_range("No more edges to iterate.");
                         }
-                        // Dereference the current iterator to get the edge,
-                        // then post-increment the iterator to move it to the next position.
-                        auto edge = *(this->m_current_edge);
-                        ++(this->m_current_edge);
-                        std::vector<std::uint64_t> current_edge_coordinates = std::vector<std::uint64_t>(this->max_per_dimension.size());
-                        // NOTE: Perhaps, encoding must be the opposite; edge.first must be at 1, and edge.second at 0.
-                        current_edge_coordinates[0] = edge.first;  
-                        current_edge_coordinates[1] = edge.second;
-                        return current_edge_coordinates;
+                        return this->payload[this->payload_index++];
                     }
             };
+
+
+            /** 2025 Implementation: */
+            // class GraphReader : public Reader { // NOTE: Patch-implementation! ...on account of memory corruption that happens when trying to use an edge-iterator. 
+            //     private:
+            //         std::vector<std::uint64_t> max_per_dimension;
+            //         std::uint64_t number_of_entries;
+            //         std::uint64_t matrix_side_size;
+            //         std::uint64_t matrix_size;
+            //         std::float_t matrix_expected_density;
+            //         std::float_t matrix_actual_density;
+            //         std::string matrix_distribution;
+            //         std::float_t gauss_mu;
+            //         std::float_t gauss_sigma;
+            //         std::uint64_t clustering;
+            //         std::float_t clustering_distance_error;
+            //         webgraph::bv_graph::graph::graph_ptr graph;
+            //         boost::graph_traits<webgraph::bv_graph::graph>::edge_iterator m_edge_begin;
+            //         boost::graph_traits<webgraph::bv_graph::graph>::edge_iterator m_edge_end;
+            //         boost::graph_traits<webgraph::bv_graph::graph>::edge_iterator m_current_edge;
+
+            //         std::queue<std::vector<std::uint64_t>> data; // This is a placeholder for the data structure to hold the graph edges.
+            //         // // boost::graph_traits<webgraph::bv_graph::graph>::edge_iterator e, e_end;
+            //         // boost::iterator_range<boost::graph_traits<webgraph::bv_graph::graph>::edge_iterator> edge_range;
+            //         // boost::graph_traits<webgraph::bv_graph::graph>::edge_iterator current_iterator;
+                    
+            //     public:
+            //         GraphReader(std::string file_name) :
+            //             Reader(file_name),
+            //             // graph (webgraph::bv_graph::graph::load( samg::utils::get_file_basename(file_name) ))
+            //             // graph (webgraph::bv_graph::graph::load_sequential( samg::utils::get_file_basename(file_name) ))
+            //             graph (webgraph::bv_graph::graph::load_offline( samg::utils::get_file_basename(file_name) ))
+            //             // edge_range(boost::edges(*graph)),
+            //             // current_iterator(edge_range.begin())
+            //         {
+            //             this->max_per_dimension = std::vector<std::uint64_t>();
+            //             std::string properties_file = samg::utils::change_extension(file_name,"properties");
+            //             std::string defaults = samg::utils::read_from_file( properties_file.data() );
+            //             std::map<std::string, std::string> properties;
+            //             if( cpp_properties::parse(defaults.begin(),defaults.end(),properties) ) {
+            //                 std::uint64_t nodes = std::atoll( properties["nodes"].data() );
+            //                 std::uint64_t arcs = std::atoll( properties["arcs"].data() );
+            //                 this->max_per_dimension = { nodes , nodes };
+            //                 this->number_of_entries = arcs;
+            //                 this->matrix_side_size = nodes;
+            //                 this->matrix_size = nodes*nodes;
+            //                 this->matrix_expected_density = (double) arcs / (double) this->matrix_size;
+            //                 this->matrix_actual_density = (double) arcs / (double) this->matrix_size;
+            //                 this->matrix_distribution = "null";
+            //                 this->gauss_mu = -1.0f; // Properties might override this
+            //                 this->gauss_sigma = -1.0f; // Properties might override this
+            //                 this->clustering = 0ull; // Properties might override this
+            //                 this->clustering_distance_error = -1.0f; // Properties might override this
+            //             } else {
+            //                 throw std::runtime_error("Graph properties file \""+properties_file+"\" not available.");
+            //             }
+            //             // Loading data in memory:
+            //             // webgraph::bv_graph::graph::node_iterator n, n_end;
+   
+            //             std::cout << "Loading graph data from file: " << file_name << std::endl;
+                        
+            //             auto edge_pair = boost::edges(*(this->graph));
+
+            //             // Setting iterator:
+            //             this->m_edge_begin = edge_pair.first;
+            //             this->m_edge_end = edge_pair.second;
+            //             this->m_current_edge = this->m_edge_begin;
+            //         }
+
+            //         const std::size_t get_number_of_dimensions() const override {
+            //             return this->max_per_dimension.size();
+            //         }
+            //         const std::vector<std::uint64_t> get_max_per_dimension() const override {
+            //             return this->max_per_dimension;
+            //         }
+            //         const std::uint64_t get_number_of_entries() const override {
+            //             return this->number_of_entries;
+            //         }
+            //         const bool has_next() override {
+            //             return this->m_current_edge != this->m_edge_end;
+            //         }
+            //         const std::uint64_t get_matrix_side_size() const override {
+            //             return this->matrix_side_size;
+            //         }
+            //         const std::uint64_t get_matrix_size() const override {
+            //             return this->matrix_size;
+            //         }
+            //         const std::float_t get_matrix_expected_density() const override {
+            //             return this->matrix_expected_density;
+            //         }
+            //         const std::float_t get_matrix_actual_density() const override {
+            //             return this->matrix_actual_density;
+            //         }
+            //         const std::string get_matrix_distribution() const override {
+            //             return this->matrix_distribution;
+            //         }
+            //         const std::float_t get_gauss_mu() const override {
+            //             return this->gauss_mu;
+            //         }
+            //         const std::float_t get_gauss_sigma() const override {
+            //             return this->gauss_sigma;
+            //         }
+            //         const std::uint64_t get_clustering() const override {
+            //             return this->clustering;
+            //         }
+            //         const std::float_t get_clustering_distance_error() const override {
+            //             return this->clustering_distance_error;
+            //         }
+
+            //         std::vector<std::uint64_t> next() override {
+            //             if (!has_next()) {
+            //                 throw std::out_of_range("No more edges to iterate.");
+            //             }
+            //             // Dereference the current iterator to get the edge,
+            //             // then post-increment the iterator to move it to the next position.
+            //             auto edge = *(this->m_current_edge);
+            //             ++(this->m_current_edge);
+            //             std::vector<std::uint64_t> current_edge_coordinates = std::vector<std::uint64_t>(this->max_per_dimension.size());
+            //             // NOTE: Perhaps, encoding must be the opposite; edge.first must be at 1, and edge.second at 0.
+            //             current_edge_coordinates[0] = edge.first;  
+            //             current_edge_coordinates[1] = edge.second;
+            //             return current_edge_coordinates;
+            //         }
+            // };
 
 
             // class GraphReader : public Reader { // NOTE: Patch-implementation! ...on account of memory corruption that happens when trying to use an edge-iterator. 

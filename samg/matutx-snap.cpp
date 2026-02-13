@@ -37,6 +37,7 @@
 // #include <Snap.h>
 // #include <samg/matutx-snap.hpp>
 #include "matutx-snap.hpp"
+#include <samg/commons.hpp>
 
 namespace samg {
     namespace matutx {
@@ -46,7 +47,7 @@ namespace samg {
 
             // }
 
-            SnapReader::SnapReader( const char *file_name, const unsigned int src_col_id, const unsigned int dst_col_id ) :
+            SnapReader::SnapReader( const char *file_name, const unsigned int src_col_id, const unsigned int dst_col_id, const unsigned int k=2ULL ) :
                 FILE_NAME ( TStr(file_name) ),
                 graph ( TSnap::LoadEdgeList<PNGraph>(file_name, src_col_id, dst_col_id) ) {
                     this->graph->GetNIdV(this->v);
@@ -55,6 +56,11 @@ namespace samg {
                     this->ntrg = 0ULL;
                     this->NI = this->graph->GetNI((int)this->v[this->nid]);
                     this->NI.SortNIdV();
+                    this->b = samg::utils::get_required_bits( k );//(k == 1UL ? 0UL : std::bit_width(k - 1UL)), // Number of bits per coordinate component considered for Z-ordering.
+                    this->d = samg::utils::get_required_digits( static_cast<std::size_t>(this->get_matrix_side_size()), this->b );//(s == 0) ? 0 : static_cast<std::size_t>(std::ceil(std::log2(s) / static_cast<double>(b))), // Number of digits to encode a component considered for Z-ordering.
+                    this->n = this->get_number_of_dimensions(); // Number of dimensions of the matrix.
+                    this->initial_M = samg::utils::get_initial_mask( b );
+                    this->bd = this->b * this->d;
             }
 
             const char* SnapReader::get_input_file_name() {
@@ -66,7 +72,7 @@ namespace samg {
             }
 
             unsigned long long int* SnapReader::get_max_per_dimension() {
-                unsigned long long int* maxd = new unsigned long long int[2];
+                static unsigned long long int maxd[2];
                 maxd[ 0 ] = maxd[ 1 ] = this->v[ this->v.Len()-1 ];
                 return maxd;
             }
@@ -142,6 +148,11 @@ namespace samg {
                     return edge;
                 }
                 throw 123; // NOTE No more entries!
+            }
+
+            unsigned long long int SnapReader::next_zvalue() {
+                unsigned long long int* edge = this->next( );
+                return samg::utils::to_zvalue3( std::vector<std::uint64_t>( edge, edge+2 ), this->n, this->b, this->d, this->bd, this->initial_M );
             }
         }
     }

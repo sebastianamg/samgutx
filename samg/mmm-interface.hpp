@@ -76,6 +76,7 @@ namespace samg {
                     virtual const std::uint64_t get_clustering() const = 0;
                     virtual const std::float_t get_clustering_distance_error() const = 0;
                     virtual std::vector<std::uint64_t> next() = 0;
+                    virtual std::uint64_t next_zvalue() = 0;
             };
         }
 

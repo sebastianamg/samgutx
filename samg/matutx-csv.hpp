@@ -48,6 +48,12 @@ namespace samg {
                     std::size_t index;
                     std::uint64_t global_max;
 
+                    std::size_t n;
+                    std::size_t b;
+                    std::size_t d;
+                    std::uint64_t initial_M;
+                    std::size_t bd;
+
                     const std::uint64_t get_global_max( ) const {
                         // if( this->index < this->doc.GetRowCount() ) {
                         //     throw std::runtime_error("Unkown glogal maximum.");
@@ -56,7 +62,7 @@ namespace samg {
                     }
 
                 public:
-                    CSVReader( const std::string file_name, const char separator = ',' , const std::vector<std::size_t> selected_columns = std::vector<std::size_t>(), const std::int8_t first_row=-1, const std::int8_t first_column=-1):
+                    CSVReader( const std::string file_name, const char separator = ',' , const std::vector<std::size_t> selected_columns = std::vector<std::size_t>(), const std::int8_t first_row=-1, const std::int8_t first_column=-1, const std::uint64_t k = 2ULL ):
                         Reader ( file_name ),
                         doc ( rapidcsv::Document(file_name, rapidcsv::LabelParams( first_column , first_row ), rapidcsv::SeparatorParams( separator )) ),
                         selected_columns ( selected_columns ),
@@ -84,6 +90,11 @@ namespace samg {
                             }
                         }
                         std::cout << "MAX: " << this->global_max << "; selected columns: " << this->selected_columns.size() << std::endl;
+                        this->b = samg::utils::get_required_bits( k );//(k == 1UL ? 0UL : std::bit_width(k - 1UL)), // Number of bits per coordinate component considered for Z-ordering.
+                        this->d = samg::utils::get_required_digits( this->get_matrix_side_size(), b );//(s == 0) ? 0 : static_cast<std::size_t>(std::ceil(std::log2(s) / static_cast<double>(b))), // Number of digits to encode a component considered for Z-ordering.
+                        this->n = this->get_number_of_dimensions(); // Number of dimensions of the matrix.
+                        this->initial_M = samg::utils::get_initial_mask( b );
+                        this->bd = b * d;
                     }
                     // ~CSVReader() {   
                     // }
@@ -146,6 +157,11 @@ namespace samg {
                         }
                         throw std::runtime_error("No more entries.");
                     }
+
+                    std::uint64_t next_zvalue() override {
+                        return samg::utils::to_zvalue3(this->next(), this->n, this->b, this->d, this->bd, this->initial_M); 
+                    }
+
             };
         }
     }

@@ -74,10 +74,11 @@ namespace samg {
                     
                     std::vector<std::uint64_t> payload;
                     std::size_t payload_index;
-                    std::size_t n;
-                    std::size_t b;
-                    std::size_t d;
-                    std::uint64_t initial_M;
+                    // std::size_t n;
+                    // std::size_t b;
+                    // std::size_t d;
+                    // std::uint64_t initial_M;
+                    samg::utils::ZValueConverter z_converter;
                     
                 public:
                     GraphReader(std::string file_name, const std::size_t k = 2ZU ) :
@@ -110,15 +111,17 @@ namespace samg {
                         webgraph::bv_graph::graph::graph_ptr G = webgraph::bv_graph::graph::load_offline( samg::utils::get_file_basename(file_name) );
 
                         /* Either qualify the call … */
-                        this->b = samg::utils::get_required_bits( k );//(k == 1UL ? 0UL : std::bit_width(k - 1UL)), // Number of bits per coordinate component considered for Z-ordering.
-                        this->d = samg::utils::get_required_digits( this->matrix_side_size, b );//(s == 0) ? 0 : static_cast<std::size_t>(std::ceil(std::log2(s) / static_cast<double>(b))), // Number of digits to encode a component considered for Z-ordering.
-                        this->n = this->max_per_dimension.size(); // Number of dimensions of the matrix.
-                        this->initial_M = samg::utils::get_initial_mask( b );
-                        std::size_t bd = b * d;
+                        // this->b = samg::utils::get_required_bits( k );//(k == 1UL ? 0UL : std::bit_width(k - 1UL)), // Number of bits per coordinate component considered for Z-ordering.
+                        // this->d = samg::utils::get_required_digits( this->matrix_side_size, b );//(s == 0) ? 0 : static_cast<std::size_t>(std::ceil(std::log2(s) / static_cast<double>(b))), // Number of digits to encode a component considered for Z-ordering.
+                        // this->n = this->max_per_dimension.size(); // Number of dimensions of the matrix.
+                        // this->initial_M = samg::utils::get_initial_mask( b );
+                        // std::size_t bd = b * d;
+                        this->z_converter = samg::utils::ZValueConverter( this->matrix_side_size, this->max_per_dimension.size(), k );
                         this->payload = std::vector<std::uint64_t>();
                         this->payload_index = 0ZU;
                         for (auto e : boost::make_iterator_range(boost::edges(*G))) {
-                            this->payload.push_back( static_cast<std::uint64_t>( samg::utils::to_zvalue3( {static_cast<std::uint64_t>(e.first), static_cast<std::uint64_t>(e.second)}, this->n, this->b, this->d, bd, this->initial_M ) ) );
+                            // this->payload.push_back( static_cast<std::uint64_t>( samg::utils::to_zvalue3( {static_cast<std::uint64_t>(e.first), static_cast<std::uint64_t>(e.second)}, this->n, this->b, this->d, bd, this->initial_M ) ) );
+                            this->payload.push_back( this->z_converter.to_zvalue( {static_cast<std::uint64_t>(e.first), static_cast<std::uint64_t>(e.second)} ) );
                         }
                     }
 
@@ -164,7 +167,9 @@ namespace samg {
                     }
 
                     std::vector<std::uint64_t> next() override {
-                        return std::vector<std::uint64_t>( samg::utils::from_zvalue3( this->next_zvalue(), this->n, this->b, this->d, this->initial_M ) );
+                        // return std::vector<std::uint64_t>( samg::utils::from_zvalue3( this->next_zvalue(), this->n, this->b, this->d, this->initial_M ) );
+                        // return std::vector<std::uint64_t>( this->z_converter.from_zvalue( this->next_zvalue() ) );
+                        return this->z_converter.from_zvalue( this->next_zvalue() );
                     }
 
                     std::uint64_t next_zvalue() override {

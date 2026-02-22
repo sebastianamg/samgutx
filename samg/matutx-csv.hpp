@@ -48,11 +48,12 @@ namespace samg {
                     std::size_t index;
                     std::uint64_t global_max;
 
-                    std::size_t n;
-                    std::size_t b;
-                    std::size_t d;
-                    std::uint64_t initial_M;
-                    std::size_t bd;
+                    // std::size_t n;
+                    // std::size_t b;
+                    // std::size_t d;
+                    // std::uint64_t initial_M;
+                    // std::size_t bd;
+                    samg::utils::ZValueConverter z_converter;
 
                     const std::uint64_t get_global_max( ) const {
                         // if( this->index < this->doc.GetRowCount() ) {
@@ -90,11 +91,12 @@ namespace samg {
                             }
                         }
                         std::cout << "MAX: " << this->global_max << "; selected columns: " << this->selected_columns.size() << std::endl;
-                        this->b = samg::utils::get_required_bits( k );//(k == 1UL ? 0UL : std::bit_width(k - 1UL)), // Number of bits per coordinate component considered for Z-ordering.
-                        this->d = samg::utils::get_required_digits( this->get_matrix_side_size(), b );//(s == 0) ? 0 : static_cast<std::size_t>(std::ceil(std::log2(s) / static_cast<double>(b))), // Number of digits to encode a component considered for Z-ordering.
-                        this->n = this->get_number_of_dimensions(); // Number of dimensions of the matrix.
-                        this->initial_M = samg::utils::get_initial_mask( b );
-                        this->bd = b * d;
+                        this->z_converter = samg::utils::ZValueConverter( this->get_matrix_side_size(), this->get_number_of_dimensions(), k );
+                        // this->b = samg::utils::get_required_bits( k );//(k == 1UL ? 0UL : std::bit_width(k - 1UL)), // Number of bits per coordinate component considered for Z-ordering.
+                        // this->d = samg::utils::get_required_digits( this->get_matrix_side_size(), b );//(s == 0) ? 0 : static_cast<std::size_t>(std::ceil(std::log2(s) / static_cast<double>(b))), // Number of digits to encode a component considered for Z-ordering.
+                        // this->n = this->get_number_of_dimensions(); // Number of dimensions of the matrix.
+                        // this->initial_M = samg::utils::get_initial_mask( b );
+                        // this->bd = b * d;
                     }
                     // ~CSVReader() {   
                     // }
@@ -159,7 +161,8 @@ namespace samg {
                     }
 
                     std::uint64_t next_zvalue() override {
-                        return samg::utils::to_zvalue3(this->next(), this->n, this->b, this->d, this->bd, this->initial_M); 
+                        // return samg::utils::to_zvalue3(this->next(), this->n, this->b, this->d, this->bd, this->initial_M); 
+                        return this->z_converter.to_zvalue( this->next() );
                     }
 
             };

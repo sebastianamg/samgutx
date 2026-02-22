@@ -55,11 +55,12 @@ namespace samg {
                     unsigned long long int nid, ntrg;
                     TNGraph::TNodeI NI;
                     // void _update_( );
-                    unsigned long long int n;
-                    unsigned long long int b;
-                    unsigned long long int d;
-                    unsigned long long int initial_M;
-                    unsigned long long int bd;
+                    // unsigned long long int n;
+                    // unsigned long long int b;
+                    // unsigned long long int d;
+                    // unsigned long long int initial_M;
+                    // unsigned long long int bd;
+                    samg::utils::ZValueConverter z_converter;
 
                 public:
                     SnapReader( const char *file_name, const unsigned int src_col_id = 0U, const unsigned int dst_col_id = 1U, const unsigned int k=2ULL  );

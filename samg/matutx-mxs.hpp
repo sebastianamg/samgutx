@@ -200,11 +200,12 @@ namespace samg {
                     std::vector<std::size_t> I; // Let I be a vector of positive integers.
                     std::vector<std::size_t> Ii;// Let Ii be an array of n cells to store pointers to I, initially as Ii = [0,1,2,...,n-1].
 
-                    std::size_t n;
-                    std::size_t b;
-                    std::size_t digits;
-                    std::uint64_t initial_M;
-                    std::size_t bd;
+                    // std::size_t n;
+                    // std::size_t b;
+                    // std::size_t digits;
+                    // std::uint64_t initial_M;
+                    // std::size_t bd;
+                    samg::utils::ZValueConverter z_converter;
 
                     std::vector<std::uint64_t> _gen_coord_( std::vector<std::uint64_t> &Pi ) {
                         std::vector<std::uint64_t> c(Pi); // Let c be an array of |Pi| cells.
@@ -257,11 +258,12 @@ namespace samg {
                         this->j /*= this->pp*/ = this->ip = maxs.size();
                         this->j--;
 
-                        this->b = samg::utils::get_required_bits( k );//(k == 1UL ? 0UL : std::bit_width(k - 1UL)), // Number of bits per coordinate component considered for Z-ordering.
-                        this->digits = samg::utils::get_required_digits( this->s, b );//(s == 0) ? 0 : static_cast<std::size_t>(std::ceil(std::log2(s) / static_cast<double>(b))), // Number of digits to encode a component considered for Z-ordering.
-                        this->n = this->maxs.size(); // Number of dimensions of the matrix.
-                        this->initial_M = samg::utils::get_initial_mask( b );
-                        this->bd = b * this->digits;
+                        // this->b = samg::utils::get_required_bits( k );//(k == 1UL ? 0UL : std::bit_width(k - 1UL)), // Number of bits per coordinate component considered for Z-ordering.
+                        // this->digits = samg::utils::get_required_digits( this->s, b );//(s == 0) ? 0 : static_cast<std::size_t>(std::ceil(std::log2(s) / static_cast<double>(b))), // Number of digits to encode a component considered for Z-ordering.
+                        // this->n = this->maxs.size(); // Number of dimensions of the matrix.
+                        // this->initial_M = samg::utils::get_initial_mask( b );
+                        // this->bd = b * this->digits;
+                        this->z_converter = samg::utils::ZValueConverter( this->s, this->maxs.size(), k );
 
                     }
 
@@ -342,7 +344,8 @@ namespace samg {
                     }
 
                     std::uint64_t next_zvalue() override {
-                        return samg::utils::to_zvalue3( this->next(), this->n, this->b, this->digits, this->bd, this->initial_M );
+                        // return samg::utils::to_zvalue3( this->next(), this->n, this->b, this->digits, this->bd, this->initial_M );
+                        return this->z_converter.to_zvalue( this->next() );
                     }
             };
         }

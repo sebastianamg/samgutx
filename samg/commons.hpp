@@ -313,247 +313,195 @@ namespace samg {
                 }
                 repr = char(digit) + repr;
             }
-            // std::cout << "to_base("<<number<<") = " << repr << std::endl;
             while( repr.length() < length ){
                 repr = "0" + repr;
             }
-            // std::cout << "to_base("<<number<<") = (with "<<length<<" 0s) " << repr << std::endl;
 
             return repr;
         }
 
-        /**
-         * @brief Converts from n-dimensional coordinates of order `base` to z-order. 
-         * 
-         * @param c is the coordinate.
-         * @param base is the target base to which z-value will be parsed (usually binary --- 2 ).
-         * @param len is the number of bits to correctly represent each element in the coordinate in base `base`. 
-         * @return std::size_t 
-         */
-        std::size_t to_zvalue( const std::vector<std::uint64_t>& c, const std::size_t base, const std::size_t len ) {
-
-            // For each element in `c`, convert to base `base`:
-            std::vector<std::string> p;
-            for ( std::uint64_t v : c ) {
-                p.push_back( samg::utils::to_base( v, base, len ) );
-            }
-
-            // Concatenate elements in `p` interleaving-wise:
-            std::string v = "";
-            for (size_t i = 0; i < len; i++) {
-                for( std::string s : p ) {
-                    v = v + s[i];
+        class ZValueConverter {
+            private:
+                std::size_t s,b,d,bd,initial_M,n;
+                /**
+                 * @brief Helper function to get the number of bits needed for a given size.
+                 * @note For s=8, this returns 3. For s=7, it also returns 3.
+                 * 
+                 * @param s 
+                 * @return size_t 
+                 */
+                static inline const std::size_t _get_required_bits_( const std::size_t k ) {
+                    return ( k == 1UL ) ? 0UL : std::bit_width( static_cast<unsigned long long>(k - 1) ); //(s == 0) ? 0 : std::bit_width(s - 1);
                 }
-            }
 
-            // Convert `v` from base `base` to base 10:
-            std::uint64_t zv_ans = samg::utils::from_base( v, base );
+                static inline const std::size_t _get_required_digits_( const std::size_t s, const std::size_t b ) {
+                    return (s == 0) ? 0 : static_cast<std::size_t>(std::ceil(std::log2(s) / static_cast<double>(b)));
+                }
 
-            return zv_ans;
-        }
+                static inline const std::size_t _get_initial_mask_(const std::size_t b) {
+                    return (1ZU << b) - 1ZU; // 
+                }
 
-        /**
-         * @brief Convert `z_value` into `dims`-dimensional coordinates:
-         * 
-         * @param zvalue 
-         * @param base is the target base to which z-value will be parsed (usually binary --- 2 ).
-         * @param dims are the dimensions of the coordinate to recover from `zvalue`.
-         * @param len is the sum of number of bits that represent each element in the sought coordinate. The number of bits must be divisible by `dims`.
-         * @return std::vector<std::uint64_t> 
-         */
-        std::vector<std::uint64_t> from_zvalue( const std::size_t zvalue, const std::size_t base, const std::size_t dims, const std::size_t len ) {
-            // Convert zv from base 10 to base `base` and ensure length `len`: 
-            const std::string zv_k = samg::utils::to_base( zvalue, base, len );
+                /**
+                 * @brief Calculates the normalized side size for a k-ary tree structure.
+                 * The normalized side size is the smallest power of k that is greater than or equal to
+                 * the raw_side_size, considering the number of bits `b` required to represent a component in base k.
+                 *
+                 * @param raw_side_size The original side size of the matrix/space.
+                 * @param k The order of the k-ary tree.
+                 * @return The normalized side size.
+                 */
+                static std::size_t _get_norm_side_size_(std::size_t raw_side_size, std::uint8_t k) {
+                    if (raw_side_size == 0) {
+                        return 0;
+                    }
+                    if (k == 0) { // Or handle as an error
+                        return 0;
+                    }
+                    if (k == 1) {
+                        return (raw_side_size > 0) ? 1 : 0;
+                    }
 
-            // Separate components from zv_k:
-            std::vector<std::string> zv_k_components( dims );
-            for (std::size_t i = 0; i < zv_k.length(); i++) {
-                zv_k_components[i%dims] += zv_k[i];
-            }
+                    std::size_t b = _get_required_bits_(k);//std::bit_width(static_cast<unsigned long long>(k - 1)); // Bits per component for base k
+                    double log2_raw_s = std::log2(static_cast<double>(raw_side_size));
+                    double levels_double = std::ceil(log2_raw_s / static_cast<double>(b));
+                    return static_cast<std::size_t>(std::pow(static_cast<double>(k), levels_double));
+                }
 
-            // Convert each component back to create a coordinate:
-            std::vector<std::uint64_t> c;
-            for (std::string c_zv : zv_k_components) {
-                c.push_back( samg::utils::from_base( c_zv, base ) );
-            }
+                /**
+                 * @brief Converts from n-dimensional coordinates C to z-order. This function improves speed by avoiding recalculating constants. 
+                 * 
+                 * @param C 
+                 * @param n are the number of dimensions of the hyper-space.
+                 * @param b is the number of bits per coordinate component considered for Z-ordering.
+                 * @param d is the number of digits to encode a component considered for Z-ordering.
+                 * @param bd is the product of b and d (b*d).
+                 * @param M is the initial mask to retrieve bits from each coordinate component.
+                 * @return std::size_t 
+                 */
+                std::size_t _to_zvalue_( const std::vector<std::uint64_t>& C, const std::uint8_t n, const std::size_t b, const std::size_t d, const std::size_t bd, std::size_t M ) {
+                    assert(C.size() == n && "*** to_zvalue > Reader returned coordinate with wrong arity!");
+                    // Iterate through each 'b-bit digit' position, from most significant to least
+                    std::size_t zv = 0ZU,digit;
+                    for (int i = d - 1; i >= 0; --i) {
+                        // Interleave the ith digit from each dimension
+                        for (std::size_t j = 0; j < n; ++j) {
+                            // zv <<= b;
+                            // digit = (C[j] >> (i * b)) & M;
+                            // zv |= digit;
+                            zv = ( zv << b ) | (C[j] >> (i * b)) & M;
+                        }
+                    }
+                    return zv;
+                }
+
+                /**
+                 * @brief Converts from z-order to n-dimensional coordinates.
+                 * 
+                 * @param z is the z-value. 
+                 * @param n are the number of dimensions of the hyper-space.
+                 * @param b is the number of bits per coordinate component considered for Z-ordering.
+                 * @param d is the number of digits to encode a component considered for Z-ordering.
+                 * @param M is the initial mask to retrieve bits from each coordinate component.
+                 * @return std::vector<std::uint64_t> 
+                 */
+                std::vector<std::uint64_t> _from_zvalue_( std::size_t zv, const std::uint8_t n, const std::size_t b, const std::size_t d, std::size_t M  ) {
+                    // Build zv:
+                    std::vector<std::uint64_t> C = std::vector<std::uint64_t>( n, 0ULL );
+                    // Iterate through each 'b-bit digit' position, from least significant to most
+                    for (std::size_t i = 0; i < d; ++i) {
+                        // De-interleave the ith set of digits
+                        for (int j = n - 1; j >= 0; --j) {
+                            std::size_t digit = zv & M;
+                            zv >>= b;
+                            C[j] |= (digit << (i * b));
+                        }
+                    }
+                    return C;
+                }
             
-            return c;
-        }
+            public:
 
-        /**
-         * @brief Helper function to get the number of bits needed for a given size.
-         * @note For s=8, this returns 3. For s=7, it also returns 3.
-         * 
-         * @param s 
-         * @return size_t 
-         */
-        inline const std::size_t get_required_bits( const std::size_t k ) {
-            return ( k == 1UL ) ? 0UL : std::bit_width( static_cast<unsigned long long>(k - 1) ); //(s == 0) ? 0 : std::bit_width(s - 1);
-        }
+                ZValueConverter() : s(0), b(0), d(0), bd(0), initial_M(0), n(0) {}
 
-        inline const std::size_t get_required_digits( const std::size_t s, const std::size_t b ) {
-            return (s == 0) ? 0 : static_cast<std::size_t>(std::ceil(std::log2(s) / static_cast<double>(b)));
-        }
+                ZValueConverter( const std::size_t raw_s, const std::uint8_t n, const std::uint8_t k ) : 
+                    s(_get_norm_side_size_(raw_s,k)), 
+                    b(_get_required_bits_(k)),
+                    d(_get_required_digits_(s,b)), 
+                    bd(b*d), 
+                    initial_M(_get_initial_mask_(b)),
+                    n(n) {}
 
-        inline const std::size_t get_initial_mask(const std::size_t b) {
-            return (1ZU << b) - 1ZU; // 
-        }
-
-        /**
-         * @brief Calculates the normalized side size for a k-ary tree structure.
-         * The normalized side size is the smallest power of k that is greater than or equal to
-         * the raw_side_size, considering the number of bits `b` required to represent a component in base k.
-         *
-         * @param raw_side_size The original side size of the matrix/space.
-         * @param k The order of the k-ary tree.
-         * @return The normalized side size.
-         */
-        std::size_t get_norm_side_size(std::size_t raw_side_size, std::uint8_t k) {
-            if (raw_side_size == 0) {
-                return 0;
-            }
-            if (k == 0) { // Or handle as an error
-                return 0;
-            }
-            if (k == 1) {
-                return (raw_side_size > 0) ? 1 : 0;
-            }
-
-            std::size_t b = samg::utils::get_required_bits(k);//std::bit_width(static_cast<unsigned long long>(k - 1)); // Bits per component for base k
-            double log2_raw_s = std::log2(static_cast<double>(raw_side_size));
-            double levels_double = std::ceil(log2_raw_s / static_cast<double>(b));
-            return static_cast<std::size_t>(std::pow(static_cast<double>(k), levels_double));
-        }
-
-        /**
-         * @brief Converts from n-dimensional coordinates C to z-order. This function improves speed by avoiding recalculating constants. 
-         * 
-         * @param C 
-         * @param n are the number of dimensions of the hyper-space.
-         * @param b is the number of bits per coordinate component considered for Z-ordering.
-         * @param d is the number of digits to encode a component considered for Z-ordering.
-         * @param bd is the product of b and d (b*d).
-         * @param M is the initial mask to retrieve bits from each coordinate component.
-         * @return std::size_t 
-         */
-        std::size_t to_zvalue3( const std::vector<std::uint64_t>& C, const std::uint8_t n, const std::size_t b, const std::size_t d, const std::size_t bd, std::size_t M ) {
-            assert(C.size() == n && "*** to_zvalue3 > Reader returned coordinate with wrong arity!");
-            // M = M << ( bd - b ); // Shifting M to the leftmost position ready to retrieve the right bits.
-            // Iterate through each 'b-bit digit' position, from most significant to least
-            std::size_t zv = 0ZU,digit;
-            for (int i = d - 1; i >= 0; --i) {
-                // Interleave the ith digit from each dimension
-                for (std::size_t j = 0; j < n; ++j) {
-                    // zv <<= b;
-                    // digit = (C[j] >> (i * b)) & M;
-                    // zv |= digit;
-                    zv = ( zv << b ) | (C[j] >> (i * b)) & M;
+                /** 
+                 * @brief Converts an n-dimensional coordinate to a z-value.
+                 * 
+                 * @param C The n-dimensional coordinate to convert.
+                 * @return std::size_t The resulting z-value.
+                 */
+                const std::size_t to_zvalue( const std::vector<std::uint64_t>& C ) {
+                    return _to_zvalue_( C, this->n, this->b, this->d, this->bd, this->initial_M );
                 }
-            }
-            // // Build zv:
-            // std::size_t zv = 0ZU, x;
-            // for( std::size_t i = 0ZU; i < d; i++ ) { 
-            //     for( std::size_t j = 0ZU; j < n; j++ ) {
-            //         zv = zv << b;
-            //         x = C[j] & M;
-            //         if( x != 0ZU ) {	
-            //             zv = zv | ( x >> ( bd - ( ( i + 1ZU ) * b ) ) );
-            //         }
-            //     }
-            //     M = M >> b;
-            // }
-            return zv;
-        }
 
-        /**
-         * @brief Converts from n-dimensional coordinates C to z-order.
-         * 
-         * @param C 
-         * @param s is the size of the hyper-space.
-         * @param n are the number of dimensions of the hyper-space.
-         * @param k is the order. 
-         * @return std::size_t 
-         */
-        std::size_t to_zvalue2( const std::vector<std::uint64_t>& C, const std::size_t s, const std::uint8_t n, const std::uint8_t k ) {
-            // assert(C.size() == n && "*** to_zvalue2 > Reader returned coordinate with wrong arity!");
-            /*static */const std::size_t    //p_k = std::bit_width( k ),
-                                            b = samg::utils::get_required_bits(k),//(std::size_t) (k == 1UL ? 0UL : std::bit_width(k - 1UL)), //std::ceil(std::log2(k)), // Bits per digit.
-                                            d = samg::utils::get_required_digits( s, b ),//(std::size_t) std::ceil( std::log2(s) / b ),//std::ceil( std::log2(s)/ std::log2(k) ),// Digits to encode vz
-                                            bd = b*d;
-            return samg::utils::to_zvalue3( C, n, b, d, bd, /*Set mask M:*/ samg::utils::get_initial_mask( b ) );
-        }
+                /** 
+                 * @brief Converts a z-value back to n-dimensional coordinates.
+                 * 
+                 * @param zv The z-value to convert.
+                 * @return std::vector<std::uint64_t> The resulting coordinates.
+                 */
+                const std::vector<std::uint64_t> from_zvalue( std::size_t zv ) {
+                    return _from_zvalue_( zv, this->n, this->b, this->d, this->initial_M );
+                }
+
+                /** 
+                 * @brief Returns the normalized side size of the space.
+                 * 
+                 * @return std::size_t The normalized side size.
+                 */
+                const std::size_t get_normalized_side_size() const {
+                    return this->s;
+                }
+
+                /** @brief Returns the number of bits per component in the z-value encoding. 
+                 * @return std::size_t The number of bits per component.
+                */
+                const std::size_t get_bits_per_component() const {
+                    return this->b;
+                }
+
+                /**
+                 * @brief Returns the number of digits needed to encode a component in the z-value encoding.
+                 * @return std::size_t The number of digits per component.
+                 */
+                const std::size_t get_digits_per_component() const {
+                    return this->d;
+                }
+    
+                /**
+                 * @brief Returns the product of the number of bits per component and the number of digits per component.
+                 * @return std::size_t The number of bits per interleaved block.
+                 */
+                const std::size_t get_bits_per_interleaved_block() const {
+                    return this->bd;
+                }
+    
+                /**
+                * @brief Returns the initial mask used to retrieve bits from each coordinate component during z-value conversion.
+                * @return std::size_t The initial mask for bit retrieval.
+                */
+                const std::size_t get_initial_mask() const {
+                    return this->initial_M;
+                }
+    
+                /**
+                * @brief Returns the number of dimensions of the space.
+                * @return std::size_t The number of dimensions.
+                */
+                const std::size_t get_num_dimensions() const {
+                    return this->n;
+                }
+        };
+
         
-        /**
-         * @brief Converts from z-order to n-dimensional coordinates.
-         * 
-         * @param z is the z-value. 
-         * @param n are the number of dimensions of the hyper-space.
-         * @param b is the number of bits per coordinate component considered for Z-ordering.
-         * @param d is the number of digits to encode a component considered for Z-ordering.
-         * @param M is the initial mask to retrieve bits from each coordinate component.
-         * @return std::vector<std::uint64_t> 
-         */
-        std::vector<std::uint64_t> from_zvalue3( std::size_t zv, const std::uint8_t n, const std::size_t b, const std::size_t d, std::size_t M  ) {
-            // Build zv:
-            std::vector<std::uint64_t> C = std::vector<std::uint64_t>( n, 0ULL );
-            // Iterate through each 'b-bit digit' position, from least significant to most
-            for (std::size_t i = 0; i < d; ++i) {
-                // De-interleave the ith set of digits
-                for (int j = n - 1; j >= 0; --j) {
-                    std::size_t digit = zv & M;
-                    zv >>= b;
-                    C[j] |= (digit << (i * b));
-                }
-            }
-            return C;
-        }
-        
-        /**
-         * @brief Converts from z-order to n-dimensional coordinates.
-         * 
-         * @param zv is the z-value.
-         * @param s is the size of the hyper-space.
-         * @param n are the number of dimensions of the hyper-space.
-         * @param k is the order. 
-         * @return std::vector<std::uint64_t> 
-         */
-        std::vector<std::uint64_t> from_zvalue2( std::size_t zv, const std::size_t s, const std::uint8_t n, const std::uint8_t k ) {
-            /*static */const std::size_t    b = samg::utils::get_required_bits(k),//std::bit_width(static_cast<unsigned long long>(k - 1)),//b = (std::size_t) (k == 1UL ? 0UL : std::bit_width(k - 1UL)), //std::ceil(std::log2(k)), // Bits per digit.
-                                            d = samg::utils::get_required_digits( s, b ),//(s == 0) ? 0 : static_cast<std::size_t>(std::ceil(std::log2(s) / static_cast<double>(b))),//d = (std::size_t) std::ceil( std::log2(s) / b ),//std::ceil( std::log2(s)/ std::log2(k) ),// Digits to encode vz 
-                                            //d = (std::size_t) std::ceil( std::log2(s)/ std::log2(k) ),// Digits to encode vz
-                                            //b = (std::size_t) std::ceil(std::log2(k)), // Bits per digit.
-                                            bd = b*d;
-                                            // nb = n * b,
-                                            // base = ((bd*n)-b);
-
-            // std::size_t M = (1ZU << b) - 1ZU, // Set mask M.
-            // x;
-            const std::size_t M = samg::utils::get_initial_mask( b );//(1ZU << b) - 1ZU; // Set mask M.
-            // M = M << ( bd * n) - b ; // Shifting M to the leftmost position ready to retrieve the bits.
-            
-            // Build zv:
-            std::vector<std::uint64_t> C = std::vector<std::uint64_t>( n, 0ULL );
-            // Iterate through each 'b-bit digit' position, from least significant to most
-            for (std::size_t i = 0; i < d; ++i) {
-                // De-interleave the ith set of digits
-                for (int j = n - 1; j >= 0; --j) {
-                    std::size_t digit = zv & M;
-                    zv >>= b;
-                    C[j] |= (digit << (i * b));
-                }
-            }
-            // for( std::size_t i = 0ZU; i < d; i++ ) { 
-            //     for( std::size_t j = 0ZU; j < n; j++ ) {
-            //         C[j] = C[j] << b;
-            //         x = zv & M;
-            //         if( x != 0ZU ) {	
-            //             C[j] = C[j] | ( x >> ( base - ( (nb*i)+(j*b) ) ) );
-            //         }
-            //         M = M >> b;
-            //     }
-            // }
-            return C;
-        }
         /***************************************************************/
         /** This function checks if a number is a power of two.
          * @param n is the number to check.

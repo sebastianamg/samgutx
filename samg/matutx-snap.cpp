@@ -56,11 +56,15 @@ namespace samg {
                     this->ntrg = 0ULL;
                     this->NI = this->graph->GetNI((int)this->v[this->nid]);
                     this->NI.SortNIdV();
-                    this->b = samg::utils::get_required_bits( k );//(k == 1UL ? 0UL : std::bit_width(k - 1UL)), // Number of bits per coordinate component considered for Z-ordering.
-                    this->d = samg::utils::get_required_digits( static_cast<std::size_t>(this->get_matrix_side_size()), this->b );//(s == 0) ? 0 : static_cast<std::size_t>(std::ceil(std::log2(s) / static_cast<double>(b))), // Number of digits to encode a component considered for Z-ordering.
-                    this->n = this->get_number_of_dimensions(); // Number of dimensions of the matrix.
-                    this->initial_M = samg::utils::get_initial_mask( b );
-                    this->bd = this->b * this->d;
+                    // this->b = samg::utils::get_required_bits( k );//(k == 1UL ? 0UL : std::bit_width(k - 1UL)), // Number of bits per coordinate component considered for Z-ordering.
+                    // this->d = samg::utils::get_required_digits( static_cast<std::size_t>(this->get_matrix_side_size()), this->b );//(s == 0) ? 0 : static_cast<std::size_t>(std::ceil(std::log2(s) / static_cast<double>(b))), // Number of digits to encode a component considered for Z-ordering.
+                    // this->n = this->get_number_of_dimensions(); // Number of dimensions of the matrix.
+                    // this->initial_M = samg::utils::get_initial_mask( b );
+                    // this->bd = this->b * this->d;
+                    this->z_converter = samg::utils::ZValueConverter( this->get_matrix_side_size(), this->get_number_of_dimensions(), k );
+                }
+
+            SnapReader::~SnapReader() {
             }
 
             const char* SnapReader::get_input_file_name() {
@@ -151,8 +155,8 @@ namespace samg {
             }
 
             unsigned long long int SnapReader::next_zvalue() {
-                unsigned long long int* edge = this->next( );
-                return samg::utils::to_zvalue3( std::vector<std::uint64_t>( edge, edge+2 ), this->n, this->b, this->d, this->bd, this->initial_M );
+                // unsigned long long int* edge = this->next( );
+                return this->z_converter.to_zvalue( this->next( ) );
             }
         }
     }

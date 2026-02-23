@@ -166,13 +166,13 @@ namespace samg {
                         return this->clustering_distance_error;
                     }
 
-                    std::vector<std::uint64_t> next() override {
+                    const std::vector<std::uint64_t> next() override {
                         // return std::vector<std::uint64_t>( samg::utils::from_zvalue3( this->next_zvalue(), this->n, this->b, this->d, this->initial_M ) );
                         // return std::vector<std::uint64_t>( this->z_converter.from_zvalue( this->next_zvalue() ) );
                         return this->z_converter.from_zvalue( this->next_zvalue() );
                     }
 
-                    std::uint64_t next_zvalue() override {
+                    const std::uint64_t next_zvalue() override {
                         if (!has_next()) {
                             throw std::out_of_range("No more edges to iterate.");
                         }

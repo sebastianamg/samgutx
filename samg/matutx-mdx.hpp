@@ -256,7 +256,7 @@ namespace samg {
                         return this->clustering_distance_error;
                     }
 
-                    std::vector<std::uint64_t> next() override {
+                    const std::vector<std::uint64_t> next() override {
                         std::string line;
                         while(std::getline(this->input_file,line)){
                             if(line.rfind("%",0)!=0) {
@@ -284,7 +284,7 @@ namespace samg {
                         throw std::runtime_error("No more entries.");
                     }
 
-                    std::uint64_t next_zvalue() override {
+                    const std::uint64_t next_zvalue() override {
                         // return samg::utils::to_zvalue3( this->next(), this->n, this->b, this->d, this->bd, this->initial_M );
                         return this->z_converter.to_zvalue( this->next() );
                     }

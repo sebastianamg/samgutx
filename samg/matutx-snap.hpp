@@ -78,8 +78,8 @@ namespace samg {
                     const unsigned long long int get_clustering();
                     const float get_clustering_distance_error();
                     const bool has_next();
-                    unsigned long long int* next();
-                    unsigned long long int next_zvalue();
+                    const unsigned long long int* next();
+                    const unsigned long long int next_zvalue();
             };
         }
     }

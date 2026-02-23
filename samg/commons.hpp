@@ -377,12 +377,12 @@ namespace samg {
                  * @param d is the number of digits to encode a component considered for Z-ordering.
                  * @param bd is the product of b and d (b*d).
                  * @param M is the initial mask to retrieve bits from each coordinate component.
-                 * @return std::size_t 
+                 * @return std::uint64_t 
                  */
-                std::size_t _to_zvalue_( const std::vector<std::uint64_t>& C, const std::uint8_t n, const std::size_t b, const std::size_t d, const std::size_t bd, std::size_t M ) {
+                std::uint64_t _to_zvalue_( const std::vector<std::uint64_t>& C, const std::uint8_t n, const std::size_t b, const std::size_t d, const std::size_t bd, std::size_t M ) {
                     assert(C.size() == n && "*** to_zvalue > Reader returned coordinate with wrong arity!");
                     // Iterate through each 'b-bit digit' position, from most significant to least
-                    std::size_t zv = 0ZU;
+                    std::uint64_t zv = 0ULL;
                     for (int i = d - 1; i >= 0; --i) {
                         // Interleave the ith digit from each dimension
                         for (std::size_t j = 0; j < n; ++j) {
@@ -405,7 +405,7 @@ namespace samg {
                  * @param M is the initial mask to retrieve bits from each coordinate component.
                  * @return std::vector<std::uint64_t> 
                  */
-                std::vector<std::uint64_t> _from_zvalue_( std::size_t zv, const std::uint8_t n, const std::size_t b, const std::size_t d, std::size_t M  ) {
+                std::vector<std::uint64_t> _from_zvalue_( std::uint64_t zv, const std::uint8_t n, const std::size_t b, const std::size_t d, std::size_t M  ) {
                     // Build zv:
                     std::vector<std::uint64_t> C = std::vector<std::uint64_t>( n, 0ULL );
                     // Iterate through each 'b-bit digit' position, from least significant to most
@@ -436,9 +436,9 @@ namespace samg {
                  * @brief Converts an n-dimensional coordinate to a z-value.
                  * 
                  * @param C The n-dimensional coordinate to convert.
-                 * @return std::size_t The resulting z-value.
+                 * @return std::uint64_t The resulting z-value.
                  */
-                const std::size_t to_zvalue( const std::vector<std::uint64_t>& C ) {
+                const std::uint64_t to_zvalue( const std::vector<std::uint64_t>& C ) {
                     return _to_zvalue_( C, this->n, this->b, this->d, this->bd, this->initial_M );
                 }
 
@@ -448,7 +448,7 @@ namespace samg {
                  * @param zv The z-value to convert.
                  * @return std::vector<std::uint64_t> The resulting coordinates.
                  */
-                const std::vector<std::uint64_t> from_zvalue( std::size_t zv ) {
+                const std::vector<std::uint64_t> from_zvalue( std::uint64_t zv ) {
                     return _from_zvalue_( zv, this->n, this->b, this->d, this->initial_M );
                 }
 

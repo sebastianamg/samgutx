@@ -141,7 +141,7 @@ namespace samg {
                 return  true;
             }
 
-            unsigned long long int* SnapReader::next() {
+            const unsigned long long int* SnapReader::next() {
                 if( this->has_next() ) {
                     // if( ( (int) this->ntrg ) < this->NI.GetOutDeg() ) {
                     unsigned long long int* edge = new unsigned long long int[ 2 ];
@@ -154,7 +154,7 @@ namespace samg {
                 throw 123; // NOTE No more entries!
             }
 
-            unsigned long long int SnapReader::next_zvalue() {
+            const unsigned long long int SnapReader::next_zvalue() {
                 // unsigned long long int* edge = this->next( );
                 return this->z_converter.to_zvalue( this->next( ) );
             }

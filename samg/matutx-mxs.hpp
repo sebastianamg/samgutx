@@ -308,7 +308,7 @@ namespace samg {
                         return this->current_entry < e;
                     }
                     
-                    std::vector<std::uint64_t> next() override {
+                    const std::vector<std::uint64_t> next() override {
                         if( !this->has_next() ){
                             throw std::runtime_error("No more entries!");
                         }
@@ -343,7 +343,7 @@ namespace samg {
                         return C;
                     }
 
-                    std::uint64_t next_zvalue() override {
+                    const std::uint64_t next_zvalue() override {
                         // return samg::utils::to_zvalue3( this->next(), this->n, this->b, this->digits, this->bd, this->initial_M );
                         return this->z_converter.to_zvalue( this->next() );
                     }

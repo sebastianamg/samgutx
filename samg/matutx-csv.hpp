@@ -141,7 +141,7 @@ namespace samg {
                         return 0.0F;
                     }
 
-                    std::vector<std::uint64_t> next() override {
+                    const std::vector<std::uint64_t> next() override {
                         if( this->has_next() ){
                             std::vector<std::uint64_t>  ans( this->selected_columns.size() ),
                                                         tmp = this->doc.GetRow<std::uint64_t>( this->index++ );
@@ -160,7 +160,7 @@ namespace samg {
                         throw std::runtime_error("No more entries.");
                     }
 
-                    std::uint64_t next_zvalue() override {
+                    const std::uint64_t next_zvalue() override {
                         // return samg::utils::to_zvalue3(this->next(), this->n, this->b, this->d, this->bd, this->initial_M); 
                         return this->z_converter.to_zvalue( this->next() );
                     }

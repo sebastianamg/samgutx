@@ -178,6 +178,14 @@ namespace samg {
                         }
                         return this->payload[this->payload_index++];
                     }
+
+                    /** 
+                     * @brief Returns the vector of z-values representing the edges of the graph.
+                     * @note This method returns the entire payload vector, which may lead to side effects if the caller modifies the returned vector. Use with caution.
+                    */
+                    const std::vector<std::uint64_t> get_zvalues() override {
+                        return this->payload; 
+                    }
             };
 
 

@@ -80,6 +80,7 @@ namespace samg {
                     const bool has_next();
                     const unsigned long long int* next();
                     const unsigned long long int next_zvalue();
+                    const unsigned long long int* get_zvalues();
             };
         }
     }

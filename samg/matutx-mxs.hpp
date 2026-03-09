@@ -347,6 +347,13 @@ namespace samg {
                         // return samg::utils::to_zvalue3( this->next(), this->n, this->b, this->digits, this->bd, this->initial_M );
                         return this->z_converter.to_zvalue( this->next() );
                     }
+                    const std::vector<std::uint64_t> get_zvalues() override {
+                        std::vector<std::uint64_t> ans;
+                        while( this->has_next() ) {
+                            ans.push_back( this->next_zvalue() );
+                        }
+                        return ans;
+                    }
             };
         }
         namespace writer {

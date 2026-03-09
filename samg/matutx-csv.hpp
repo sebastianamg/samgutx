@@ -165,6 +165,14 @@ namespace samg {
                         return this->z_converter.to_zvalue( this->next() );
                     }
 
+                    const std::vector<std::uint64_t> get_zvalues() override {
+                        std::vector<std::uint64_t> ans;
+                        while( this->has_next() ) {
+                            ans.push_back( this->next_zvalue() );
+                        }
+                        return ans;
+                    }
+
             };
         }
     }

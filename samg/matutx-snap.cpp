@@ -158,6 +158,14 @@ namespace samg {
                 // unsigned long long int* edge = this->next( );
                 return this->z_converter.to_zvalue( this->next( ) );
             }
+
+            const unsigned long long int* SnapReader::get_zvalues() {
+                std::vector<unsigned long long int> zvalues;
+                while (this->has_next()) {
+                    zvalues.push_back(this->next_zvalue());
+                }
+                return zvalues.data();
+            }
         }
     }
 }

@@ -439,7 +439,10 @@ namespace samg {
                  * @return std::uint64_t The resulting z-value.
                  */
                 const std::uint64_t to_zvalue( const std::vector<std::uint64_t>& C ) {
-                    return _to_zvalue_( C, this->n, this->b, this->d, this->bd, this->initial_M );
+                    return this->_to_zvalue_( C, this->n, this->b, this->d, this->bd, this->initial_M );
+                }
+                const std::uint64_t to_zvalue( const unsigned long long int* C ) {
+                    return this->to_zvalue(  std::vector<std::uint64_t>( C, C + this->n ) );
                 }
 
                 /** 
@@ -448,8 +451,8 @@ namespace samg {
                  * @param zv The z-value to convert.
                  * @return std::vector<std::uint64_t> The resulting coordinates.
                  */
-                const std::vector<std::uint64_t> from_zvalue( std::uint64_t zv ) {
-                    return _from_zvalue_( zv, this->n, this->b, this->d, this->initial_M );
+                const std::vector<std::uint64_t> from_zvalue( const std::uint64_t zv ) {
+                    return this->_from_zvalue_( zv, this->n, this->b, this->d, this->initial_M );
                 }
 
                 /** 

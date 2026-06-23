@@ -185,6 +185,19 @@ namespace samg {
             }
         }
         namespace reader {
+
+            /**
+             * @brief MXS Reader class for reading matrices in MXS format.
+             * 
+             * @note This is a 64-bit serialized edge list. 
+             * 
+             * HEADER: s s^n d actual_d dist c cderr n max1 max2 max3 ... maxn e
+             * 
+             * PAYLOAD: l{n} v{n} l{n-1} v{n-1} l{n-2} v{n-3} l{n-4} ... v{2} l{1} v1{1} v2{1} v3{1} ... vm{1} ...
+             * 
+             * TAIL: I0 I1 I2 ... Im |I|<in bytes>
+             * 
+             */
             class MXSReader : public Reader {
                 private:
                     // std::size_t MAX_VALUE, MAX_INDEX_VALUE;
@@ -357,6 +370,13 @@ namespace samg {
             };
         }
         namespace writer {
+
+            /**
+             * @brief @brief MXS Writer class for writing matrices in MXS format.
+             * 
+             * @note This is a 64-bit serialized edge list.
+             * 
+             */
             class MXSWriter : public Writer {
                 /**
                  * @brief MXS Format:

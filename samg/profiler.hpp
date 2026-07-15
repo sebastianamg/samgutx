@@ -97,7 +97,7 @@ namespace samg {
                                       ? (data.mem_final_kb - data.mem_initial_kb) 
                                       : 0;
 
-                    return {ans, data};
+                    return std::make_pair(std::move(ans), data);
                 }
             private:
                 /**

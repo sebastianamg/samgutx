@@ -181,7 +181,7 @@ namespace samg {
              */
             class CSMR {
             private:
-                size_t num_dims;
+                std::size_t num_dims;
                 bool is_sealed;
                 bool is_first_insertion;
                 std::vector<std::uint64_t> last_coord;
@@ -194,10 +194,10 @@ namespace samg {
                 std::vector<std::vector<std::uint64_t>> ptr;
 
                 // Traversal State variables for the iterator (DFS mimicking)
-                std::vector<size_t> I;
-                std::vector<size_t> J;
+                std::vector<std::size_t> I;
+                std::vector<std::size_t> J;
                 std::vector<std::uint64_t> current_coord;
-                size_t d;
+                std::size_t d;
                 bool _has_next;
 
                 /**
@@ -210,7 +210,7 @@ namespace samg {
                         return;
                     }
                     // Cap off the boundaries of the ptr arrays with the final sizes
-                    for (size_t k = 0; k < num_dims - 1; ++k) {
+                    for (std::size_t k = 0; k < num_dims - 1; ++k) {
                         ptr[k].push_back(ind[k + 1].size());
                     }
                     is_sealed = true;
@@ -221,7 +221,7 @@ namespace samg {
                  * @brief Constructor for dynamic insertion
                  * @param n Number of dimensions
                  */
-                CSMR(size_t n) : num_dims(n), is_sealed(false), is_first_insertion(true), max_coord_val(0) {
+                CSMR(std::size_t n) : num_dims(n), is_sealed(false), is_first_insertion(true), max_coord_val(0) {
                     if (n == 0) throw std::invalid_argument("Dimensions must be > 0");
                     ind.resize(n);
                     if (n > 1) ptr.resize(n - 1);
@@ -237,7 +237,7 @@ namespace samg {
                  * @param n Number of dimensions
                  * @param coords Vector of n-dimensional coordinates (must be lexicographically sorted)
                  */
-                CSMR(size_t n, const std::vector<std::vector<std::uint64_t>>& coords) : CSMR(n) {
+                CSMR(std::size_t n, const std::vector<std::vector<std::uint64_t>>& coords) : CSMR(n) {
                     for (const auto& coord : coords) {
                         add(coord);
                     }
@@ -258,7 +258,7 @@ namespace samg {
                     }
 
                     if (is_first_insertion) {
-                        for (size_t k = 0; k < num_dims; ++k) {
+                        for (std::size_t k = 0; k < num_dims; ++k) {
                             ind[k].push_back(coord[k]);
                             if (k < num_dims - 1) {
                                 ptr[k].push_back(0); // Start of children in next dimension
@@ -268,7 +268,7 @@ namespace samg {
                         is_first_insertion = false;
                     } else {
                         // Find the highest dimension (smallest index) where the prefix diverges
-                        size_t diff_d = 0;
+                        std::size_t diff_d = 0;
                         while (diff_d < num_dims && coord[diff_d] == last_coord[diff_d]) {
                             diff_d++;
                         }
@@ -279,7 +279,7 @@ namespace samg {
                         }
 
                         // Branch the prefix tree from the divergence point
-                        for (size_t k = diff_d; k < num_dims; ++k) {
+                        for (std::size_t k = diff_d; k < num_dims; ++k) {
                             ind[k].push_back(coord[k]);
                             if (k < num_dims - 1) {
                                 // Start of children for this newly branched node
@@ -293,7 +293,7 @@ namespace samg {
                 /**
                  * @brief Returns the number of dimensions of the space.
                  */
-                const size_t get_number_of_dimensions() const {
+                const std::size_t get_number_of_dimensions() const {
                     return num_dims;
                 }
 

@@ -143,6 +143,7 @@ namespace samg {
         }
 
         namespace streamer {
+            /***************************************************************/
             template<typename IntType> class IntStreamerAdapter {
                 private:
                     std::queue<IntType> buffer;
@@ -166,6 +167,229 @@ namespace samg {
                         return ans;
                     }
             };
+            /***************************************************************/
+            // #include <vector>
+            // #include <cstdint>
+            // #include <algorithm>
+            // #include <stdexcept>
+            // #include <iostream>
+
+            /**
+             * @brief A class for representing an n-dimensional Cartesian space with dynamic insertion capabilities. This class compresses the coordinates into a compact representation using a set of contiguous arrays, allowing for efficient storage and traversal.
+             * @note The space complexity of CSMR class is O(n + m), where n is the number of dimensions and m is the total number of unique coordinates inserted. The traversal methods operate in O(n) time per coordinate retrieval, making it efficient for large datasets.
+             * 
+             */
+            class CSMR {
+            private:
+                size_t num_dims;
+                bool is_sealed;
+                bool is_first_insertion;
+                std::vector<std::uint64_t> last_coord;
+                std::uint64_t max_coord_val;
+
+                // The 2n - 1 contiguous flat arrays
+                // ind[d] stores the unique coordinate indices for dimension d
+                std::vector<std::vector<std::uint64_t>> ind;
+                // ptr[d] stores the boundary offsets for dimension d to d+1
+                std::vector<std::vector<std::uint64_t>> ptr;
+
+                // Traversal State variables for the iterator (DFS mimicking)
+                std::vector<size_t> I;
+                std::vector<size_t> J;
+                std::vector<std::uint64_t> current_coord;
+                size_t d;
+                bool _has_next;
+
+                /**
+                 * @brief Finalizes the structure by capping all pointer arrays. 
+                 * Required before any traversal can begin.
+                 */
+                void seal() {
+                    if (is_sealed || is_first_insertion) {
+                        is_sealed = true;
+                        return;
+                    }
+                    // Cap off the boundaries of the ptr arrays with the final sizes
+                    for (size_t k = 0; k < num_dims - 1; ++k) {
+                        ptr[k].push_back(ind[k + 1].size());
+                    }
+                    is_sealed = true;
+                }
+
+            public:
+                /**
+                 * @brief Constructor for dynamic insertion
+                 * @param n Number of dimensions
+                 */
+                CSMR(size_t n) : num_dims(n), is_sealed(false), is_first_insertion(true), max_coord_val(0) {
+                    if (n == 0) throw std::invalid_argument("Dimensions must be > 0");
+                    ind.resize(n);
+                    if (n > 1) ptr.resize(n - 1);
+                    
+                    // Pre-allocate traversal arrays
+                    I.resize(n, 0);
+                    J.resize(n, 0);
+                    current_coord.resize(n, 0);
+                }
+
+                /**
+                 * @brief Constructor for bulk loading
+                 * @param n Number of dimensions
+                 * @param coords Vector of n-dimensional coordinates (must be lexicographically sorted)
+                 */
+                CSMR(size_t n, const std::vector<std::vector<std::uint64_t>>& coords) : CSMR(n) {
+                    for (const auto& coord : coords) {
+                        add(coord);
+                    }
+                    seal();
+                }
+
+                /**
+                 * @brief Adds a coordinate dynamically.
+                 * Coordinates MUST be added in lexicographical order.
+                 */
+                void add(const std::vector<std::uint64_t>& coord) {
+                    if (is_sealed) throw std::logic_error("Cannot add coordinates after traversing (structure is sealed).");
+                    if (coord.size() != num_dims) throw std::invalid_argument("Coordinate dimension mismatch.");
+
+                    // Track maximum coordinate value to determine number of nodes
+                    for (const auto& val : coord) {
+                        if (val > max_coord_val) max_coord_val = val;
+                    }
+
+                    if (is_first_insertion) {
+                        for (size_t k = 0; k < num_dims; ++k) {
+                            ind[k].push_back(coord[k]);
+                            if (k < num_dims - 1) {
+                                ptr[k].push_back(0); // Start of children in next dimension
+                            }
+                        }
+                        last_coord = coord;
+                        is_first_insertion = false;
+                    } else {
+                        // Find the highest dimension (smallest index) where the prefix diverges
+                        size_t diff_d = 0;
+                        while (diff_d < num_dims && coord[diff_d] == last_coord[diff_d]) {
+                            diff_d++;
+                        }
+
+                        if (diff_d == num_dims) return; // Duplicate coordinate, ignore.
+                        if (coord[diff_d] < last_coord[diff_d]) {
+                            throw std::invalid_argument("Coordinates must be added in lexicographical order.");
+                        }
+
+                        // Branch the prefix tree from the divergence point
+                        for (size_t k = diff_d; k < num_dims; ++k) {
+                            ind[k].push_back(coord[k]);
+                            if (k < num_dims - 1) {
+                                // Start of children for this newly branched node
+                                ptr[k].push_back(ind[k + 1].size());
+                            }
+                        }
+                        last_coord = coord;
+                    }
+                }
+
+                /**
+                 * @brief Returns the number of dimensions of the space.
+                 */
+                const size_t get_number_of_dimensions() const {
+                    return num_dims;
+                }
+
+                /**
+                 * @brief Returns the number of nodes, calculated as the max coordinate value + 1.
+                 */
+                const std::uint64_t get_number_of_nodes() const {
+                    return max_coord_val + 1;
+                }
+
+                /**
+                 * @brief Returns the total number of edges (unique coordinates) stored.
+                 * @note The structure must be sealed before calling this method.
+                 */
+                const std::uint64_t get_number_of_edges() const {
+                    if (!is_sealed) {
+                        throw std::logic_error("CSMR must be sealed before getting edge count. Call restart() or next() first.");
+                    }
+                    return ind.empty() ? 0 : ind.back().size();
+                }
+
+                /**
+                 * @brief Prepares the CSMR for a sequential iterator traversal.
+                 */
+                void restart() {
+                    if (!is_sealed) seal();
+
+                    if (ind[0].empty()) {
+                        _has_next = false;
+                        return;
+                    }
+
+                    std::fill(I.begin(), I.end(), 0);
+                    std::fill(J.begin(), J.end(), 0);
+                    std::fill(current_coord.begin(), current_coord.end(), 0);
+
+                    d = 0;
+                    J[0] = ind[0].size();
+                    _has_next = true;
+                }
+
+                bool has_next() const {
+                    return _has_next;
+                }
+
+                /**
+                 * @brief Iteratively retrieves the next n-dimensional coordinate using DFS.
+                 * Guaranteed O(n) memory overhead.
+                 */
+                std::vector<std::uint64_t> next() {
+                    if (!_has_next) throw std::out_of_range("No more coordinates available.");
+
+                    std::vector<std::uint64_t> result;
+
+                    while (true) {
+                        if (I[d] < J[d]) {
+                            // 1. Visit the current node at dimension d
+                            current_coord[d] = ind[d][I[d]];
+
+                            if (d == num_dims - 1) {
+                                // 2a. LEAF NODE: We found a full coordinate
+                                result = current_coord;
+                                I[d]++; // Advance leaf pointer for the next call
+                                return result; 
+                            } else {
+                                // 2b. INTERNAL NODE: Branch down to d+1
+                                I[d + 1] = ptr[d][I[d]];
+                                J[d + 1] = ptr[d][I[d] + 1];
+                                d++;
+                            }
+                        } else {
+                            // 3. EXHAUSTION: Backtrack to the parent
+                            if (d == 0) {
+                                _has_next = false;
+                                return result; // End of tree reached
+                            }
+                            d--;
+                            I[d]++;
+                        }
+                    }
+                }
+
+                /**
+                 * @brief Exhausts the structure to retrieve all coordinates.
+                 */
+                std::vector<std::vector<std::uint64_t>> get_sequence() {
+                    std::vector<std::vector<std::uint64_t>> full_sequence;
+                    restart();
+                    while (has_next()) {
+                        full_sequence.push_back(next());
+                    }
+                    return full_sequence;
+                }
+            };
+
+            /***************************************************************/
         }
         /***************************************************************/
     }

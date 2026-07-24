@@ -198,6 +198,7 @@ namespace samg {
                 std::vector<std::size_t> J;
                 std::vector<std::uint64_t> current_coord;
                 std::size_t d;
+                std::vector<std::uint64_t> _next_result;
                 bool _has_next;
 
                 /**
@@ -214,6 +215,44 @@ namespace samg {
                         ptr[k].push_back(ind[k + 1].size());
                     }
                     is_sealed = true;
+                }
+
+                /**
+                 * @brief Proactively traverses the tree to find the next valid leaf.
+                 * Updates _has_next instantaneously so the sequence wrapper never lies.
+                 */
+                void advance() {
+                    while (true) {
+                        if (I[d] < J[d]) {
+                            current_coord[d] = ind[d][I[d]];
+
+                            if (d == num_dims - 1) {
+                                // LEAF NODE: Cache the result and pause traversal
+                                _next_result = current_coord;
+                                I[d]++; 
+                                _has_next = true;
+                                return; 
+                            } else {
+                                // INTERNAL NODE: Branch down
+                                I[d + 1] = ptr[d][I[d]];
+                                if (I[d] + 1 < ptr[d].size()) {
+                                    J[d + 1] = ptr[d][I[d] + 1];
+                                } else {
+                                    // This can happen if the last element was added
+                                    J[d + 1] = ind[d + 1].size();
+                                }
+                                d++;
+                            }
+                        } else {
+                            // EXHAUSTION: Backtrack
+                            if (d == 0) {
+                                _has_next = false; // Accurately flags the end of the tree
+                                return; 
+                            }
+                            d--;
+                            I[d]++;
+                        }
+                    }
                 }
 
             public:
@@ -332,48 +371,37 @@ namespace samg {
 
                     d = 0;
                     J[0] = ind[0].size();
-                    _has_next = true;
+                    
+                    // Prime the pump! Find and cache the very first element immediately.
+                    advance(); 
                 }
 
+                /**
+                 * @brief Checks if there are more coordinates available in the sequence.
+                 * 
+                 * @return true 
+                 * @return false 
+                 */
                 bool has_next() const {
                     return _has_next;
                 }
 
                 /**
-                 * @brief Iteratively retrieves the next n-dimensional coordinate using DFS.
-                 * Guaranteed O(n) memory overhead.
+                 * @brief Returns the next coordinate in the sequence.
+                 * 
+                 * @return std::vector<std::uint64_t> 
                  */
                 std::vector<std::uint64_t> next() {
                     if (!_has_next) throw std::out_of_range("No more coordinates available.");
-
-                    std::vector<std::uint64_t> result;
-
-                    while (true) {
-                        if (I[d] < J[d]) {
-                            // 1. Visit the current node at dimension d
-                            current_coord[d] = ind[d][I[d]];
-
-                            if (d == num_dims - 1) {
-                                // 2a. LEAF NODE: We found a full coordinate
-                                result = current_coord;
-                                I[d]++; // Advance leaf pointer for the next call
-                                return result; 
-                            } else {
-                                // 2b. INTERNAL NODE: Branch down to d+1
-                                I[d + 1] = ptr[d][I[d]];
-                                J[d + 1] = ptr[d][I[d] + 1];
-                                d++;
-                            }
-                        } else {
-                            // 3. EXHAUSTION: Backtrack to the parent
-                            if (d == 0) {
-                                _has_next = false;
-                                return result; // End of tree reached
-                            }
-                            d--;
-                            I[d]++;
-                        }
-                    }
+                    
+                    // 1. Grab the cached result
+                    // Using move semantics to avoid a copy if _next_result is not needed afterward.
+                    std::vector<std::uint64_t> result = std::move(_next_result);
+                    
+                    // 2. Immediately pre-fetch the next one so _has_next updates instantly
+                    advance(); 
+                    
+                    return result;
                 }
 
                 /**

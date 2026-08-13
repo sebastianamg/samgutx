@@ -235,12 +235,7 @@ namespace samg {
                             } else {
                                 // INTERNAL NODE: Branch down
                                 I[d + 1] = ptr[d][I[d]];
-                                if (I[d] + 1 < ptr[d].size()) {
-                                    J[d + 1] = ptr[d][I[d] + 1];
-                                } else {
-                                    // This can happen if the last element was added
-                                    J[d + 1] = ind[d + 1].size();
-                                }
+                                J[d + 1] = (I[d] + 1 < ptr[d].size()) ? ptr[d][I[d] + 1] : ind[d + 1].size();
                                 d++;
                             }
                         } else {

@@ -325,6 +325,44 @@ namespace samg {
                 }
 
                 /**
+                 * @brief Checks if a specific coordinate exists in the structure.
+                 * This is an efficient O(sum(log |ind_d|)) operation.
+                 * @note The structure must be sealed before calling this.
+                 */
+                bool contains(const std::vector<std::uint64_t>& coord) {
+                    if (!is_sealed) {
+                        // // Seal on demand if not already done.
+                        // seal();
+                        throw std::logic_error("Cannot check if a coordinate exists within an unsealed structure. Call restart() or next() first.");
+                    }
+                    if (coord.size() != num_dims) return false;
+
+                    // Iteratively search through the dimensions
+                    std::size_t start_idx = 0;
+                    std::size_t end_idx = ind[0].size();
+
+                    for (std::size_t d = 0; d < num_dims; ++d) {
+                        // Binary search for the current dimension's value in the valid range
+                        auto it = std::lower_bound(ind[d].begin() + start_idx, ind[d].begin() + end_idx, coord[d]);
+
+                        if (it == (ind[d].begin() + end_idx) || *it != coord[d]) {
+                            // Value not found in this dimension's segment
+                            return false;
+                        }
+
+                        // If found, update the search range for the next dimension
+                        if (d < num_dims - 1) {
+                            std::size_t current_idx = std::distance(ind[d].begin(), it);
+                            start_idx = ptr[d][current_idx];
+                            end_idx = (current_idx + 1 < ptr[d].size()) ? ptr[d][current_idx + 1] : ind[d + 1].size();
+                        }
+                    }
+
+                    // If we successfully traversed all dimensions, the coordinate exists.
+                    return true;
+                }
+
+                /**
                  * @brief Returns the number of dimensions of the space.
                  */
                 const std::size_t get_number_of_dimensions() const {

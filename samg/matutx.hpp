@@ -179,26 +179,27 @@ namespace samg {
              * @note The space complexity of CSMR class is O(n + m), where n is the number of dimensions and m is the total number of unique coordinates inserted. The traversal methods operate in O(n) time per coordinate retrieval, making it efficient for large datasets.
              * 
              */
+            template<typename IntType = std::uint64_t>
             class CSMR {
             private:
                 std::size_t num_dims;
                 bool is_sealed;
                 bool is_first_insertion;
-                std::vector<std::uint64_t> last_coord;
-                std::uint64_t max_coord_val;
+                std::vector<IntType> last_coord;
+                IntType max_coord_val;
 
                 // The 2n - 1 contiguous flat arrays
                 // ind[d] stores the unique coordinate indices for dimension d
-                std::vector<std::vector<std::uint64_t>> ind;
+                std::vector<std::vector<IntType>> ind;
                 // ptr[d] stores the boundary offsets for dimension d to d+1
-                std::vector<std::vector<std::uint64_t>> ptr;
+                std::vector<std::vector<std::size_t>> ptr;
 
                 // Traversal State variables for the iterator (DFS mimicking)
                 std::vector<std::size_t> I;
                 std::vector<std::size_t> J;
-                std::vector<std::uint64_t> current_coord;
+                std::vector<IntType> current_coord;
                 std::size_t d;
-                std::vector<std::uint64_t> _next_result;
+                std::vector<IntType> _next_result;
                 bool _has_next;
 
                 /**
@@ -271,7 +272,18 @@ namespace samg {
                  * @param n Number of dimensions
                  * @param coords Vector of n-dimensional coordinates (must be lexicographically sorted)
                  */
-                CSMR(std::size_t n, const std::vector<std::vector<std::uint64_t>>& coords) : CSMR(n) {
+                CSMR(std::size_t n, const std::vector<std::vector<IntType>>& coords) : CSMR(n) {
+                    for (const auto& coord : coords) {
+                        add(coord);
+                    }
+                    seal();
+                }
+
+                /**
+                 * @brief Constructor for bulk loading from a different coordinate type
+                 */
+                template<typename OtherIntType, typename = std::enable_if_t<!std::is_same_v<OtherIntType, IntType>>>
+                CSMR(std::size_t n, const std::vector<std::vector<OtherIntType>>& coords) : CSMR(n) {
                     for (const auto& coord : coords) {
                         add(coord);
                     }
@@ -282,7 +294,7 @@ namespace samg {
                  * @brief Adds a coordinate dynamically.
                  * Coordinates MUST be added in lexicographical order.
                  */
-                void add(const std::vector<std::uint64_t>& coord) {
+                void add(const std::vector<IntType>& coord) {
                     if (is_sealed) throw std::logic_error("Cannot add coordinates after traversing (structure is sealed).");
                     if (coord.size() != num_dims) throw std::invalid_argument("Coordinate dimension mismatch.");
 
@@ -325,11 +337,25 @@ namespace samg {
                 }
 
                 /**
+                 * @brief Adds a coordinate of a different integer type dynamically.
+                 */
+                template<typename OtherIntType, typename = std::enable_if_t<!std::is_same_v<OtherIntType, IntType>>>
+                void add(const std::vector<OtherIntType>& coord) {
+                    if (coord.size() != num_dims) throw std::invalid_argument("Coordinate dimension mismatch.");
+                    std::vector<IntType> converted;
+                    converted.reserve(coord.size());
+                    for (const auto& val : coord) {
+                        converted.push_back(static_cast<IntType>(val));
+                    }
+                    add(converted);
+                }
+
+                /**
                  * @brief Checks if a specific coordinate exists in the structure.
                  * This is an efficient O(sum(log |ind_d|)) operation.
                  * @note The structure must be sealed before calling this.
                  */
-                bool contains(const std::vector<std::uint64_t>& coord) {
+                bool contains(const std::vector<IntType>& coord) const {
                     if (!is_sealed) {
                         // // Seal on demand if not already done.
                         // seal();
@@ -363,6 +389,20 @@ namespace samg {
                 }
 
                 /**
+                 * @brief Checks if a specific coordinate of a different integer type exists in the structure.
+                 */
+                template<typename OtherIntType, typename = std::enable_if_t<!std::is_same_v<OtherIntType, IntType>>>
+                bool contains(const std::vector<OtherIntType>& coord) const {
+                    if (coord.size() != num_dims) return false;
+                    std::vector<IntType> converted;
+                    converted.reserve(coord.size());
+                    for (const auto& val : coord) {
+                        converted.push_back(static_cast<IntType>(val));
+                    }
+                    return contains(converted);
+                }
+
+                /**
                  * @brief Returns the number of dimensions of the space.
                  */
                 const std::size_t get_number_of_dimensions() const {
@@ -373,7 +413,7 @@ namespace samg {
                  * @brief Returns the number of nodes, calculated as the max coordinate value + 1.
                  */
                 const std::uint64_t get_number_of_nodes() const {
-                    return max_coord_val + 1;
+                    return static_cast<std::uint64_t>(max_coord_val) + 1;
                 }
 
                 /**
@@ -393,7 +433,7 @@ namespace samg {
                 void restart() {
                     if (!is_sealed) seal();
 
-                    if (ind[0].empty()) {
+                    if (ind.empty() || ind[0].empty()) {
                         _has_next = false;
                         return;
                     }
@@ -422,14 +462,14 @@ namespace samg {
                 /**
                  * @brief Returns the next coordinate in the sequence.
                  * 
-                 * @return std::vector<std::uint64_t> 
+                 * @return std::vector<IntType> 
                  */
-                std::vector<std::uint64_t> next() {
+                std::vector<IntType> next() {
                     if (!_has_next) throw std::out_of_range("No more coordinates available.");
                     
                     // 1. Grab the cached result
                     // Using move semantics to avoid a copy if _next_result is not needed afterward.
-                    std::vector<std::uint64_t> result = std::move(_next_result);
+                    std::vector<IntType> result = std::move(_next_result);
                     
                     // 2. Immediately pre-fetch the next one so _has_next updates instantly
                     advance(); 
@@ -440,8 +480,8 @@ namespace samg {
                 /**
                  * @brief Exhausts the structure to retrieve all coordinates.
                  */
-                std::vector<std::vector<std::uint64_t>> get_sequence() {
-                    std::vector<std::vector<std::uint64_t>> full_sequence;
+                std::vector<std::vector<IntType>> get_sequence() {
+                    std::vector<std::vector<IntType>> full_sequence;
                     restart();
                     while (has_next()) {
                         full_sequence.push_back(next());

@@ -187,6 +187,7 @@ namespace samg {
                 std::size_t num_dims;
                 bool is_sealed;
                 bool is_first_insertion;
+                bool verify_type_bounds;
                 std::vector<IntType> last_coord;
                 IntType max_coord_val;
 
@@ -257,8 +258,14 @@ namespace samg {
                 /**
                  * @brief Constructor for dynamic insertion
                  * @param n Number of dimensions
+                 * @param verify_type_bounds Whether to check if coordinate values fit within IntType range during insertion (default: true)
                  */
-                CSMR(std::size_t n) : num_dims(n), is_sealed(false), is_first_insertion(true), max_coord_val(0) {
+                CSMR(std::size_t n, bool verify_type_bounds = true) : 
+                    num_dims(n), 
+                    is_sealed(false), 
+                    is_first_insertion(true), 
+                    verify_type_bounds(verify_type_bounds), 
+                    max_coord_val(0) {
                     if (n == 0) throw std::invalid_argument("Dimensions must be > 0");
                     ind.resize(n);
                     if (n > 1) ptr.resize(n - 1);
@@ -273,8 +280,9 @@ namespace samg {
                  * @brief Constructor for bulk loading
                  * @param n Number of dimensions
                  * @param coords Vector of n-dimensional coordinates (must be lexicographically sorted)
+                 * @param verify_type_bounds Whether to check if coordinate values fit within IntType range during insertion (default: true)
                  */
-                CSMR(std::size_t n, const std::vector<std::vector<IntType>>& coords) : CSMR(n) {
+                CSMR(std::size_t n, const std::vector<std::vector<IntType>>& coords, bool verify_type_bounds = true) : CSMR(n, verify_type_bounds) {
                     for (const auto& coord : coords) {
                         add(coord);
                     }
@@ -283,9 +291,12 @@ namespace samg {
 
                 /**
                  * @brief Constructor for bulk loading from a different coordinate type
+                 * @param n Number of dimensions
+                 * @param coords Vector of n-dimensional coordinates (must be lexicographically sorted)
+                 * @param verify_type_bounds Whether to check if coordinate values fit within IntType range during insertion (default: true)
                  */
                 template<typename OtherIntType, typename = std::enable_if_t<!std::is_same_v<OtherIntType, IntType>>>
-                CSMR(std::size_t n, const std::vector<std::vector<OtherIntType>>& coords) : CSMR(n) {
+                CSMR(std::size_t n, const std::vector<std::vector<OtherIntType>>& coords, bool verify_type_bounds = true) : CSMR(n, verify_type_bounds) {
                     for (const auto& coord : coords) {
                         add(coord);
                     }
@@ -300,12 +311,18 @@ namespace samg {
                     if (is_sealed) throw std::logic_error("Cannot add coordinates after traversing (structure is sealed).");
                     if (coord.size() != num_dims) throw std::invalid_argument("Coordinate dimension mismatch.");
 
-                    // Verify if coordinate values fit within IntType and track maximum coordinate value
-                    for (const auto& val : coord) {
-                        if (val > std::numeric_limits<IntType>::max()) {
-                            throw std::overflow_error("Coordinate value exceeds the maximum capacity of the configured IntType.");
+                    // Track maximum coordinate value and conditionally verify IntType capacity
+                    if (verify_type_bounds) {
+                        for (const auto& val : coord) {
+                            if (val > std::numeric_limits<IntType>::max()) {
+                                throw std::overflow_error("Coordinate value exceeds the maximum capacity of the configured IntType.");
+                            }
+                            if (val > max_coord_val) max_coord_val = val;
                         }
-                        if (val > max_coord_val) max_coord_val = val;
+                    } else {
+                        for (const auto& val : coord) {
+                            if (val > max_coord_val) max_coord_val = val;
+                        }
                     }
 
                     if (is_first_insertion) {
@@ -349,16 +366,22 @@ namespace samg {
                     if (coord.size() != num_dims) throw std::invalid_argument("Coordinate dimension mismatch.");
                     std::vector<IntType> converted;
                     converted.reserve(coord.size());
-                    for (const auto& val : coord) {
-                        if constexpr (std::is_signed_v<OtherIntType>) {
-                            if (val < 0) {
-                                throw std::invalid_argument("Coordinate value cannot be negative.");
+                    if (verify_type_bounds) {
+                        for (const auto& val : coord) {
+                            if constexpr (std::is_signed_v<OtherIntType>) {
+                                if (val < 0) {
+                                    throw std::invalid_argument("Coordinate value cannot be negative.");
+                                }
                             }
+                            if (val > static_cast<OtherIntType>(std::numeric_limits<IntType>::max())) {
+                                throw std::overflow_error("Coordinate value " + std::to_string(val) + " exceeds the capacity of the configured IntType (" + std::to_string(std::numeric_limits<IntType>::max()) + ").");
+                            }
+                            converted.push_back(static_cast<IntType>(val));
                         }
-                        if (val > static_cast<OtherIntType>(std::numeric_limits<IntType>::max())) {
-                            throw std::overflow_error("Coordinate value " + std::to_string(val) + " exceeds the capacity of the configured IntType (" + std::to_string(std::numeric_limits<IntType>::max()) + ").");
+                    } else {
+                        for (const auto& val : coord) {
+                            converted.push_back(static_cast<IntType>(val));
                         }
-                        converted.push_back(static_cast<IntType>(val));
                     }
                     add(converted);
                 }

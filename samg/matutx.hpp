@@ -3,6 +3,8 @@
 #include <cmath>
 #include <regex>
 #include <memory>
+#include <limits>
+#include <type_traits>
 #include <samg/matutx-mdx.hpp>
 #include <samg/matutx-mxs.hpp>
 #include <samg/matutx-graph.hpp>
@@ -298,8 +300,11 @@ namespace samg {
                     if (is_sealed) throw std::logic_error("Cannot add coordinates after traversing (structure is sealed).");
                     if (coord.size() != num_dims) throw std::invalid_argument("Coordinate dimension mismatch.");
 
-                    // Track maximum coordinate value to determine number of nodes
+                    // Verify if coordinate values fit within IntType and track maximum coordinate value
                     for (const auto& val : coord) {
+                        if (val > std::numeric_limits<IntType>::max()) {
+                            throw std::overflow_error("Coordinate value exceeds the maximum capacity of the configured IntType.");
+                        }
                         if (val > max_coord_val) max_coord_val = val;
                     }
 
@@ -345,6 +350,14 @@ namespace samg {
                     std::vector<IntType> converted;
                     converted.reserve(coord.size());
                     for (const auto& val : coord) {
+                        if constexpr (std::is_signed_v<OtherIntType>) {
+                            if (val < 0) {
+                                throw std::invalid_argument("Coordinate value cannot be negative.");
+                            }
+                        }
+                        if (val > static_cast<OtherIntType>(std::numeric_limits<IntType>::max())) {
+                            throw std::overflow_error("Coordinate value " + std::to_string(val) + " exceeds the capacity of the configured IntType (" + std::to_string(std::numeric_limits<IntType>::max()) + ").");
+                        }
                         converted.push_back(static_cast<IntType>(val));
                     }
                     add(converted);

@@ -896,7 +896,15 @@ namespace samg {
                  * @return UINT_T
                  */
                 template<typename UINT_T> UINT_T _read_( std::ifstream& file ) {
-                    return OfflineWordReader<Type>::_read_<UINT_T>( file, 1ULL )[0];
+                    if ( !file.is_open() ) {
+                        throw std::runtime_error("The file is closed!");
+                    }
+                    if ( file.eof() ) {
+                        throw std::runtime_error("The file has no more data!");
+                    }
+                    UINT_T val{};
+                    file.read( reinterpret_cast<char*>(&val), sizeof( UINT_T ) );
+                    return val;
                 }
 
                 template<typename UINT_T> std::vector<UINT_T> _read_( std::ifstream& file, const std::size_t nwords ) {

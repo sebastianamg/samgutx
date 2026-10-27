@@ -61,22 +61,31 @@ namespace samg {
                         }
 
                         template<typename T> const std::vector<T> _read_integer_vector_( const std::size_t length ) {
-                            std::vector<T> ans = std::vector<T>( length );
-                            for (std::size_t i = 0; i < length; i++) {
-                                ans[ i ] = this->_read_integer_<T>( );
+                            auto bulk_widen = [&](auto tag) -> std::vector<T> {
+                                using SrcT = decltype(tag);
+                                if constexpr (std::is_same_v<SrcT, T>) {
+                                    return samg::serialization::OfflineWordReader<samg::matutx::Word>::next<T>( length );
+                                } else {
+                                    std::vector<SrcT> raw = samg::serialization::OfflineWordReader<samg::matutx::Word>::next<SrcT>( length );
+                                    std::vector<T> ans( length );
+                                    for (std::size_t i = 0; i < length; ++i) {
+                                        ans[ i ] = static_cast<T>( raw[ i ] );
+                                    }
+                                    return ans;
+                                }
+                            };
+
+                            if ( this->max_value <= std::numeric_limits<std::uint8_t>::max() ) {
+                                return bulk_widen( std::uint8_t{} );
+                            } else if ( this->max_value <= std::numeric_limits<std::uint16_t>::max() ) {
+                                return bulk_widen( std::uint16_t{} );
+                            } else if ( this->max_value <= std::numeric_limits<std::uint32_t>::max() ) {
+                                return bulk_widen( std::uint32_t{} );
+                            } else if ( this->max_value <= std::numeric_limits<std::uint64_t>::max() ) {
+                                return bulk_widen( std::uint64_t{} );
+                            } else {
+                                throw std::runtime_error("OfflineWordReaderWrapper/_read_integer_vector_> Unrecognized datatype!");
                             }
-                            return ans;
-                            // if (this->max_value <= std::numeric_limits<std::uint8_t>::max()) {
-                            //     samg::serialization::OfflineWordWriter<samg::matutx::Word>::add_values<std::uint8_t>( static_cast<std::vector<std::uint8_t>>( values ) );
-                            // } else if (this->max_value <= std::numeric_limits<std::uint16_t>::max()) {
-                            //     samg::serialization::OfflineWordWriter<samg::matutx::Word>::add_values<std::uint16_t>( static_cast<std::vector<std::uint16_t>>( values ) );
-                            // } else if (this->max_value <= std::numeric_limits<std::uint32_t>::max()) {
-                            //     samg::serialization::OfflineWordWriter<samg::matutx::Word>::add_values<std::uint32_t>( static_cast<std::vector<std::uint32_t>>( values ) );
-                            // } else  if (this->max_value <= std::numeric_limits<std::uint64_t>::max()) {
-                            //     samg::serialization::OfflineWordWriter<samg::matutx::Word>::add_values<std::uint64_t>( static_cast<std::vector<std::uint64_t>>( values ) );
-                            // } else{
-                            //     throw std::runtime_error("OfflineWordWriterWrapper - Unrecognized datatype!");
-                            // }
                         }
                     public:
                         OfflineWordReaderWrapper( const std::string file_name, const std::size_t max_value = 0ZU ) :

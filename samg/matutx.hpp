@@ -313,9 +313,20 @@ namespace samg {
                     if (is_sealed) throw std::logic_error("Cannot add coordinates after traversing (structure is sealed).");
                     if (coord.size() != num_dims) throw std::invalid_argument("Coordinate dimension mismatch.");
 
-                    // Track maximum coordinate value and conditionally verify IntType capacity
+                    std::size_t diff_d = 0;
+                    if (!is_first_insertion) {
+                        // Find the highest dimension (smallest index) where the prefix diverges.
+                        // Prefix elements k < diff_d match last_coord[k] and were already validated.
+                        while (diff_d < num_dims && coord[diff_d] == static_cast<CoordIntType>(last_coord[diff_d])) {
+                            diff_d++;
+                        }
+                        if (diff_d == num_dims) return; // Duplicate coordinate, ignore.
+                    }
+
+                    // Conditionally verify IntType capacity only on the diverging suffix [diff_d, num_dims - 1]
                     if (verify_type_bounds) {
-                        for (const auto& val : coord) {
+                        for (std::size_t k = diff_d; k < num_dims; ++k) {
+                            const auto val = coord[k];
                             if constexpr (std::is_signed_v<CoordIntType>) {
                                 if (val < 0) {
                                     throw std::invalid_argument("Coordinate value cannot be negative.");
@@ -330,49 +341,24 @@ namespace samg {
                                     throw std::overflow_error("Coordinate value exceeds the maximum capacity of the configured IntType.");
                                 }
                             }
-                            IntType c_val = static_cast<IntType>(val);
-                            if (c_val > max_coord_val) max_coord_val = c_val;
-                        }
-                    } else {
-                        for (const auto& val : coord) {
-                            IntType c_val = static_cast<IntType>(val);
-                            if (c_val > max_coord_val) max_coord_val = c_val;
                         }
                     }
 
-                    if (is_first_insertion) {
-                        for (std::size_t k = 0; k < num_dims; ++k) {
-                            IntType c_val = static_cast<IntType>(coord[k]);
-                            ind[k].push_back(c_val);
-                            last_coord[k] = c_val;
-                            if (k < num_dims - 1) {
-                                ptr[k].push_back(0); // Start of children in next dimension
-                            }
-                        }
-                        is_first_insertion = false;
-                    } else {
-                        // Find the highest dimension (smallest index) where the prefix diverges
-                        std::size_t diff_d = 0;
-                        while (diff_d < num_dims && static_cast<IntType>(coord[diff_d]) == last_coord[diff_d]) {
-                            diff_d++;
-                        }
+                    if (!is_first_insertion && static_cast<IntType>(coord[diff_d]) < last_coord[diff_d]) {
+                        throw std::invalid_argument("Coordinates must be added in lexicographical order.");
+                    }
 
-                        if (diff_d == num_dims) return; // Duplicate coordinate, ignore.
-                        if (static_cast<IntType>(coord[diff_d]) < last_coord[diff_d]) {
-                            throw std::invalid_argument("Coordinates must be added in lexicographical order.");
-                        }
-
-                        // Branch the prefix tree from the divergence point
-                        for (std::size_t k = diff_d; k < num_dims; ++k) {
-                            IntType c_val = static_cast<IntType>(coord[k]);
-                            ind[k].push_back(c_val);
-                            last_coord[k] = c_val;
-                            if (k < num_dims - 1) {
-                                // Start of children for this newly branched node
-                                ptr[k].push_back(ind[k + 1].size());
-                            }
+                    // Branch the prefix tree and track max_coord_val only along the diverging suffix [diff_d, num_dims - 1]
+                    for (std::size_t k = diff_d; k < num_dims; ++k) {
+                        IntType c_val = static_cast<IntType>(coord[k]);
+                        if (c_val > max_coord_val) max_coord_val = c_val;
+                        ind[k].push_back(c_val);
+                        last_coord[k] = c_val;
+                        if (k < num_dims - 1) {
+                            ptr[k].push_back(is_first_insertion ? 0 : ind[k + 1].size());
                         }
                     }
+                    is_first_insertion = false;
                 }
 
                 void add(const std::vector<IntType>& coord) {

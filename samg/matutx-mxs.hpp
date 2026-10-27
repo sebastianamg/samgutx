@@ -210,6 +210,7 @@ namespace samg {
                     std::size_t current_entry,  j/*, pp*/, ip;
                     // Let P be a vector of positive integers. --- Replaced by `this->serializer`. 
                     std::vector<std::uint64_t> Pi;// Let Pi be an array of n cells to store the latests added values to P.
+                    std::vector<std::uint64_t> _next_result; // Persistent output buffer for next()
                     std::vector<std::size_t> I; // Let I be a vector of positive integers.
                     std::vector<std::size_t> Ii;// Let Ii be an array of n cells to store pointers to I, initially as Ii = [0,1,2,...,n-1].
 
@@ -268,6 +269,7 @@ namespace samg {
                             this->Ii.push_back( i );
                             this->Pi.push_back( this->serializer->next<std::uint64_t>() );
                         }
+                        this->_next_result.resize( maxs.size(), 0 );
                         this->j /*= this->pp*/ = this->ip = maxs.size();
                         this->j--;
 
@@ -321,11 +323,11 @@ namespace samg {
                         return this->current_entry < e;
                     }
                     
-                    const std::vector<std::uint64_t> next() override {
+                    const std::vector<std::uint64_t>& next() override {
                         if( !this->has_next() ){
                             throw std::runtime_error("No more entries!");
                         }
-                        std::vector<std::uint64_t> C = this->_gen_coord_( this->Pi );
+                        this->_next_result = this->Pi;
                         this->I[ this->Ii[ this->j ] ]--;
 
                         if( this->I[ this->Ii[ this->j ] ] > 0ZU ){
@@ -337,7 +339,7 @@ namespace samg {
                                 this->I[ this->Ii[ this->j ] ]--;
                                 if( this->j == 0 && this->I[ this->Ii[ this->j ] ] == 0ZU ){
                                     this->current_entry++;
-                                    return C;// Decoding completed!
+                                    return this->_next_result;// Decoding completed!
                                 }
                             }
                             
@@ -353,7 +355,7 @@ namespace samg {
                             this->j--;
                         }
                         this->current_entry++;
-                        return C;
+                        return this->_next_result;
                     }
 
                     const std::uint64_t next_zvalue() override {

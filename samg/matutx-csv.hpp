@@ -47,6 +47,7 @@ namespace samg {
                     std::vector<std::size_t> selected_columns;
                     std::size_t index;
                     std::uint64_t global_max;
+                    std::vector<std::uint64_t> _next_result;
 
                     // std::size_t n;
                     // std::size_t b;
@@ -91,6 +92,7 @@ namespace samg {
                             }
                         }
                         std::cout << "MAX: " << this->global_max << "; selected columns: " << this->selected_columns.size() << std::endl;
+                        this->_next_result.resize( this->selected_columns.size(), 0ULL );
                         this->z_converter = samg::utils::ZValueConverter( this->get_matrix_side_size(), this->get_number_of_dimensions(), k );
                         // this->b = samg::utils::get_required_bits( k );//(k == 1UL ? 0UL : std::bit_width(k - 1UL)), // Number of bits per coordinate component considered for Z-ordering.
                         // this->d = samg::utils::get_required_digits( this->get_matrix_side_size(), b );//(s == 0) ? 0 : static_cast<std::size_t>(std::ceil(std::log2(s) / static_cast<double>(b))), // Number of digits to encode a component considered for Z-ordering.
@@ -141,21 +143,15 @@ namespace samg {
                         return 0.0F;
                     }
 
-                    const std::vector<std::uint64_t> next() override {
+                    const std::vector<std::uint64_t>& next() override {
                         if( this->has_next() ){
-                            std::vector<std::uint64_t>  ans( this->selected_columns.size() ),
-                                                        tmp = this->doc.GetRow<std::uint64_t>( this->index++ );
+                            std::vector<std::uint64_t> tmp = this->doc.GetRow<std::uint64_t>( this->index++ );
 
                             for (size_t i = 0; i < this->selected_columns.size(); i++){
-                                ans[ i ] = tmp[ this->selected_columns[ i ] ];
-                                // if( ans[ i ] > this->global_max ) {
-                                //     this->global_max = ans[ i ];
-                                // }
+                                this->_next_result[ i ] = tmp[ this->selected_columns[ i ] ];
                             }
-
-                            // samg::utils::print_vector<std::uint64_t>("\n",ans);
                             
-                            return ans;
+                            return this->_next_result;
                         }
                         throw std::runtime_error("No more entries.");
                     }

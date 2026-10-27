@@ -56,6 +56,7 @@ namespace samg {
                     std::uint64_t clustering;
                     std::float_t clustering_distance_error;
                     std::size_t entries_counter;
+                    std::vector<std::uint64_t> _next_result;
 
                     // std::size_t n;
                     // std::size_t b;
@@ -256,24 +257,24 @@ namespace samg {
                         return this->clustering_distance_error;
                     }
 
-                    const std::vector<std::uint64_t> next() override {
+                    const std::vector<std::uint64_t>& next() override {
                         std::string line;
                         while(std::getline(this->input_file,line)){
                             if(line.rfind("%",0)!=0) {
-                                std::vector<std::uint64_t> entries = std::vector<std::uint64_t>();
+                                this->_next_result.clear();
                                 std::string token;
                                 std::stringstream strm(line);
                                 for(std::size_t d=0;d<this->max_per_dimension.size()&&std::getline(strm,token,' ');d++){
-                                    entries.push_back(std::stoull(token));
+                                    this->_next_result.push_back(std::stoull(token));
                                     // std::cout << "(1)" << std::endl;
                                 }
-                                if(entries.size() == this->max_per_dimension.size()) {
+                                if(this->_next_result.size() == this->max_per_dimension.size()) {
                                     // std::cout << "(3)" << std::endl;
                                     this->entries_counter++;
                                     /* ===================== */
-                                    std::cout << "MDX ENTRY: " << samg::utils::to_string(entries) << std::endl;
+                                    std::cout << "MDX ENTRY: " << samg::utils::to_string(this->_next_result) << std::endl;
                                     /* ===================== */
-                                    return entries;
+                                    return this->_next_result;
                                 } else {
                                     throw std::runtime_error("Wrong entry format.");
                                 }

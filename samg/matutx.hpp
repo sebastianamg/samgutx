@@ -231,8 +231,7 @@ namespace samg {
                             current_coord[d] = ind[d][I[d]];
 
                             if (d == num_dims - 1) {
-                                // LEAF NODE: Cache the result and pause traversal
-                                _next_result = current_coord;
+                                // LEAF NODE: current_coord holds the lookahead tuple; pause traversal
                                 I[d]++; 
                                 _has_next = true;
                                 return; 
@@ -270,10 +269,12 @@ namespace samg {
                     ind.resize(n);
                     if (n > 1) ptr.resize(n - 1);
                     
-                    // Pre-allocate traversal arrays
+                    // Pre-allocate traversal and insertion state arrays
+                    last_coord.resize(n, 0);
                     I.resize(n, 0);
                     J.resize(n, 0);
                     current_coord.resize(n, 0);
+                    _next_result.resize(n, 0); // Pre-allocate persistent output buffer once
                 }
 
                 /**
@@ -304,86 +305,78 @@ namespace samg {
                 }
 
                 /**
-                 * @brief Adds a coordinate dynamically.
+                 * @brief Adds a coordinate dynamically in a single pass without intermediate buffer allocations.
                  * Coordinates MUST be added in lexicographical order.
                  */
-                void add(const std::vector<IntType>& coord) {
+                template<typename CoordIntType>
+                void add(const std::vector<CoordIntType>& coord) {
                     if (is_sealed) throw std::logic_error("Cannot add coordinates after traversing (structure is sealed).");
                     if (coord.size() != num_dims) throw std::invalid_argument("Coordinate dimension mismatch.");
 
                     // Track maximum coordinate value and conditionally verify IntType capacity
                     if (verify_type_bounds) {
                         for (const auto& val : coord) {
-                            if (val > std::numeric_limits<IntType>::max()) {
-                                throw std::overflow_error("Coordinate value exceeds the maximum capacity of the configured IntType.");
+                            if constexpr (std::is_signed_v<CoordIntType>) {
+                                if (val < 0) {
+                                    throw std::invalid_argument("Coordinate value cannot be negative.");
+                                }
                             }
-                            if (val > max_coord_val) max_coord_val = val;
+                            if constexpr (!std::is_same_v<CoordIntType, IntType>) {
+                                if (static_cast<std::uintmax_t>(val) > static_cast<std::uintmax_t>(std::numeric_limits<IntType>::max())) {
+                                    throw std::overflow_error("Coordinate value " + std::to_string(val) + " exceeds the capacity of the configured IntType (" + std::to_string(std::numeric_limits<IntType>::max()) + ").");
+                                }
+                            } else {
+                                if (val > std::numeric_limits<IntType>::max()) {
+                                    throw std::overflow_error("Coordinate value exceeds the maximum capacity of the configured IntType.");
+                                }
+                            }
+                            IntType c_val = static_cast<IntType>(val);
+                            if (c_val > max_coord_val) max_coord_val = c_val;
                         }
                     } else {
                         for (const auto& val : coord) {
-                            if (val > max_coord_val) max_coord_val = val;
+                            IntType c_val = static_cast<IntType>(val);
+                            if (c_val > max_coord_val) max_coord_val = c_val;
                         }
                     }
 
                     if (is_first_insertion) {
                         for (std::size_t k = 0; k < num_dims; ++k) {
-                            ind[k].push_back(coord[k]);
+                            IntType c_val = static_cast<IntType>(coord[k]);
+                            ind[k].push_back(c_val);
+                            last_coord[k] = c_val;
                             if (k < num_dims - 1) {
                                 ptr[k].push_back(0); // Start of children in next dimension
                             }
                         }
-                        last_coord = coord;
                         is_first_insertion = false;
                     } else {
                         // Find the highest dimension (smallest index) where the prefix diverges
                         std::size_t diff_d = 0;
-                        while (diff_d < num_dims && coord[diff_d] == last_coord[diff_d]) {
+                        while (diff_d < num_dims && static_cast<IntType>(coord[diff_d]) == last_coord[diff_d]) {
                             diff_d++;
                         }
 
                         if (diff_d == num_dims) return; // Duplicate coordinate, ignore.
-                        if (coord[diff_d] < last_coord[diff_d]) {
+                        if (static_cast<IntType>(coord[diff_d]) < last_coord[diff_d]) {
                             throw std::invalid_argument("Coordinates must be added in lexicographical order.");
                         }
 
                         // Branch the prefix tree from the divergence point
                         for (std::size_t k = diff_d; k < num_dims; ++k) {
-                            ind[k].push_back(coord[k]);
+                            IntType c_val = static_cast<IntType>(coord[k]);
+                            ind[k].push_back(c_val);
+                            last_coord[k] = c_val;
                             if (k < num_dims - 1) {
                                 // Start of children for this newly branched node
                                 ptr[k].push_back(ind[k + 1].size());
                             }
                         }
-                        last_coord = coord;
                     }
                 }
 
-                /**
-                 * @brief Adds a coordinate of a different integer type dynamically.
-                 */
-                template<typename OtherIntType, typename = std::enable_if_t<!std::is_same_v<OtherIntType, IntType>>>
-                void add(const std::vector<OtherIntType>& coord) {
-                    if (coord.size() != num_dims) throw std::invalid_argument("Coordinate dimension mismatch.");
-                    std::vector<IntType> converted;
-                    converted.reserve(coord.size());
-                    if (verify_type_bounds) {
-                        for (const auto& val : coord) {
-                            if constexpr (std::is_signed_v<OtherIntType>) {
-                                if (val < 0) {
-                                    throw std::invalid_argument("Coordinate value cannot be negative.");
-                                }
-                            }
-                            if (val > static_cast<OtherIntType>(std::numeric_limits<IntType>::max())) {
-                                throw std::overflow_error("Coordinate value " + std::to_string(val) + " exceeds the capacity of the configured IntType (" + std::to_string(std::numeric_limits<IntType>::max()) + ").");
-                            }
-                            converted.push_back(static_cast<IntType>(val));
-                        }
-                    } else {
-                        for (const auto& val : coord) {
-                            converted.push_back(static_cast<IntType>(val));
-                        }
-                    }
-                    add(converted);
+                void add(const std::vector<IntType>& coord) {
+                    add<IntType>(coord);
                 }
 
                 /**
@@ -391,10 +384,9 @@ namespace samg {
                  * This is an efficient O(sum(log |ind_d|)) operation.
                  * @note The structure must be sealed before calling this.
                  */
-                bool contains(const std::vector<IntType>& coord) const {
+                template<typename CoordIntType>
+                bool contains(const std::vector<CoordIntType>& coord) const {
                     if (!is_sealed) {
-                        // // Seal on demand if not already done.
-                        // seal();
                         throw std::logic_error("Cannot check if a coordinate exists within an unsealed structure. Call restart() or next() first.");
                     }
                     if (coord.size() != num_dims) return false;
@@ -404,10 +396,20 @@ namespace samg {
                     std::size_t end_idx = ind[0].size();
 
                     for (std::size_t d = 0; d < num_dims; ++d) {
-                        // Binary search for the current dimension's value in the valid range
-                        auto it = std::lower_bound(ind[d].begin() + start_idx, ind[d].begin() + end_idx, coord[d]);
+                        if constexpr (std::is_signed_v<CoordIntType>) {
+                            if (coord[d] < 0) return false;
+                        }
+                        if constexpr (!std::is_same_v<CoordIntType, IntType>) {
+                            if (static_cast<std::uintmax_t>(coord[d]) > static_cast<std::uintmax_t>(std::numeric_limits<IntType>::max())) {
+                                return false;
+                            }
+                        }
+                        IntType target = static_cast<IntType>(coord[d]);
 
-                        if (it == (ind[d].begin() + end_idx) || *it != coord[d]) {
+                        // Binary search for the current dimension's value in the valid range
+                        auto it = std::lower_bound(ind[d].begin() + start_idx, ind[d].begin() + end_idx, target);
+
+                        if (it == (ind[d].begin() + end_idx) || *it != target) {
                             // Value not found in this dimension's segment
                             return false;
                         }
@@ -424,18 +426,8 @@ namespace samg {
                     return true;
                 }
 
-                /**
-                 * @brief Checks if a specific coordinate of a different integer type exists in the structure.
-                 */
-                template<typename OtherIntType, typename = std::enable_if_t<!std::is_same_v<OtherIntType, IntType>>>
-                bool contains(const std::vector<OtherIntType>& coord) const {
-                    if (coord.size() != num_dims) return false;
-                    std::vector<IntType> converted;
-                    converted.reserve(coord.size());
-                    for (const auto& val : coord) {
-                        converted.push_back(static_cast<IntType>(val));
-                    }
-                    return contains(converted);
+                bool contains(const std::vector<IntType>& coord) const {
+                    return contains<IntType>(coord);
                 }
 
                 /**
@@ -461,6 +453,33 @@ namespace samg {
                         throw std::logic_error("CSMR must be sealed before getting edge count. Call restart() or next() first.");
                     }
                     return ind.empty() ? 0 : ind.back().size();
+                }
+
+                /**
+                 * @brief Returns the payload size in bytes of the compressed structure:
+                 *        sum_{d=0}^{n-1} |ind[d]| * sizeof(IntType) + sum_{d=0}^{n-2} |ptr[d]| * sizeof(std::size_t)
+                 * @note The structure must be sealed before calling this method.
+                 */
+                const std::size_t get_size_bytes() const {
+                    if (!is_sealed) {
+                        throw std::logic_error("CSMR must be sealed before getting byte size. Call restart() or next() first.");
+                    }
+                    std::size_t total_bytes = 0;
+                    for (std::size_t k = 0; k < ind.size(); ++k) {
+                        total_bytes += ind[k].size() * sizeof(IntType);
+                    }
+                    for (std::size_t k = 0; k < ptr.size(); ++k) {
+                        total_bytes += ptr[k].size() * sizeof(std::size_t);
+                    }
+                    return total_bytes;
+                }
+
+                /**
+                 * @brief Returns the payload size in bits of the compressed structure.
+                 * @note The structure must be sealed before calling this method.
+                 */
+                const std::size_t get_size_bits() const {
+                    return get_size_bytes() * 8;
                 }
 
                 /**
@@ -498,19 +517,18 @@ namespace samg {
                 /**
                  * @brief Returns the next coordinate in the sequence.
                  * 
-                 * @return std::vector<IntType> 
+                 * @return const std::vector<IntType>& 
                  */
-                std::vector<IntType> next() {
+                const std::vector<IntType>& next() {
                     if (!_has_next) throw std::out_of_range("No more coordinates available.");
                     
-                    // 1. Grab the cached result
-                    // Using move semantics to avoid a copy if _next_result is not needed afterward.
-                    std::vector<IntType> result = std::move(_next_result);
+                    // Copy n elements in-place (zero heap allocations; capacity is already n)
+                    _next_result = current_coord;
                     
-                    // 2. Immediately pre-fetch the next one so _has_next updates instantly
+                    // Mutate current_coord to pre-fetch the next leaf and update _has_next
                     advance(); 
                     
-                    return result;
+                    return _next_result;
                 }
 
                 /**

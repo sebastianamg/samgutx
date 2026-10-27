@@ -74,6 +74,7 @@ namespace samg {
                     
                     std::vector<std::uint64_t> payload;
                     std::size_t payload_index;
+                    std::vector<std::uint64_t> _next_result;
                     // std::size_t n;
                     // std::size_t b;
                     // std::size_t d;
@@ -166,10 +167,11 @@ namespace samg {
                         return this->clustering_distance_error;
                     }
 
-                    const std::vector<std::uint64_t> next() override {
+                    const std::vector<std::uint64_t>& next() override {
                         // return std::vector<std::uint64_t>( samg::utils::from_zvalue3( this->next_zvalue(), this->n, this->b, this->d, this->initial_M ) );
                         // return std::vector<std::uint64_t>( this->z_converter.from_zvalue( this->next_zvalue() ) );
-                        return this->z_converter.from_zvalue( this->next_zvalue() );
+                        this->_next_result = this->z_converter.from_zvalue( this->next_zvalue() );
+                        return this->_next_result;
                     }
 
                     const std::uint64_t next_zvalue() override {

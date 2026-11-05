@@ -434,7 +434,7 @@ namespace samg {
                             c,
                             cderr
                         ),
-                        MAX_VALUE ( maxs[0] ),
+                        MAX_VALUE ( maxs.empty() ? 0ZU : *std::max_element(maxs.begin(), maxs.end()) ),
                         MAX_INDEX_VALUE ( 1ZU ),
                         p( 0ZU ),
                         first( true ),

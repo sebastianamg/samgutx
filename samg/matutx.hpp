@@ -9,6 +9,7 @@
 #include <samg/matutx-mxs.hpp>
 #include <samg/matutx-graph.hpp>
 #include <samg/matutx-csv.hpp>
+#include <samg/matutx-fbr.hpp>
 
 
 /**
@@ -61,6 +62,8 @@ namespace samg {
             RRN, // Rice-runs binary format.
             GRAPH, // Graph format from LAW webgraph framework [https://law.di.unimi.it/index.php].
             CSV, // Comma Separated Values.
+            FBR, // Headerless Flat Binary Raster format (.bin / .fbr, row-major int32_t).
+            BIN = FBR,
             Unknown
         };
 
@@ -116,6 +119,16 @@ namespace samg {
                 return FileFormat::CSV;
             } 
 
+            position = file_name.find(".bin");
+            if (position != std::string::npos) {
+                return FileFormat::FBR;
+            } 
+
+            position = file_name.find(".fbr");
+            if (position != std::string::npos) {
+                return FileFormat::FBR;
+            } 
+
             return FileFormat::Unknown;
         }
         /***************************************************************/
@@ -134,6 +147,8 @@ namespace samg {
                         return std::make_shared<MXSReader>(input_file_name);
                     case samg::matutx::FileFormat::CSV:
                         return std::make_shared<CSVReader>(input_file_name);
+                    case samg::matutx::FileFormat::FBR:
+                        return std::make_shared<FBRReader>(input_file_name);
                     default:
                         throw std::runtime_error("Unrecognized file format!");
                 }

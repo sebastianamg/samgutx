@@ -1,12 +1,21 @@
 #pragma once
 #include <fcntl.h>
 #include <unistd.h>
+#include <cstdint>
 #include <fstream>
+#include <sstream>
 #include <chrono>
 #include <map>
 #include <cmath>
 #include <string>
 #include <functional>
+
+#if defined(__linux__)
+#include <linux/perf_event.h>
+#include <sys/ioctl.h>
+#include <sys/syscall.h>
+#include <cstring>
+#endif
 
 namespace samg {
     namespace profiler {
@@ -86,10 +95,39 @@ namespace samg {
                     const pid_t this_process = getpid();
 
                     data.mem_initial_kb = Profiler::_get_memory_usage_kb(this_process);
+
+#if defined(__linux__)
+                    constexpr std::uint64_t l1d_read_miss_cfg =
+                        PERF_COUNT_HW_CACHE_L1D |
+                        (PERF_COUNT_HW_CACHE_OP_READ << 8) |
+                        (PERF_COUNT_HW_CACHE_RESULT_MISS << 16);
+                    constexpr std::uint64_t llc_read_miss_cfg =
+                        PERF_COUNT_HW_CACHE_LL |
+                        (PERF_COUNT_HW_CACHE_OP_READ << 8) |
+                        (PERF_COUNT_HW_CACHE_RESULT_MISS << 16);
+
+                    PerfCounter l1_miss(PERF_TYPE_HW_CACHE, l1d_read_miss_cfg);
+                    PerfCounter llc_miss(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_MISSES,
+                                         PERF_TYPE_HW_CACHE, llc_read_miss_cfg);
+
+                    l1_miss.start();
+                    llc_miss.start();
+#endif
                     
                     auto start = ClockT::now();
                     R ans = std::invoke(std::forward<F>(func), std::forward<Args>(args)...);
                     auto end = ClockT::now();
+
+#if defined(__linux__)
+                    llc_miss.stop();
+                    l1_miss.stop();
+                    if (l1_miss.valid()) {
+                        data.counters["L1_Cache_Misses"] = l1_miss.read();
+                    }
+                    if (llc_miss.valid()) {
+                        data.counters["LLC_Cache_Misses"] = llc_miss.read();
+                    }
+#endif
 
                     data.mem_final_kb = Profiler::_get_memory_usage_kb(this_process);
                     data.time_ns = std::chrono::duration_cast<TimeT>(end - start).count();
@@ -100,6 +138,67 @@ namespace samg {
                     return std::make_pair(std::move(ans), data);
                 }
             private:
+#if defined(__linux__)
+                struct PerfCounter {
+                    int fd = -1;
+
+                    PerfCounter(std::uint32_t type, std::uint64_t config) {
+                        fd = open_event(type, config);
+                    }
+
+                    PerfCounter(std::uint32_t primary_type, std::uint64_t primary_config,
+                                std::uint32_t fallback_type, std::uint64_t fallback_config) {
+                        fd = open_event(primary_type, primary_config);
+                        if (fd == -1) {
+                            fd = open_event(fallback_type, fallback_config);
+                        }
+                    }
+
+                    ~PerfCounter() {
+                        if (fd != -1) {
+                            ::close(fd);
+                        }
+                    }
+
+                    PerfCounter(const PerfCounter&) = delete;
+                    PerfCounter& operator=(const PerfCounter&) = delete;
+
+                    bool valid() const noexcept { return fd != -1; }
+
+                    void start() const noexcept {
+                        if (fd != -1) {
+                            ::ioctl(fd, PERF_EVENT_IOC_RESET, 0);
+                            ::ioctl(fd, PERF_EVENT_IOC_ENABLE, 0);
+                        }
+                    }
+
+                    void stop() const noexcept {
+                        if (fd != -1) {
+                            ::ioctl(fd, PERF_EVENT_IOC_DISABLE, 0);
+                        }
+                    }
+
+                    std::uint64_t read() const noexcept {
+                        std::uint64_t count = 0;
+                        if (fd != -1 && ::read(fd, &count, sizeof(count)) == sizeof(count)) {
+                            return count;
+                        }
+                        return 0;
+                    }
+
+                private:
+                    static int open_event(std::uint32_t type, std::uint64_t config) noexcept {
+                        struct perf_event_attr pe{};
+                        pe.type = type;
+                        pe.size = sizeof(struct perf_event_attr);
+                        pe.config = config;
+                        pe.disabled = 1;
+                        pe.exclude_kernel = 1;
+                        pe.exclude_hv = 1;
+                        return static_cast<int>(::syscall(__NR_perf_event_open, &pe, 0, -1, -1, 0));
+                    }
+                };
+#endif
                 /**
                  * @brief Returns the current memory usage (data + stack) of a process in kilobytes.
                  * @param pid The process ID.

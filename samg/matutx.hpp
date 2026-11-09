@@ -129,6 +129,13 @@ namespace samg {
                 return FileFormat::FBR;
             } 
 
+            // Extensionless files (e.g., t100/tmax_10, t1000/tmax_10) are treated as headerless flat binary rasters (FBR)
+            const std::size_t last_sep = file_name.find_last_of("/\\");
+            const std::size_t last_dot = file_name.find_last_of(".");
+            if (last_dot == std::string::npos || (last_sep != std::string::npos && last_dot < last_sep)) {
+                return FileFormat::FBR;
+            }
+
             return FileFormat::Unknown;
         }
         /***************************************************************/

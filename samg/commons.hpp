@@ -570,8 +570,9 @@ namespace samg {
          */
         std::string get_file_basename(const std::string file_name) {
             std::string new_file_name = file_name;
+            std::size_t last_sep = new_file_name.find_last_of("/\\");
             std::size_t position = new_file_name.find_last_of(".");
-            if (position != std::string::npos) {
+            if (position != std::string::npos && (last_sep == std::string::npos || position > last_sep)) {
                 new_file_name.replace(position, file_name.length() - position, "");
             }
             return new_file_name;
